@@ -1,0 +1,237 @@
+// App state + persistence.
+//
+// `data` holds everything in memory (loaded once from IndexedDB at start-up).
+// Every mutation goes through a save*/delete* function below, which updates memory,
+// writes to IndexedDB straight away and schedules a re-render.
+// `ui` holds screen state that isn't saved (open sheets, selected tabs…).
+
+import * as idb from './db.js';
+import { defaultSettings, SCHEMA_VERSION } from './logic/model.js';
+import { buildHistory } from './logic/history.js';
+import { sampleExercises, buildTemplate } from './logic/samples.js';
+
+export const data = {
+  settings: defaultSettings(),
+  exercises: [],
+  routines: [],
+  workouts: [],
+  measurements: [],
+  blocks: [],
+  timer: null,
+};
+
+export const ui = {
+  sheets: [],          // stack of open bottom sheets: [{ type, ...props }]
+  dialog: null,        // confirm dialog
+  toast: null,
+  workoutOpen: false,
+  storageOk: true,
+  persisted: null,
+  tabState: {},        // per-screen UI bits (selected segment, week offset…)
+};
+
+let renderFn = () => {};
+let scheduled = false;
+let version = 0;
+
+export function setRenderer(fn) {
+  renderFn = fn;
+}
+
+/** Re-render on the next animation frame (many updates → one render). */
+export function update() {
+  if (scheduled) return;
+  scheduled = true;
+  requestAnimationFrame(() => {
+    scheduled = false;
+    renderFn();
+  });
+}
+
+export function dataVersion() {
+  return version;
+}
+
+function changed() {
+  version++;
+  update();
+}
+
+function persist(promise) {
+  promise.catch((err) => {
+    console.error(err);
+    ui.storageOk = false;
+    toast('⚠️ Could not save to this device: ' + (err?.message || err), 6000);
+  });
+}
+
+// ---------- Derived data (cached per data version) ----------
+const memo = new Map();
+export function cached(key, fn) {
+  const hit = memo.get(key);
+  if (hit && hit.v === version) return hit.value;
+  const value = fn();
+  memo.set(key, { v: version, value });
+  return value;
+}
+
+export const history = () => cached('history', () => buildHistory(data.workouts));
+export const exercisesById = () => cached('exById', () => new Map(data.exercises.map((e) => [e.id, e])));
+export const routinesById = () => cached('rById', () => new Map(data.routines.map((r) => [r.id, r])));
+export const activeWorkout = () => data.workouts.find((w) => w.status === 'active') || null;
+export const sortedRoutines = () => cached('routines', () => data.routines.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
+export const doneWorkouts = () => cached('done', () => data.workouts.filter((w) => w.status === 'done').sort((a, b) => b.startedAt - a.startedAt));
+
+// ---------- Generic save / delete ----------
+function upsert(listName, record) {
+  const list = data[listName];
+  const i = list.findIndex((x) => x.id === record.id);
+  if (i >= 0) list[i] = record; else list.push(record);
+  persist(idb.put(listName, record));
+  changed();
+  return record;
+}
+
+function remove(listName, id) {
+  data[listName] = data[listName].filter((x) => x.id !== id);
+  persist(idb.del(listName, id));
+  changed();
+}
+
+export const saveExercise = (r) => upsert('exercises', r);
+export const saveRoutine = (r) => upsert('routines', r);
+export const saveWorkout = (r) => upsert('workouts', r);
+export const saveMeasurement = (r) => upsert('measurements', r);
+export const saveBlock = (r) => upsert('blocks', r);
+export const deleteRoutine = (id) => remove('routines', id);
+export const deleteWorkout = (id) => remove('workouts', id);
+export const deleteMeasurement = (id) => remove('measurements', id);
+export const deleteBlock = (id) => remove('blocks', id);
+
+/** Deleting an exercise removes it from routines; past workouts keep their snapshot. */
+export function deleteExercise(id) {
+  for (const r of data.routines) {
+    if (r.items.some((i) => i.exerciseId === id)) saveRoutine({ ...r, items: r.items.filter((i) => i.exerciseId !== id) });
+  }
+  remove('exercises', id);
+}
+
+export function saveSettings(patch) {
+  data.settings = { ...data.settings, ...patch };
+  persist(idb.putMeta('settings', data.settings));
+  changed();
+}
+
+export function saveTimer(timer) {
+  data.timer = timer;
+  persist(idb.putMeta('timer', timer));
+  update();
+}
+
+/** Writes an import plan in a single transaction; memory is updated only if it succeeds. */
+export async function applyImport(plan, { includeSettings = false } = {}) {
+  const records = {
+    exercises: plan.exercises, routines: plan.routines, workouts: plan.workouts,
+    measurements: plan.measurements, blocks: plan.blocks,
+  };
+  const meta = includeSettings && plan.settings ? { settings: plan.settings } : {};
+  await idb.putMany(records, meta);
+  for (const [k, list] of Object.entries(records)) data[k].push(...list);
+  if (meta.settings) data.settings = meta.settings;
+  changed();
+}
+
+export async function eraseAll() {
+  await idb.clearAll();
+  data.exercises = []; data.routines = []; data.workouts = []; data.measurements = []; data.blocks = [];
+  data.settings = defaultSettings();
+  data.timer = null;
+  await idb.putMeta('seeded', true);
+  await idb.putMeta('schemaVersion', SCHEMA_VERSION);
+  changed();
+}
+
+// ---------- UI helpers ----------
+let toastTimer = null;
+export function toast(message, ms = 2600, action = null) {
+  ui.toast = { message, action, id: Math.random() };
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { ui.toast = null; update(); }, ms);
+  update();
+}
+
+export function openSheet(sheet) {
+  ui.sheets.push(sheet);
+  update();
+}
+
+export function closeSheet() {
+  ui.sheets.pop();
+  update();
+}
+
+export function closeAllSheets() {
+  ui.sheets = [];
+  update();
+}
+
+/** confirm({ title, message, confirmText, destructive, onConfirm }) */
+export function confirm(opts) {
+  ui.dialog = opts;
+  update();
+}
+
+// ---------- Start-up ----------
+export async function load() {
+  try {
+    const [exercises, routines, workouts, measurements, blocks] = await Promise.all(idb.STORES.map((s) => idb.getAll(s)));
+    Object.assign(data, { exercises, routines, workouts, measurements, blocks });
+    const settings = await idb.getMeta('settings');
+    data.settings = { ...defaultSettings(), ...(settings || {}) };
+    data.timer = (await idb.getMeta('timer')) || null;
+    const schema = (await idb.getMeta('schemaVersion')) || 0;
+    if (schema < SCHEMA_VERSION) await migrateData(schema);
+    const seeded = await idb.getMeta('seeded');
+    if (!seeded && data.routines.length === 0 && data.exercises.length === 0) await seedSamples();
+    await idb.putMeta('seeded', true);
+  } catch (err) {
+    console.error(err);
+    ui.storageOk = false;
+  }
+  // Ask the browser not to clear our data when space runs low.
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      ui.persisted = (await navigator.storage.persisted()) || (await navigator.storage.persist());
+    }
+  } catch { /* not supported */ }
+  version++;
+}
+
+/** Data-shape migrations between app versions (runs once per upgrade). */
+async function migrateData(from) {
+  // Version 1 is the first web schema – nothing to migrate yet.
+  // Future: if (from < 2) { …update records…; }
+  await idb.putMeta('schemaVersion', SCHEMA_VERSION);
+}
+
+export async function seedSamples() {
+  const exercises = sampleExercises(data.settings).filter((e) => !data.exercises.some((x) => x.name.toLowerCase() === e.name.toLowerCase()));
+  const all = [...data.exercises, ...exercises];
+  const order = Math.max(-1, ...data.routines.map((r) => r.order ?? 0)) + 1;
+  const { routines } = buildTemplate('ppl', all, data.settings, order, '');
+  await idb.putMany({ exercises, routines });
+  data.exercises.push(...exercises);
+  data.routines.push(...routines);
+  changed();
+}
+
+/** Adds a template's routines (and any missing exercises). */
+export async function addTemplate(templateId, folder) {
+  const order = Math.max(-1, ...data.routines.map((r) => r.order ?? 0)) + 1;
+  const { exercises, routines } = buildTemplate(templateId, data.exercises, data.settings, order, folder);
+  await idb.putMany({ exercises, routines });
+  data.exercises.push(...exercises);
+  data.routines.push(...routines);
+  changed();
+  return routines;
+}

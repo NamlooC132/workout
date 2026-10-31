@@ -1,0 +1,264 @@
+// Exercise library: list screen, multi-select picker and the exercise editor.
+import { h, cx } from '../vdom.js';
+import { icon } from './icons.js';
+import { data, ui, update, openSheet, closeSheet, saveExercise, deleteExercise, confirm, toast, history } from '../store.js';
+import { Page, Section, Row, Empty, Button, IconButton, Stepper, Toggle, Segmented, Chip, Sheet, TextField, Thumb, NumberField, nav } from './components.js';
+import { newExercise } from '../logic/model.js';
+import { allMuscles, muscleName, contributions, EXERCISE_TYPES, EQUIPMENT, CATEGORIES } from '../logic/muscles.js';
+import { fmtClock, deepClone, fmtNum } from '../logic/util.js';
+import { REST_STEP, REST_MIN, REST_MAX } from '../logic/restTimer.js';
+import { defaultProgressionStep } from '../logic/units.js';
+
+export function exerciseSubtitle(ex) {
+  const mus = contributions(ex).filter((c) => c.value >= 1).map((c) => muscleName(c.key, data.settings));
+  return [mus.join(', ') || 'No muscles set', ex.equipment].filter(Boolean).join(' · ');
+}
+
+function matches(ex, q, muscle) {
+  if (q && !ex.name.toLowerCase().includes(q.toLowerCase())) return false;
+  if (muscle && !(ex.muscles && ex.muscles[muscle] > 0)) return false;
+  return true;
+}
+
+function MuscleFilter({ value, onChange }) {
+  return h('div.chips', { style: { margin: '8px 0 4px', overflowX: 'auto', flexWrap: 'nowrap', paddingBottom: '4px' } }, [
+    h(Chip, { active: !value, onClick: () => onChange(null) }, 'All'),
+    ...allMuscles(data.settings).map((m) => h(Chip, { active: value === m.key, onClick: () => onChange(value === m.key ? null : m.key) }, m.name)),
+  ]);
+}
+
+function SearchBox({ value, onChange, placeholder = 'Search exercises' }) {
+  return h('div.card', { style: { display: 'flex', alignItems: 'center', gap: '8px', padding: '0 12px', marginTop: '4px' } }, [
+    h('span.muted', icon('search', 18)),
+    h('input.text-field', { type: 'search', placeholder, value, oninput: (e) => onChange(e.target.value), 'aria-label': placeholder }),
+  ]);
+}
+
+// ---------- Library screen ----------
+export function LibraryScreen() {
+  const st = (ui.tabState.library = ui.tabState.library || { q: '', muscle: null });
+  const list = data.exercises.filter((e) => matches(e, st.q, st.muscle)).sort((a, b) => a.name.localeCompare(b.name));
+  const hist = history();
+  return h(Page, {
+    title: 'Exercises', backTo: '/routines',
+    actions: [h(IconButton, { name: 'plus', label: 'New exercise', onClick: () => openSheet({ type: 'exerciseEditor', exerciseId: null }) })],
+  }, [
+    h(SearchBox, { value: st.q, onChange: (v) => { st.q = v; update(); } }),
+    h(MuscleFilter, { value: st.muscle, onChange: (v) => { st.muscle = v; update(); } }),
+    list.length === 0
+      ? h(Empty, { title: data.exercises.length ? 'No matches' : 'No exercises yet', text: 'Tap + to create one.' })
+      : h(Section, {}, list.map((ex) => h(Row, {
+        key: ex.id,
+        left: h(Thumb, { image: ex.image, name: ex.name }),
+        title: ex.name,
+        subtitle: `${exerciseSubtitle(ex)} · ${(hist.get(ex.id) || []).length} sessions`,
+        chevron: true,
+        onClick: () => nav('/exercise/' + ex.id),
+      }))),
+  ]);
+}
+
+// ---------- Picker sheet ----------
+// sheet: { type: 'picker', title, multi, onPick(exercises) }
+export function PickerSheet(sheet) {
+  sheet.q = sheet.q || '';
+  sheet.selected = sheet.selected || [];
+  const list = data.exercises.filter((e) => matches(e, sheet.q, sheet.muscle)).sort((a, b) => a.name.localeCompare(b.name));
+  const toggle = (id) => {
+    if (!sheet.multi) {
+      const ex = data.exercises.find((e) => e.id === id);
+      closeSheet();
+      sheet.onPick([ex]);
+      return;
+    }
+    const i = sheet.selected.indexOf(id);
+    if (i >= 0) sheet.selected.splice(i, 1); else sheet.selected.push(id);
+    update();
+  };
+  const confirmPick = () => {
+    const exs = sheet.selected.map((id) => data.exercises.find((e) => e.id === id)).filter(Boolean);
+    closeSheet();
+    sheet.onPick(exs);
+  };
+  return h(Sheet, {
+    title: sheet.title || 'Add Exercises', full: true,
+    left: h('button.link-btn', { onclick: closeSheet }, 'Cancel'),
+    actions: sheet.multi ? [h('button.link-btn.strong', { onclick: confirmPick, disabled: !sheet.selected.length }, sheet.selected.length ? `Add (${sheet.selected.length})` : 'Add')] : null,
+  }, [
+    h(SearchBox, { value: sheet.q, onChange: (v) => { sheet.q = v; update(); } }),
+    h(MuscleFilter, { value: sheet.muscle, onChange: (v) => { sheet.muscle = v; update(); } }),
+    h(Section, {}, [
+      h(Row, {
+        left: h('span', { style: { color: 'var(--accent)' } }, icon('plus', 24)),
+        title: h('span', { style: { color: 'var(--accent)', fontWeight: 650 } }, 'Create new exercise'),
+        onClick: () => openSheet({
+          type: 'exerciseEditor', exerciseId: null, presetName: sheet.q,
+          onSaved: (ex) => { if (sheet.multi) { sheet.selected.push(ex.id); update(); } else { closeSheet(); sheet.onPick([ex]); } },
+        }),
+      }),
+    ]),
+    h(Section, { title: 'Library' }, list.length ? list.map((ex) => {
+      const on = sheet.selected.includes(ex.id);
+      return h(Row, {
+        key: ex.id,
+        left: h(Thumb, { image: ex.image, name: ex.name, size: 40 }),
+        title: ex.name,
+        subtitle: exerciseSubtitle(ex),
+        right: sheet.multi ? h('span', { style: { color: on ? 'var(--accent)' : 'var(--muted)' } }, on ? h('span.tag.accent', `#${sheet.selected.indexOf(ex.id) + 1}`) : icon('plus', 22)) : null,
+        onClick: () => toggle(ex.id),
+        class: on ? 'selected' : '',
+      });
+    }) : h('div.pad.muted', 'No exercises found.')),
+  ]);
+}
+
+// ---------- Editor sheet ----------
+// sheet: { type: 'exerciseEditor', exerciseId, onSaved, presetName }
+export function ExerciseEditorSheet(sheet) {
+  const s = data.settings;
+  if (!sheet.draft) {
+    const existing = sheet.exerciseId && data.exercises.find((e) => e.id === sheet.exerciseId);
+    sheet.draft = existing ? deepClone(existing) : newExercise(s, { name: sheet.presetName || '' });
+    sheet.isNew = !existing;
+  }
+  const d = sheet.draft;
+  const set = (patch) => { Object.assign(d, patch); update(); };
+  const setProg = (patch) => { d.progression = { ...d.progression, ...patch }; update(); };
+  const canSave = d.name.trim().length > 0;
+  const routinesUsing = data.routines.filter((r) => r.items.some((i) => i.exerciseId === d.id));
+  const save = () => {
+    d.name = d.name.trim();
+    if (d.repMin > d.repMax) [d.repMin, d.repMax] = [d.repMax, d.repMin];
+    saveExercise(deepClone(d));
+    closeSheet();
+    toast(sheet.isNew ? 'Exercise created' : 'Exercise saved');
+    sheet.onSaved && sheet.onSaved(d);
+  };
+  const unit = s.unit;
+  const hasWeight = d.type !== 'bodyweight';
+  const stepOptions = [0.5, 1, 1.25, 2, 2.5, 5, 10];
+
+  return h(Sheet, {
+    title: sheet.isNew ? 'New Exercise' : 'Edit Exercise', full: true,
+    left: h('button.link-btn', { onclick: closeSheet }, 'Cancel'),
+    actions: [h('button.link-btn.strong', { onclick: save, disabled: !canSave }, 'Save')],
+  }, [
+    h(Section, {}, [
+      h('div.field-card', h(TextField, { value: d.name, onChange: (v) => { d.name = v; update(); }, placeholder: 'Exercise name', autofocus: sheet.isNew && !d.name })),
+      h('div.row', h('div.photo-row', [
+        h(Thumb, { image: d.image, name: d.name, size: 64 }),
+        h('div.photo-btns', [
+          h('label.link-btn', { style: { padding: '4px 0', minHeight: 'auto', display: 'inline-flex', gap: '6px', alignItems: 'center' } }, [
+            icon('camera', 18), d.image ? 'Change photo' : 'Add photo',
+            h('input.hidden-input', { type: 'file', accept: 'image/*', onchange: (e) => pickImage(e, (url) => set({ image: url })) }),
+          ]),
+          d.image && h('button.link-btn.danger', { style: { padding: '4px 0', minHeight: 'auto' }, onclick: () => set({ image: null }) }, 'Remove photo'),
+        ]),
+      ])),
+    ]),
+
+    h(Section, { title: 'Type' }, [
+      ...EXERCISE_TYPES.map((t) => h(Row, {
+        key: t.key, title: t.name, subtitle: t.hint, onClick: () => set({ type: t.key }),
+        right: d.type === t.key ? h('span', { style: { color: 'var(--accent)' } }, icon('check', 22)) : null,
+      })),
+      d.type === 'dumbbell' && h(Row, { title: 'Weight is entered', right: h(Segmented, { small: true, value: d.loadMode, onChange: (v) => set({ loadMode: v }), options: [{ value: 'per_hand', label: 'Per hand' }, { value: 'total', label: 'Total' }] }) }),
+      h(Row, { title: 'Unilateral', subtitle: 'Log left and right reps separately', right: h(Toggle, { checked: d.unilateral, onChange: (v) => set({ unilateral: v }) }) }),
+      h(Row, { title: 'Equipment', right: select(EQUIPMENT, d.equipment, (v) => set({ equipment: v })) }),
+      h(Row, { title: 'Category', right: select(CATEGORIES, d.category, (v) => set({ category: v })) }),
+    ]),
+
+    h(Section, {
+      title: 'Muscles worked',
+      footer: 'Each working set counts as this much volume for the muscle. Default: 100 % for the main (direct) muscle, 50 % for helpers (indirect).',
+    }, allMuscles(s).map((m) => {
+      const v = d.muscles[m.key] || 0;
+      return h(Row, {
+        key: m.key, title: m.name,
+        right: h('div.segmented.small', { style: { margin: 0, width: '200px' } }, [0, 0.25, 0.5, 0.75, 1].map((x) =>
+          h('button', { class: cx('seg', Math.abs(v - x) < 0.001 && 'active'), onclick: () => { const mus = { ...d.muscles }; if (x === 0) delete mus[m.key]; else mus[m.key] = x; set({ muscles: mus }); } }, x === 0 ? '–' : `${x * 100}`))),
+      });
+    })),
+
+    h(Section, { title: 'Defaults', footer: 'Routines can override these for one routine only (tap the exercise inside a routine).' }, [
+      h(Row, { title: 'Working sets', right: h(Stepper, { value: d.sets, min: 1, max: 12, onChange: (v) => set({ sets: v }) }) }),
+      h(Row, { title: 'Warm-up sets', right: h(Stepper, { value: d.warmupSets || 0, min: 0, max: 6, onChange: (v) => set({ warmupSets: v }) }) }),
+      h(Row, { title: 'Min reps', right: h(Stepper, { value: d.repMin, min: 1, max: d.repMax, onChange: (v) => set({ repMin: v }) }) }),
+      h(Row, { title: 'Max reps', right: h(Stepper, { value: d.repMax, min: d.repMin, max: 100, onChange: (v) => set({ repMax: v }) }) }),
+      h(Row, { title: 'Rest time', right: h(Stepper, { value: d.rest, step: REST_STEP, min: REST_MIN, max: REST_MAX, format: fmtClock, onChange: (v) => set({ rest: v }) }) }),
+      hasWeight && h(Row, { title: `Weight step (− / +)`, right: select(stepOptions.map((x) => ({ value: x, label: `${x} ${unit}` })), d.weightStep, (v) => set({ weightStep: Number(v) })) }),
+      h(Row, { title: 'Target RIR', subtitle: 'Reps in reserve you aim for', right: select([{ value: '', label: 'None' }, ...[0, 1, 2, 3, 4].map((x) => ({ value: String(x), label: `${x}` })), { value: '5', label: '5+' }], d.rirTarget === null || d.rirTarget === undefined ? '' : String(d.rirTarget), (v) => set({ rirTarget: v === '' ? null : Number(v) })) }),
+    ]),
+
+    h(Section, { title: 'Progressive overload', footer: progressionFooter(d, s) }, [
+      h(Row, {
+        title: 'Rule',
+        right: select([
+          { value: 'all_max', label: 'Max reps on all sets' },
+          { value: 'avg', label: 'Average reps' },
+          { value: 'custom', label: 'Custom' },
+        ], d.progression.rule, (v) => setProg({ rule: v })),
+      }),
+      d.progression.rule === 'avg' && h(Row, { title: 'Average reps needed', right: h(Stepper, { value: d.progression.avgTarget || d.repMax, min: 1, max: 100, onChange: (v) => setProg({ avgTarget: v }) }) }),
+      d.progression.rule === 'custom' && h(Row, { title: 'Reps on every set', right: h(Stepper, { value: d.progression.customReps || d.repMax, min: 1, max: 100, onChange: (v) => setProg({ customReps: v }) }) }),
+      d.progression.rule === 'custom' && h(Row, { title: 'With at least RIR', right: select([{ value: '', label: 'Any' }, ...[0, 1, 2, 3, 4, 5].map((x) => ({ value: String(x), label: String(x) }))], d.progression.customMinRir === null || d.progression.customMinRir === undefined ? '' : String(d.progression.customMinRir), (v) => setProg({ customMinRir: v === '' ? null : Number(v) })) }),
+      hasWeight && h(Row, {
+        title: d.type === 'assisted' ? 'Reduce assistance by' : 'Increase by',
+        right: h('div.hstack', [
+          h(NumberField, { value: d.progression.step ?? null, placeholder: fmtNum(s.defaultProgressionStep || defaultProgressionStep(unit)), onChange: (v) => setProg({ step: v || null }), class: 'w-80' }),
+          h('span.muted', unit),
+        ]),
+      }),
+    ]),
+
+    h(Section, { title: 'Technique notes (always shown)' }, h('div.field-card', h(TextField, { value: d.notes, onChange: (v) => { d.notes = v; update(); }, placeholder: 'e.g. seat height 4, grip width…', multiline: true }))),
+
+    !sheet.isNew && routinesUsing.length > 1 && h('div.callout.blue', [icon('info', 18), `Used in ${routinesUsing.length} routines – changes here apply to all of them.`]),
+
+    !sheet.isNew && h('div.mt', h(Button, {
+      kind: 'danger', block: true,
+      onClick: () => confirm({
+        title: `Delete “${d.name}”?`,
+        message: 'It will be removed from all routines. Your past workouts keep everything you logged.',
+        confirmText: 'Delete Exercise', destructive: true,
+        onConfirm: () => { deleteExercise(d.id); closeSheet(); toast('Exercise deleted'); if (location.hash.includes(d.id)) window.history.back(); },
+      }),
+    }, [icon('trash', 18), 'Delete Exercise'])),
+  ]);
+}
+
+function progressionFooter(d, s) {
+  const step = d.progression.step || s.defaultProgressionStep || defaultProgressionStep(s.unit);
+  if (d.type === 'bodyweight') return 'When you reach the target, you’ll be told to make it harder (add weight or use a harder variation).';
+  const verb = d.type === 'assisted' ? `use ${step} ${s.unit} less assistance` : `add ${step} ${s.unit}`;
+  if (d.progression.rule === 'avg') return `When your average reps reach the target at one weight, the app suggests you ${verb}.`;
+  if (d.progression.rule === 'custom') return `When every set reaches the reps (and RIR) above at one weight, the app suggests you ${verb}.`;
+  return `When you hit ${d.repMax} reps on every working set at the same weight, the app suggests you ${verb}.`;
+}
+
+export function select(options, value, onChange) {
+  const opts = options.map((o) => (typeof o === 'object' ? o : { value: o, label: o }));
+  return h('select.select', { onchange: (e) => onChange(e.target.value) },
+    opts.map((o) => h('option', { value: String(o.value), selected: String(o.value) === String(value) }, o.label)));
+}
+
+/** Reads a picked photo and shrinks it to a small JPEG thumbnail. */
+export function pickImage(e, done) {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    const max = 320;
+    const scale = Math.min(1, max / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * scale);
+    c.height = Math.round(img.height * scale);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    URL.revokeObjectURL(url);
+    done(c.toDataURL('image/jpeg', 0.82));
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); toast("Couldn't read that photo"); };
+  img.src = url;
+}
