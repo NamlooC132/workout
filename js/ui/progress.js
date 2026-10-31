@@ -7,7 +7,7 @@ import { Page, Section, Row, Empty, Button, IconButton, Segmented, Sheet, Number
 import { fmtNum, addDays, startOfWeek, startOfMonth, addMonths, dateKey, uid, parseDateKey, startOfDay } from '../logic/util.js';
 import { allMuscles, muscleName } from '../logic/muscles.js';
 import { volumeBetween, weekRange, weeklySeries, monthRange, targetStatus } from '../logic/volume.js';
-import { weeklyFrequency, weekStreak } from '../logic/analytics.js';
+import { weeklyFrequency, weekStreak, strengthTrend, trendBuckets } from '../logic/analytics.js';
 import { prsInWorkout, isStalled, personalRecords } from '../logic/records.js';
 import { activeBlock, blockRange, planVsDone, adherence, blockWeek } from '../logic/blocks.js';
 import { displayWeight, fromDisplayWeight, toDisplayLength, fromDisplayLength } from '../logic/units.js';
@@ -53,14 +53,45 @@ function Overview(st) {
     adh = adherence(planVsDone(data.blocks, data.workouts, r.from, Math.min(r.to, addDays(startOfDay(now), 1))), now);
   }
 
+  const trend = cached('trend', () => strengthTrend(history(), data.measurements, now));
+  const tb = trendBuckets(trend);
+  const exName = (t) => data.exercises.find((e) => e.id === t.exerciseId)?.name || t.name;
+  const pct = (c) => `${c > 0 ? '+' : ''}${fmtNum(c * 100, Math.abs(c) < 0.1 ? 1 : 0)} %`;
+
+  // Takeaway 1: Am I getting stronger?
+  let strongT, strongS;
+  if (!trend.length) { strongT = 'Not enough data yet'; strongS = 'Do the same exercise twice in 8 weeks and you’ll see your trend here.'; }
+  else if (tb.up.length >= Math.max(1, tb.down.length) && tb.up.length >= trend.length / 2) { strongT = 'Yes – you’re getting stronger'; strongS = `${tb.up.length} of ${trend.length} exercises went up in the last 8 weeks.`; }
+  else if (tb.down.length > tb.up.length) { strongT = 'Slightly down lately'; strongS = `${tb.down.length} of ${trend.length} exercises dropped. Sleep, food and a deload week can help.`; }
+  else { strongT = 'Mostly holding steady'; strongS = `${tb.up.length} up, ${tb.steady.length} steady, ${tb.down.length} down over the last 8 weeks.`; }
+
+  // Takeaway 2: How often did I train?
+  const last4 = freq.slice(-4).reduce((a, b) => a + b.count, 0) / 4;
+  const prev4 = freq.slice(-8, -4).reduce((a, b) => a + b.count, 0) / 4;
+  const freqT = done.length === 0 ? 'No workouts yet' : `${fmtNum(last4, 1)} workouts a week`;
+  const freqS = done.length === 0 ? 'Finish your first workout to see this.'
+    : `Last 4 weeks${prev4 > 0 ? ` (${last4 > prev4 + 0.2 ? 'up from' : last4 < prev4 - 0.2 ? 'down from' : 'same as'} ${fmtNum(prev4, 1)} before)` : ''}. This week: ${thisWeek}${streak > 1 ? ` · ${streak}-week streak 🔥` : ''}.`;
+
+  // Takeaway 3: Which exercises are improving?
+  const impT = tb.up.length ? `${exName(tb.up[0])} is improving most` : trend.length ? 'No clear gains yet' : 'Not enough data yet';
+  const impS = tb.up.length ? `${pct(tb.up[0].change)} in the last 8 weeks.` : trend.length ? 'Try the suggested weight increases when they appear.' : 'Train an exercise at least twice to compare.';
+
   return h('div', [
-    h('div.stat-grid', [
-      statBox('This week', thisWeek, thisWeek === 1 ? 'workout' : 'workouts'),
-      statBox('Streak', streak, streak === 1 ? 'week' : 'weeks'),
-      statBox('Avg / week', fmtNum(avg, 1), 'last 12 wks'),
-      statBox('Total', done.length, 'workouts'),
-    ]),
-    h(Section, { title: 'Workouts per week' }, h(BarChart, { bars: freq.map((f) => ({ label: new Date(f.from).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }), value: f.count })), formatY: (v) => String(v) })),
+    Insight({ q: 'Am I getting stronger?', t: strongT, s: strongS, tone: tb.up.length > tb.down.length ? 'good' : tb.down.length > tb.up.length ? 'warn' : '' },
+      trend.length > 0 && h('div.trend-chips', [
+        h('span.tchip.up', `↑ ${tb.up.length} up`), h('span.tchip', `→ ${tb.steady.length} steady`), h('span.tchip.down', `↓ ${tb.down.length} down`),
+      ])),
+
+    Insight({ q: 'How often did I train?', t: freqT, s: freqS },
+      h(BarChart, { bars: freq.map((f) => ({ label: new Date(f.from).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }), value: f.count })), formatY: (v) => String(v) })),
+
+    Insight({ q: 'Which exercises are improving?', t: impT, s: impS },
+      trend.length > 0 && h('div.trend-list', trend.slice(0, 8).map((t) => h('button.trend-row', { key: t.exerciseId, onclick: () => nav('/exercise/' + t.exerciseId) }, [
+        h('div.grow', [h('div.tn', exName(t)), h('div.ts', t.metric === 'e1rm' ? `Est. 1RM ${fmtW(t.from)} → ${fmtW(t.to)}` : `Best reps ${t.from} → ${t.to}`)]),
+        h('span', { class: cx('tpct', t.change > 0.01 ? 'up' : t.change < -0.02 ? 'down' : '') }, pct(t.change)),
+      ])))),
+
+    h('div.section-head', { style: { marginTop: '22px' } }, h('span', 'Details')),
     Calendar(st),
     block && adh && h(Section, { title: `Plan · ${block.name}` }, [
       h(Row, { title: `Week ${blockWeek(block)} of ${block.weeks}`, subtitle: block.phase, right: h('b', adh.planned ? `${adh.completed}/${adh.planned} planned done` : 'No plan yet') }),
@@ -71,6 +102,20 @@ function Overview(st) {
       : recentPrs.slice(0, 12).map((p, i) => h(Row, { key: i, left: h('span.pr', icon('trophy', 20)), title: p.name, subtitle: `${p.kind} · ${relDay(p.date)}`, chevron: true, onClick: () => nav('/exercise/' + p.exerciseId) }))),
     stalled.length > 0 && h(Section, { title: 'Possibly stalled', footer: 'No improvement in estimated 1RM (or reps) over the last 3 sessions.' },
       stalled.map((e) => h(Row, { key: e.id, left: h(Thumb, { image: e.image, name: e.name, muscles: e.muscles, size: 36 }), title: e.name, chevron: true, onClick: () => nav('/exercise/' + e.id) }))),
+    h('div.stat-grid', { style: { marginTop: '14px' } }, [
+      statBox('Total', done.length, 'workouts'),
+      statBox('Avg / week', fmtNum(avg, 1), 'last 12 wks'),
+    ]),
+  ]);
+}
+
+/** Question → short answer → chart. */
+function Insight({ q, t, s, tone }, body) {
+  return h('section.insight', { class: tone || '' }, [
+    h('div.iq', q),
+    h('div.it', t),
+    h('div.is', s),
+    body && h('div.ib', body),
   ]);
 }
 
@@ -138,7 +183,14 @@ function Volume(st) {
   const shift = (d) => { if (isWeek) st.weekOffset = Math.min(0, st.weekOffset + d); else st.monthOffsetV = Math.min(0, (st.monthOffsetV || 0) + d); update(); };
   const trend = weeklySeries(data.workouts, Date.now(), 12, s);
 
+  const per = isWeek ? 1 : weeks;
+  const stat = rows.map((r) => ({ ...r, st: targetStatus(r.v.total / per, s.volumeTargets[r.m.key]) }));
+  const low = stat.filter((r) => r.st === 'low'), ok = stat.filter((r) => r.st === 'ok'), withT = stat.filter((r) => r.st !== 'none');
+  const volT = total === 0 ? 'No sets logged in this period' : low.length === 0 ? 'Every muscle hit its target 🎯' : `${ok.length} of ${withT.length} muscles on target`;
+  const volS = total === 0 ? 'Finish a workout to see your muscle volume.' : low.length ? `Below target: ${low.slice(0, 4).map((r) => r.m.name).join(', ')}${low.length > 4 ? '…' : ''}.` : 'Nice balance – keep it up.';
+
   return h('div', [
+    h('section.insight', [h('div.iq', 'Am I training every muscle enough?'), h('div.it', volT), h('div.is', volS)]),
     h(Segmented, { small: true, value: st.mode, onChange: (v) => { st.mode = v; update(); }, options: [{ value: 'week', label: 'Weekly' }, { value: 'month', label: 'Monthly' }] }),
     h('div.hstack', { style: { justifyContent: 'space-between' } }, [
       h(IconButton, { name: 'chevronLeft', label: 'Earlier', onClick: () => shift(-1) }),
@@ -188,14 +240,19 @@ function Exercises() {
     .filter((x) => x.list.length > 0)
     .sort((a, b) => b.list[0].workout.startedAt - a.list[0].workout.startedAt);
   if (!list.length) return h(Empty, { iconName: 'chart', title: 'No exercise history yet', text: 'Finish a workout to see charts and records here.' });
-  return h(Section, { footer: h('button.link-btn', { onclick: () => nav('/library') }, 'All exercises in the library ›') }, list.map(({ e, list: l }) => {
+  const trend = new Map(cached('trend', () => strengthTrend(history(), data.measurements, Date.now())).map((t) => [t.exerciseId, t]));
+  const ups = [...trend.values()].filter((t) => t.change > 0.01).length;
+  return h('div', [
+    h('section.insight', [h('div.iq', 'Which exercises are improving?'), h('div.it', trend.size ? `${ups} of ${trend.size} going up` : 'Not enough data yet'), h('div.is', trend.size ? 'Change in estimated 1RM over the last 8 weeks is shown on each exercise.' : 'Train an exercise twice in 8 weeks to see its trend.')]),
+    h(Section, { footer: h('button.link-btn', { onclick: () => nav('/library') }, 'All exercises in the library ›') }, list.map(({ e, list: l }) => {
     const rec = personalRecords(l, data.measurements);
     return h(Row, {
       key: e.id, left: h(Thumb, { image: e.image, name: e.name, muscles: e.muscles }), title: e.name,
       subtitle: `${l.length} sessions · last ${relDay(l[0].workout.startedAt)}${rec.bestE1rm ? ` · e1RM ${fmtW(rec.bestE1rm.value)}` : ''}`,
+      right: trend.has(e.id) ? ((t) => h('span', { class: cx('tpct', t.change > 0.01 ? 'up' : t.change < -0.02 ? 'down' : '') }, `${t.change > 0 ? '+' : ''}${fmtNum(t.change * 100, 0)} %`))(trend.get(e.id)) : null,
       chevron: true, onClick: () => nav('/exercise/' + e.id),
     });
-  }));
+  }))]);
 }
 
 // ---------- Body measurements ----------

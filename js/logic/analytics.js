@@ -3,6 +3,7 @@
 import { addDays, startOfWeek, sum } from './util.js';
 import { effectiveConfig } from './model.js';
 import { contributions } from './muscles.js';
+import { sessionStats } from './records.js';
 
 /** Workouts per week for the last `count` weeks (oldest first). */
 export function weeklyFrequency(workouts, now, count, weekStart = 1) {
@@ -60,4 +61,37 @@ export function workoutDuration(w) {
 
 export function workoutSetCount(w) {
   return sum(w.entries || [], (e) => (e.sets || []).filter((s) => s.done && s.type !== 'warmup').length);
+}
+
+/**
+ * "Am I getting stronger?" – for every exercise trained at least twice in the last `days` days,
+ * compare the first session in that window with the best of the latest two sessions.
+ * Metric: estimated 1RM, or best reps for bodyweight exercises.
+ * Returns [{ exerciseId, name, from, to, change, metric }] sorted by change (best first).
+ */
+export function strengthTrend(historyMap, measurements, now, days = 56) {
+  const since = now - days * 86400000;
+  const out = [];
+  for (const [exerciseId, list] of historyMap) {
+    const recent = list.filter((x) => x.workout.startedAt >= since); // newest first
+    if (recent.length < 2) continue;
+    const stats = recent.map((x) => sessionStats(x.entry, x.workout, measurements)).filter((s) => s.sets > 0);
+    if (stats.length < 2) continue;
+    const useE1rm = stats.every((s) => s.e1rm > 0);
+    const metric = (s) => (useE1rm ? s.e1rm : s.bestReps);
+    const from = metric(stats[stats.length - 1]);
+    const to = Math.max(metric(stats[0]), metric(stats[1]));
+    if (!(from > 0)) continue;
+    out.push({ exerciseId, name: recent[0].entry.snapshot?.name || '', from, to, change: (to - from) / from, metric: useE1rm ? 'e1rm' : 'reps', sessions: stats.length });
+  }
+  return out.sort((a, b) => b.change - a.change);
+}
+
+/** Splits a trend list into improving / steady / down. */
+export function trendBuckets(trend) {
+  return {
+    up: trend.filter((t) => t.change > 0.01),
+    steady: trend.filter((t) => t.change <= 0.01 && t.change >= -0.02),
+    down: trend.filter((t) => t.change < -0.02),
+  };
 }

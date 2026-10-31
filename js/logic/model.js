@@ -46,6 +46,8 @@ export function defaultSettings() {
     rirDisplay: 'current',           // 'current' (only on the set you're doing) | 'all'
     backupReminder: true,            // weekly 'back up your workouts' card
     backupSnoozeUntil: null,
+    deloadSetShare: 0.5,             // deload: keep this share of working sets
+    deloadWeightPct: 10,             // deload: use this much less weight (%)
     lastBackupAt: null,
   };
 }
@@ -105,7 +107,7 @@ export function newRoutineItem(exerciseId, fields = {}) {
 export function newRoutine(fields = {}) {
   return {
     id: uid(),
-    name: 'New Routine',
+    name: 'New routine',
     folder: '',                // optional folder / phase name used to group routines
     order: 0,
     notes: '',

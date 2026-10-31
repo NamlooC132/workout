@@ -9,7 +9,7 @@ import { WorkoutView, RestPanel, ManualRestSheet, SetMenuSheet, TextInputSheet, 
 import { HistoryScreen, WorkoutDetailScreen, ExerciseScreen } from './ui/history.js';
 import { ProgressScreen, MeasurementSheet } from './ui/progress.js';
 import { PlanScreen, BlockEditorSheet } from './ui/plan.js';
-import { SettingsScreen, ExportRoutinesSheet, ImportPreviewSheet, TargetsSheet, MusclesSheet, ActionsSheet } from './ui/settings.js';
+import { SettingsScreen, AdvancedSettingsScreen, ExportRoutinesSheet, ImportPreviewSheet, TargetsSheet, MusclesSheet, ActionsSheet } from './ui/settings.js';
 import { resumeTimer, unlockAudio, syncWakeLock } from './timer.js';
 import { fmtDuration } from './logic/util.js';
 
@@ -44,6 +44,7 @@ const ROUTES = [
   [/^\/workout\/(.+)$/, (m) => h(WorkoutDetailScreen, { id: m[1] }), 'history'],
   [/^\/progress$/, () => h(ProgressScreen), 'progress'],
   [/^\/settings$/, () => h(SettingsScreen), 'settings'],
+  [/^\/settings\/advanced$/, () => h(AdvancedSettingsScreen), 'settings'],
 ];
 
 let lastTab = 'routines';
@@ -60,7 +61,7 @@ function currentRoute() {
 }
 
 const TABS = [
-  { key: 'routines', path: '/routines', label: 'Routines', icon: 'folder' },
+  { key: 'routines', path: '/routines', label: 'Workout', icon: 'dumbbell' },
   { key: 'history', path: '/history', label: 'History', icon: 'history' },
   { key: 'progress', path: '/progress', label: 'Progress', icon: 'chart' },
   { key: 'settings', path: '/settings', label: 'Settings', icon: 'gear' },
@@ -78,7 +79,7 @@ function ResumeBar({ w }) {
   const done = w.entries.reduce((a, e) => a + e.sets.filter((s) => s.done).length, 0);
   return h('button.resume-bar', { onclick: () => { ui.workoutOpen = true; update(); } }, [
     icon('dumbbell', 24),
-    h('div.grow', { style: { textAlign: 'left' } }, [h('div.title', w.routineName), h('div.sub', `Workout in progress · ${done} sets done`)]),
+    h('div.grow', { style: { textAlign: 'left' } }, [h('div.title', w.routineName), h('div.sub', `Workout in progress · ${done} set${done === 1 ? '' : 's'} done`)]),
     h('b.mono', fmtDuration(Date.now() - w.startedAt)),
     icon('chevronUp', 20),
   ]);

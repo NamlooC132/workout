@@ -70,7 +70,7 @@ export function WorkoutDetailScreen({ id }) {
   const save = () => saveWorkout(w);
 
   const del = () => confirm({
-    title: 'Delete this workout?', message: `${w.routineName} · ${fmtDateTime(w.startedAt)}`, confirmText: 'Delete Workout', destructive: true,
+    title: 'Delete this workout?', message: `${w.routineName} · ${fmtDateTime(w.startedAt)}`, confirmText: 'Delete workout', destructive: true,
     onConfirm: () => {
       const copy = deepClone(w);
       deleteWorkout(w.id);
@@ -111,7 +111,7 @@ export function WorkoutDetailScreen({ id }) {
       }
       save();
     } }) }, [icon('plus', 18), 'Add exercise']),
-    h('div.mt', h(Button, { kind: 'danger', block: true, onClick: del }, [icon('trash', 18), 'Delete Workout'])),
+    h('div.mt', h(Button, { kind: 'danger', block: true, onClick: del }, [icon('trash', 18), 'Delete workout'])),
   ]);
 }
 
@@ -219,6 +219,18 @@ export function ExerciseScreen({ id }) {
     ]),
     h('a.mini-link', { href: guideFor(ex || { name }), target: '_blank', rel: 'noopener', style: { margin: '6px 0 0' } }, [icon('info', 15), 'How to do this exercise ↗']),
     ex?.notes && h('div.callout.mt', [icon('info', 18), ex.notes]),
+    series.length >= 2 && (() => {
+      const base = monthAgo || series[0];
+      const a = metricOf(latest), b = metricOf(base);
+      const ch = a && b ? (a - b) / b : 0;
+      const since = monthAgo ? 'in the last 4 weeks' : `since ${fmtDate(base.date, { day: 'numeric', month: 'short' })}`;
+      const what = latest.e1rm > 0 ? 'estimated 1RM' : 'best reps';
+      return h('section.insight.mt', { class: ch > 0.01 ? 'good' : ch < -0.02 ? 'warn' : '' }, [
+        h('div.iq', 'Am I getting stronger at this?'),
+        h('div.it', ch > 0.01 ? `Yes – up ${fmtNum(ch * 100, 1)} %` : ch < -0.02 ? `Down ${fmtNum(-ch * 100, 1)} %` : 'Holding steady'),
+        h('div.is', `Your ${what} ${since}.${stalled ? ' No gain in the last 3 sessions – consider a deload or new rep range.' : ''}`),
+      ]);
+    })(),
     (ex || list[0]) && Object.keys((ex?.muscles || list[0]?.entry.snapshot.muscles) || {}).length > 0 && h(Section, { title: 'Muscles worked' }, h('div.mm-big', [
       MuscleMap({ muscles: ex?.muscles || list[0].entry.snapshot.muscles, size: 230, labels: true }),
       h('div.mm-legend', contributions({ muscles: ex?.muscles || list[0].entry.snapshot.muscles }).map((c) => h('div.mm-row', { key: c.key }, [
@@ -227,7 +239,7 @@ export function ExerciseScreen({ id }) {
         h('span.muted', c.value >= 1 ? 'Main' : `Helper ${Math.round(c.value * 100)}%`),
       ]))),
     ])),
-    stalled && h('div.callout.yellow.mt', [icon('info', 18), h('div', [h('b', 'Possibly stalled. '), 'No improvement in your last 3 sessions. Consider a deload, a rep-range change or swapping the exercise.'])]),
+    stalled && series.length < 2 && h('div.callout.yellow.mt', [icon('info', 18), h('div', [h('b', 'Possibly stalled. '), 'No improvement in your last 3 sessions. Consider a deload, a rep-range change or swapping the exercise.'])]),
 
     h(Section, { title: 'Personal records' }, list.length === 0
       ? h('div.pad.muted', 'Finish a workout with this exercise to set your first records.')

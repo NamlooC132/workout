@@ -2,7 +2,7 @@
 import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
 import { data, ui, update, openSheet, closeSheet, saveSettings, confirm, toast, applyImport, eraseAll, seedSamples, sortedRoutines } from '../store.js';
-import { Page, Section, Row, Button, Stepper, Toggle, Segmented, Sheet, NumberField, TextField, Chip, fmtDate } from './components.js';
+import { Page, Section, Row, Button, Stepper, Toggle, Segmented, Sheet, NumberField, TextField, Chip, fmtDate, nav } from './components.js';
 import { select } from './exercises.js';
 import { fmtClock, uid, fmtNum } from '../logic/util.js';
 import { allMuscles, BASE_MUSCLES } from '../logic/muscles.js';
@@ -11,14 +11,14 @@ import { defaultProgressionStep } from '../logic/units.js';
 import { makeBackup, validateBackup, planImport } from '../logic/backup.js';
 import { wakeLockSupported } from '../timer.js';
 
-export const APP_VERSION = '1.5.0';
+export const APP_VERSION = '1.6.0';
 
 export function SettingsScreen() {
   const s = data.settings;
   const set = (patch) => saveSettings(patch);
   const unit = s.unit;
   return h(Page, { title: 'Settings' }, [
-    h(Section, { title: 'Units', footer: `Weights are stored precisely; switching only changes how they’re shown. Weight increases default to exactly ${defaultProgressionStep(unit)} ${unit}.` }, [
+    h(Section, { title: 'Units' }, [
       h(Row, { title: 'Weight', right: h(Segmented, { small: true, value: unit, onChange: (v) => {
         const patch = { unit: v };
         if (v === 'lbs' && s.defaultWeightStep === 2.5) patch.defaultWeightStep = 5;
@@ -26,39 +26,11 @@ export function SettingsScreen() {
         set(patch);
       }, options: [{ value: 'kg', label: 'kg' }, { value: 'lbs', label: 'lbs' }] }) }),
       h(Row, { title: 'Body measurements', right: h(Segmented, { small: true, value: s.lengthUnit, onChange: (v) => set({ lengthUnit: v }), options: [{ value: 'cm', label: 'cm' }, { value: 'in', label: 'in' }] }) }),
-      h(Row, { title: 'Week starts on', right: h(Segmented, { small: true, value: s.weekStart, onChange: (v) => set({ weekStart: v }), options: [{ value: 0, label: 'Sun' }, { value: 1, label: 'Mon' }] }) }),
-    ]),
-
-    h(Section, { title: 'Defaults for new exercises' }, [
-      h(Row, { title: 'Rest time', right: h(Stepper, { value: s.defaultRest, step: REST_STEP, min: REST_MIN, max: REST_MAX, format: fmtClock, onChange: (v) => set({ defaultRest: v }) }) }),
-      h(Row, { title: 'Weight step (− / +)', right: select([0.5, 1, 1.25, 2, 2.5, 5, 10].map((x) => ({ value: x, label: `${x} ${unit}` })), s.defaultWeightStep, (v) => set({ defaultWeightStep: Number(v) })) }),
-      h(Row, { title: 'Warm-up sets', right: h(Stepper, { value: s.defaultWarmupSets || 0, min: 0, max: 5, onChange: (v) => set({ defaultWarmupSets: v }) }) }),
-      h(Row, { title: 'Drop sets', right: h(Stepper, { value: s.defaultDropSets || 0, min: 0, max: 4, onChange: (v) => set({ defaultDropSets: v }) }) }),
-      h(Row, { title: 'Target RIR', right: select([{ value: '', label: 'None' }, ...[0, 1, 2, 3, 4].map((x) => ({ value: String(x), label: String(x) }))], s.defaultRirTarget === null ? '' : String(s.defaultRirTarget), (v) => set({ defaultRirTarget: v === '' ? null : Number(v) })) }),
-      h(Row, { title: 'Default set type', right: select([{ value: 'working', label: 'Working' }, { value: 'failure', label: 'To failure' }], s.defaultSetType, (v) => set({ defaultSetType: v })) }),
-    ]),
-
-    h(Section, { title: 'RIR (reps in reserve)', footer: 'RIR = how many more reps you could have done. 0 = failure. Required means a working set can’t be ticked until you pick RIR.' }, [
-      h(Row, { title: 'Log RIR', right: h(Segmented, { small: true, value: s.rirMode, onChange: (v) => set({ rirMode: v }), options: [{ value: 'off', label: 'Off' }, { value: 'optional', label: 'Optional' }, { value: 'required', label: 'Required' }] }) }),
-      s.rirMode !== 'off' && h(Row, { title: 'Show RIR buttons', subtitle: 'Compact = only on the set you’re doing now (tap a set number to change others)', right: h(Segmented, { small: true, value: s.rirDisplay || 'current', onChange: (v) => set({ rirDisplay: v }), options: [{ value: 'current', label: 'Compact' }, { value: 'all', label: 'All sets' }] }) }),
-    ]),
-
-    h(Section, { title: 'Progressive overload', footer: 'Used for new exercises; each exercise can have its own rule and step. Suggestions are never applied without your tap.' }, [
-      h(Row, { title: 'Default rule', right: select([{ value: 'descending', label: 'Reps drop 1 per set' }, { value: 'all_max', label: 'Max reps on all sets' }, { value: 'avg', label: 'Average reps' }, { value: 'custom', label: 'Custom' }], s.defaultRule, (v) => set({ defaultRule: v })) }),
-      h(Row, { title: 'Increase by', right: h('div.hstack', [h(NumberField, { value: s.defaultProgressionStep, placeholder: String(defaultProgressionStep(unit)), class: 'w-80', onChange: (v) => set({ defaultProgressionStep: v || null }) }), h('span.muted', unit)]) }),
-    ]),
-
-    h(Section, { title: 'Hypertrophy volume' }, [
-      h(Row, { title: 'Weekly targets per muscle', chevron: true, onClick: () => openSheet({ type: 'targets' }) }),
-      h(Row, { title: 'Muscle groups', subtitle: `${allMuscles(s).length} groups · add your own`, chevron: true, onClick: () => openSheet({ type: 'muscles' }) }),
-      h(Row, { title: 'Default indirect share', subtitle: 'Used when you tick a helper muscle', right: select([0.25, 0.5, 0.75].map((x) => ({ value: x, label: `${x * 100} %` })), s.indirectContribution, (v) => set({ indirectContribution: Number(v) })) }),
-      h(Row, { title: 'Drop & rest-pause sets count as', right: select([{ value: 1, label: '1 set' }, { value: 0.5, label: '½ set' }], s.dropSetsCount, (v) => set({ dropSetsCount: Number(v) })) }),
     ]),
 
     h(Section, { title: 'Rest timer', footer: wakeLockSupported() ? 'A website can’t ring while the phone is locked, so the app keeps the screen on during workouts. Sound follows your phone’s silent switch; iPhones don’t allow websites to vibrate.' : 'Your browser can’t keep the screen on – keep the app open between sets to hear the timer.' }, [
       h(Row, { title: 'Start automatically after a set', right: h(Toggle, { checked: s.autoRest, onChange: (v) => set({ autoRest: v }) }) }),
       h(Row, { title: 'Sound', right: h(Toggle, { checked: s.restSound, onChange: (v) => set({ restSound: v }) }) }),
-      h(Row, { title: 'Vibrate (Android)', right: h(Toggle, { checked: s.restVibrate, onChange: (v) => set({ restVibrate: v }) }) }),
       h(Row, { title: 'Keep screen on during workouts', right: h(Toggle, { checked: s.keepAwake, onChange: (v) => set({ keepAwake: v }) }) }),
     ]),
 
@@ -75,6 +47,49 @@ export function SettingsScreen() {
       h('input#import-input.hidden-input', { type: 'file', accept: '.json,application/json', onchange: onImportFile }),
     ]),
 
+    h(Section, {}, h(Row, { left: icon('gear', 22), title: 'Advanced settings', subtitle: 'Exercise defaults, RIR, overload rules, muscle volume, deload', chevron: true, onClick: () => nav('/settings/advanced') })),
+    h('div.section-foot.center', `Workout Log ${APP_VERSION} · works offline · no account`),
+  ]);
+}
+
+export function AdvancedSettingsScreen() {
+  const s = data.settings;
+  const set = (patch) => saveSettings(patch);
+  const unit = s.unit;
+  return h(Page, { title: 'Advanced settings', backTo: '/settings', large: false }, [
+    h(Section, { title: 'Defaults for new exercises' }, [
+      h(Row, { title: 'Rest time', right: h(Stepper, { value: s.defaultRest, step: REST_STEP, min: REST_MIN, max: REST_MAX, format: fmtClock, onChange: (v) => set({ defaultRest: v }) }) }),
+      h(Row, { title: 'Weight step (− / +)', right: select([0.5, 1, 1.25, 2, 2.5, 5, 10].map((x) => ({ value: x, label: `${x} ${unit}` })), s.defaultWeightStep, (v) => set({ defaultWeightStep: Number(v) })) }),
+      h(Row, { title: 'Warm-up sets', right: h(Stepper, { value: s.defaultWarmupSets || 0, min: 0, max: 5, onChange: (v) => set({ defaultWarmupSets: v }) }) }),
+      h(Row, { title: 'Drop sets', right: h(Stepper, { value: s.defaultDropSets || 0, min: 0, max: 4, onChange: (v) => set({ defaultDropSets: v }) }) }),
+      h(Row, { title: 'Target RIR', right: select([{ value: '', label: 'None' }, ...[0, 1, 2, 3, 4].map((x) => ({ value: String(x), label: String(x) }))], s.defaultRirTarget === null ? '' : String(s.defaultRirTarget), (v) => set({ defaultRirTarget: v === '' ? null : Number(v) })) }),
+      h(Row, { title: 'Default set type', right: select([{ value: 'working', label: 'Working' }, { value: 'failure', label: 'To failure' }], s.defaultSetType, (v) => set({ defaultSetType: v })) }),
+    ]),
+
+    h(Section, { title: 'RIR (reps in reserve)', footer: 'RIR = how many more reps you could have done. 0 = failure. Required means a working set can’t be ticked until you pick RIR.' }, [
+      h(Row, { title: 'Log RIR', right: h(Segmented, { small: true, value: s.rirMode, onChange: (v) => set({ rirMode: v }), options: [{ value: 'off', label: 'Off' }, { value: 'optional', label: 'Optional' }, { value: 'required', label: 'Required' }] }) }),
+    ]),
+
+    h(Section, { title: 'Progressive overload', footer: 'Used for new exercises; each exercise can have its own rule and step. Suggestions are never applied without your tap.' }, [
+      h(Row, { title: 'Default rule', right: select([{ value: 'descending', label: 'Reps drop 1 per set' }, { value: 'all_max', label: 'Max reps on all sets' }, { value: 'avg', label: 'Average reps' }, { value: 'custom', label: 'Custom' }], s.defaultRule, (v) => set({ defaultRule: v })) }),
+      h(Row, { title: 'Increase by', right: h('div.hstack', [h(NumberField, { value: s.defaultProgressionStep, placeholder: String(defaultProgressionStep(unit)), class: 'w-80', onChange: (v) => set({ defaultProgressionStep: v || null }) }), h('span.muted', unit)]) }),
+    ]),
+
+    h(Section, { title: 'Muscle volume' }, [
+      h(Row, { title: 'Weekly targets per muscle', chevron: true, onClick: () => openSheet({ type: 'targets' }) }),
+      h(Row, { title: 'Muscle groups', subtitle: `${allMuscles(s).length} groups · add your own`, chevron: true, onClick: () => openSheet({ type: 'muscles' }) }),
+      h(Row, { title: 'Helper muscle share', subtitle: 'How much a set counts for a helper muscle', right: select([0.25, 0.5, 0.75].map((x) => ({ value: x, label: `${x * 100} %` })), s.indirectContribution, (v) => set({ indirectContribution: Number(v) })) }),
+      h(Row, { title: 'Drop & rest-pause sets count as', right: select([{ value: 1, label: '1 set' }, { value: 0.5, label: '½ set' }], s.dropSetsCount, (v) => set({ dropSetsCount: Number(v) })) }),
+    ]),
+
+    h(Section, { title: 'Deload weeks', footer: 'Used by “Apply deload” in a training-plan deload week.' }, [
+      h(Row, { title: 'Keep this share of sets', right: select([0.33, 0.5, 0.67, 0.75].map((x) => ({ value: x, label: `${Math.round(x * 100)} %` })), s.deloadSetShare ?? 0.5, (v) => set({ deloadSetShare: Number(v) })) }),
+      h(Row, { title: 'Use less weight', right: select([0, 5, 10, 15, 20, 30].map((x) => ({ value: x, label: `${x} %` })), s.deloadWeightPct ?? 10, (v) => set({ deloadWeightPct: Number(v) })) }),
+    ]),
+    h(Section, { title: 'Other' }, [
+      h(Row, { title: 'Week starts on', right: h(Segmented, { small: true, value: s.weekStart, onChange: (v) => set({ weekStart: v }), options: [{ value: 0, label: 'Sun' }, { value: 1, label: 'Mon' }] }) }),
+      h(Row, { title: 'Vibrate when rest ends (Android)', right: h(Toggle, { checked: s.restVibrate, onChange: (v) => set({ restVibrate: v }) }) }),
+    ]),
     h(Section, { title: 'Storage' }, [
       h(Row, { title: 'Protected from automatic clean-up', right: h('span', ui.persisted ? '✓ Yes' : 'Not guaranteed') }),
       !ui.storageOk && h('div.callout.yellow', [icon('info', 18), 'Saving failed on this device. If you are in a private browsing window, open the app normally.']),
@@ -85,7 +100,6 @@ export function SettingsScreen() {
         onConfirm: () => confirm({ title: 'Are you absolutely sure?', message: 'This cannot be undone.', confirmText: 'Erase everything', destructive: true, onConfirm: async () => { await eraseAll(); toast('All data erased'); } }),
       }) }),
     ]),
-    h('div.section-foot.center', `Workout Log ${APP_VERSION} · works offline · no account`),
   ]);
 }
 

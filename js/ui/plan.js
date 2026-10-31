@@ -16,11 +16,11 @@ export function PlanScreen() {
   const blocks = data.blocks.slice().sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
   const rById = new Map(data.routines.map((r) => [r.id, r]));
   return h(Page, {
-    title: 'Training Plan', backTo: '/routines',
+    title: 'Training plan', backTo: '/routines',
     actions: [h(IconButton, { name: 'plus', label: 'New block', onClick: () => openSheet({ type: 'blockEditor', blockId: null }) })],
   }, [
     h('div.callout.blue', [icon('info', 18), h('div', 'Plan training blocks (e.g. 6 weeks of accumulation with a deload in week 6). Pick which routine you do on which day – the Routines tab then shows today’s workout, and the calendar shows planned vs done. You never have to follow a fixed split.')]),
-    blocks.length === 0 && h(Empty, { iconName: 'calendar', title: 'No training blocks', text: 'Optional – create one to plan phases, deloads and your weekly schedule.', action: h(Button, { onClick: () => openSheet({ type: 'blockEditor', blockId: null }) }, 'New Block') }),
+    blocks.length === 0 && h(Empty, { iconName: 'calendar', title: 'No training blocks', text: 'Optional – create one to plan phases, deloads and your weekly schedule.', action: h(Button, { onClick: () => openSheet({ type: 'blockEditor', blockId: null }) }, 'New block') }),
     blocks.length > 0 && h(Section, { title: 'Blocks' }, blocks.map((b) => {
       const r = blockRange(b);
       const isActive = active && active.id === b.id;
@@ -55,14 +55,14 @@ export function BlockEditorSheet(sheet) {
     update();
   };
   const save = () => {
-    d.name = d.name.trim() || 'Training Block';
+    d.name = d.name.trim() || 'Training block';
     d.deloadWeeks = (d.deloadWeeks || []).filter((w) => w <= d.weeks);
     saveBlock(deepClone(d));
     closeSheet();
     toast(sheet.isNew ? 'Block created' : 'Block saved');
   };
   return h(Sheet, {
-    title: sheet.isNew ? 'New Block' : 'Edit Block', full: true,
+    title: sheet.isNew ? 'New block' : 'Edit block', full: true,
     left: h('button.link-btn', { onclick: closeSheet }, 'Cancel'),
     actions: [h('button.link-btn.strong', { onclick: save }, 'Save')],
   }, [
@@ -85,8 +85,8 @@ export function BlockEditorSheet(sheet) {
       ]))),
     h(Section, { title: 'Notes' }, h('div.field-card', h(TextField, { value: d.notes, multiline: true, placeholder: 'Goals for this block…', onChange: (v) => { d.notes = v; } }))),
     !sheet.isNew && h(Button, { kind: 'danger', block: true, onClick: () => confirm({
-      title: `Delete “${d.name}”?`, message: 'Your workouts are not affected.', confirmText: 'Delete Block', destructive: true,
+      title: `Delete “${d.name}”?`, message: 'Your workouts are not affected.', confirmText: 'Delete block', destructive: true,
       onConfirm: () => { deleteBlock(d.id); closeSheet(); },
-    }) }, [icon('trash', 18), 'Delete Block']),
+    }) }, [icon('trash', 18), 'Delete block']),
   ]);
 }

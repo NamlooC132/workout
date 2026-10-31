@@ -232,16 +232,18 @@ export function dismissSuggestion(w, entry) {
 /** Halves working sets (rounded up) and lowers working weights ~10 % (to the weight step). */
 export function applyDeload(w) {
   const unit = data.settings.unit;
+  const setShare = data.settings.deloadSetShare ?? 0.5;        // keep 50 % of working sets
+  const lighter = (data.settings.deloadWeightPct ?? 10) / 100; // 10 % lighter
   for (const e of w.entries) {
     const work = e.sets.filter((s) => s.type !== 'warmup' && !s.done);
-    const keep = Math.ceil(e.sets.filter((s) => s.type !== 'warmup').length / 2);
+    const keep = Math.max(1, Math.ceil(e.sets.filter((s) => s.type !== 'warmup').length * setShare));
     const doneWork = e.sets.filter((s) => s.type !== 'warmup' && s.done).length;
     let toRemove = Math.max(0, doneWork + work.length - keep);
     for (let i = work.length - 1; i >= 0 && toRemove > 0; i--, toRemove--) e.sets = e.sets.filter((s) => s !== work[i]);
     const step = e.snapshot.weightStep || 2.5;
     for (const s of e.sets) {
       if (s.done || s.type === 'warmup' || !s.kg) continue;
-      const disp = toDisplayWeight(s.kg, unit) * 0.9;
+      const disp = toDisplayWeight(s.kg, unit) * (1 - lighter);
       s.kg = fromDisplayWeight(Math.max(0, Math.round(disp / step) * step), unit);
     }
   }
@@ -372,4 +374,28 @@ export function discardWorkout(w) {
   deleteWorkout(w.id);
   syncWakeLock();
   return copy;
+}
+
+// ---------- Undo ----------
+/**
+ * Runs `fn` (which changes the workout) and shows a short message with Undo.
+ * Undo puts back an exact copy of the workout from before the change.
+ */
+export function undoable(w, message, fn) {
+  const before = deepClone(w);
+  fn();
+  toast(message, 5000, { text: 'Undo', onClick: () => saveWorkout(before) });
+}
+
+/** "Same as previous": copy weight and reps from the set above. */
+export function copyPrevious(w, entry, set) {
+  const i = entry.sets.indexOf(set);
+  const prev = entry.sets.slice(0, i).reverse().find((s) => s.type === set.type || (s.type !== 'warmup' && set.type !== 'warmup'));
+  if (!prev) return false;
+  set.kg = prev.kg;
+  set.reps = prev.reps;
+  set.repsL = prev.repsL;
+  set.repsR = prev.repsR;
+  save(w);
+  return true;
 }
