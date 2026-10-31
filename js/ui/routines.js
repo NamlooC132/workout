@@ -217,7 +217,7 @@ export function RoutineScreen({ id }) {
         left: h(Thumb, { image: ex.image, name: ex.name }),
         title: ex.name,
         subtitle: [
-          `${cfg.warmupSets ? cfg.warmupSets + 'W + ' : ''}${cfg.sets} × ${cfg.repMin}–${cfg.repMax} · Rest ${fmtClock(cfg.rest)}${cfg.rirTarget !== null && cfg.rirTarget !== undefined ? ` · RIR ${cfg.rirTarget}` : ''}`,
+          `${cfg.warmupSets ? cfg.warmupSets + 'W + ' : ''}${cfg.sets} × ${cfg.repMin}–${cfg.repMax}${cfg.dropSets ? ` + ${cfg.dropSets} drop` : ''} · Rest ${fmtClock(cfg.rest)}${cfg.rirTarget !== null && cfg.rirTarget !== undefined ? ` · RIR ${cfg.rirTarget}` : ''}`,
           item.notes && h('div', ['📝 ', item.notes]),
           ex.notes && h('div', ['📌 ', ex.notes]),
         ],
@@ -279,7 +279,7 @@ export function ItemEditorSheet(sheet) {
   };
   const idx = r.items.indexOf(item);
   const next = r.items[idx + 1];
-  const overridden = ['sets', 'warmupSets', 'repMin', 'repMax', 'rest', 'weightStep', 'rirTarget'].some((k) => item[k] !== null && item[k] !== undefined);
+  const overridden = ['sets', 'warmupSets', 'dropSets', 'repMin', 'repMax', 'rest', 'weightStep', 'rirTarget'].some((k) => item[k] !== null && item[k] !== undefined);
   const lib = (k, f = (x) => x) => `Library: ${f(ex[k] ?? '–')}`;
 
   return h(Sheet, { title: ex.name, full: true }, [
@@ -298,6 +298,7 @@ export function ItemEditorSheet(sheet) {
     }, [
       h(Row, { title: 'Working sets', subtitle: lib('sets'), right: h(Stepper, { value: cfg.sets, min: 1, max: 12, onChange: (v) => setOverride('sets', v) }) }),
       h(Row, { title: 'Warm-up sets', subtitle: lib('warmupSets'), right: h(Stepper, { value: cfg.warmupSets || 0, min: 0, max: 6, onChange: (v) => setOverride('warmupSets', v) }) }),
+      h(Row, { title: 'Drop sets', subtitle: lib('dropSets', (x) => x || 0), right: h(Stepper, { value: cfg.dropSets || 0, min: 0, max: 4, onChange: (v) => setOverride('dropSets', v) }) }),
       h(Row, { title: 'Min reps', subtitle: lib('repMin'), right: h(Stepper, { value: cfg.repMin, min: 1, max: cfg.repMax, onChange: (v) => setOverride('repMin', v) }) }),
       h(Row, { title: 'Max reps', subtitle: lib('repMax'), right: h(Stepper, { value: cfg.repMax, min: cfg.repMin, max: 100, onChange: (v) => setOverride('repMax', v) }) }),
       h(Row, { title: 'Rest', subtitle: lib('rest', fmtClock), right: h(Stepper, { value: cfg.rest, step: REST_STEP, min: REST_MIN, max: REST_MAX, format: fmtClock, onChange: (v) => setOverride('rest', v) }) }),

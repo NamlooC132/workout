@@ -209,8 +209,20 @@ export async function load() {
 
 /** Data-shape migrations between app versions (runs once per upgrade). */
 async function migrateData(from) {
-  // Version 1 is the first web schema – nothing to migrate yet.
-  // Future: if (from < 2) { …update records…; }
+  if (from >= 1 && from < 2) {
+    // v2: the default overload rule became "descending reps" (e.g. 10, 9, 8 in a 6–10 range).
+    // Exercises still on the old default switch over; custom rules are left alone.
+    const changed = [];
+    for (const e of data.exercises) {
+      if (!e.progression || e.progression.rule === 'all_max') {
+        e.progression = { ...(e.progression || {}), rule: 'descending' };
+        changed.push(e);
+      }
+      if (e.dropSets === undefined) e.dropSets = 0;
+    }
+    if (data.settings.defaultRule === 'all_max') data.settings.defaultRule = 'descending';
+    await idb.putMany({ exercises: changed }, { settings: data.settings });
+  }
   await idb.putMeta('schemaVersion', SCHEMA_VERSION);
 }
 

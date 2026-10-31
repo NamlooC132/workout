@@ -14,7 +14,7 @@
 import { uid } from './util.js';
 import { BASE_MUSCLES } from './muscles.js';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export function defaultSettings() {
   const targets = {};
@@ -26,11 +26,12 @@ export function defaultSettings() {
     defaultRest: 90,
     defaultWeightStep: 2.5,          // −/+ buttons, display unit
     defaultProgressionStep: null,    // null = 2.5 kg / 5 lbs
-    defaultRule: 'all_max',
+    defaultRule: 'descending',
     defaultRirTarget: null,          // e.g. 2
     rirMode: 'optional',             // 'off' | 'optional' | 'required'
     defaultSetType: 'working',
     defaultWarmupSets: 0,
+    defaultDropSets: 0,
     weekStart: 1,                    // 0 = Sunday, 1 = Monday
     indirectContribution: 0.5,
     dropSetsCount: 1,                // drop / rest-pause sets count as 1 (or 0.5) set
@@ -63,8 +64,9 @@ export function newExercise(settings, fields = {}) {
     weightStep: settings?.defaultWeightStep ?? 2.5,
     rirTarget: settings?.defaultRirTarget ?? null,
     warmupSets: settings?.defaultWarmupSets ?? 0,
+    dropSets: settings?.defaultDropSets ?? 0,   // drop sets after the last working set
     progression: {
-      rule: settings?.defaultRule ?? 'all_max', // 'all_max' | 'avg' | 'custom'
+      rule: settings?.defaultRule ?? 'descending', // 'descending' | 'all_max' | 'avg' | 'custom'
       avgTarget: null,         // 'avg' rule: average reps needed (default = repMax)
       customReps: null,        // 'custom' rule: every set must reach this many reps…
       customMinRir: null,      // …with at least this many reps in reserve (optional)
@@ -83,6 +85,7 @@ export function newRoutineItem(exerciseId, fields = {}) {
     exerciseId,
     sets: null,
     warmupSets: null,
+    dropSets: null,
     repMin: null,
     repMax: null,
     rest: null,
@@ -144,6 +147,7 @@ export function effectiveConfig(exercise, item) {
   return {
     sets: pick('sets'),
     warmupSets: pick('warmupSets') ?? 0,
+    dropSets: pick('dropSets') ?? 0,
     repMin: pick('repMin'),
     repMax: pick('repMax'),
     rest: pick('rest'),

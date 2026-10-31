@@ -183,6 +183,7 @@ export function ExerciseEditorSheet(sheet) {
     h(Section, { title: 'Defaults', footer: 'Routines can override these for one routine only (tap the exercise inside a routine).' }, [
       h(Row, { title: 'Working sets', right: h(Stepper, { value: d.sets, min: 1, max: 12, onChange: (v) => set({ sets: v }) }) }),
       h(Row, { title: 'Warm-up sets', right: h(Stepper, { value: d.warmupSets || 0, min: 0, max: 6, onChange: (v) => set({ warmupSets: v }) }) }),
+      h(Row, { title: 'Drop sets', subtitle: 'After the last working set', right: h(Stepper, { value: d.dropSets || 0, min: 0, max: 4, onChange: (v) => set({ dropSets: v }) }) }),
       h(Row, { title: 'Min reps', right: h(Stepper, { value: d.repMin, min: 1, max: d.repMax, onChange: (v) => set({ repMin: v }) }) }),
       h(Row, { title: 'Max reps', right: h(Stepper, { value: d.repMax, min: d.repMin, max: 100, onChange: (v) => set({ repMax: v }) }) }),
       h(Row, { title: 'Rest time', right: h(Stepper, { value: d.rest, step: REST_STEP, min: REST_MIN, max: REST_MAX, format: fmtClock, onChange: (v) => set({ rest: v }) }) }),
@@ -194,6 +195,7 @@ export function ExerciseEditorSheet(sheet) {
       h(Row, {
         title: 'Rule',
         right: select([
+          { value: 'descending', label: 'Reps drop 1 per set (10, 9, 8)' },
           { value: 'all_max', label: 'Max reps on all sets' },
           { value: 'avg', label: 'Average reps' },
           { value: 'custom', label: 'Custom' },
@@ -231,6 +233,10 @@ function progressionFooter(d, s) {
   const step = d.progression.step || s.defaultProgressionStep || defaultProgressionStep(s.unit);
   if (d.type === 'bodyweight') return 'When you reach the target, you’ll be told to make it harder (add weight or use a harder variation).';
   const verb = d.type === 'assisted' ? `use ${step} ${s.unit} less assistance` : `add ${step} ${s.unit}`;
+  if (d.progression.rule === 'descending') {
+    const t = [...Array(Math.max(1, d.sets))].map((_, i) => Math.max(d.repMin, d.repMax - i)).join(', ');
+    return `Set 1 must reach ${d.repMax} reps and each next set may drop by one (${t}) at the same weight – then the app suggests you ${verb}. Warm-ups and drop sets don’t count.`;
+  }
   if (d.progression.rule === 'avg') return `When your average reps reach the target at one weight, the app suggests you ${verb}.`;
   if (d.progression.rule === 'custom') return `When every set reaches the reps (and RIR) above at one weight, the app suggests you ${verb}.`;
   return `When you hit ${d.repMax} reps on every working set at the same weight, the app suggests you ${verb}.`;

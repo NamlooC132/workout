@@ -1,7 +1,9 @@
 // Progressive overload.
 //
 // Rules (chosen per exercise):
-//   all_max – every working set reached the TOP of the rep range        (default)
+//   descending – set 1 reaches the TOP of the rep range and each following set may
+//                drop by one rep (6–10: 10, 9, 8 …)                      (default)
+//   all_max – every working set reached the TOP of the rep range
 //   avg     – the average reps of the working sets reached a target
 //   custom  – every working set reached N reps (optionally with ≥ X RIR left)
 //
@@ -56,11 +58,19 @@ export function evaluateProgression(exercise, last, cfg, settings) {
   }
 
   const reps = sets.map(setReps);
-  const rule = exercise.progression?.rule || 'all_max';
+  const rule = exercise.progression?.rule || 'descending';
   const repMax = cfg.repMax;
   let hit = false;
   let reason = '';
-  if (rule === 'avg') {
+  if (rule === 'descending') {
+    // Target for set i (0-based) is repMax − i, but never below the bottom of the range.
+    const targets = reps.map((_, i) => Math.max(cfg.repMin || 1, repMax - i));
+    hit = reps.every((r, i) => r >= targets[i]);
+    const want = targets.join(', ');
+    reason = hit
+      ? `You hit ${reps.join(', ')} last time`
+      : `Keep this weight – aim for ${want}.`;
+  } else if (rule === 'avg') {
     const target = exercise.progression?.avgTarget || repMax;
     const avg = reps.reduce((a, b) => a + b, 0) / reps.length;
     hit = avg >= target - EPS;

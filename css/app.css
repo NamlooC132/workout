@@ -299,7 +299,8 @@ select.select { color: var(--text); -webkit-appearance: menulist; border: 0; bac
 .bar { width: 100%; max-width: 30px; background: var(--fill2); border-radius: 6px 6px 3px 3px; min-height: 2px; }
 .bar.current { background: var(--accent); }
 .bar-val { font-size: 11px; color: var(--muted); font-weight: 650; min-height: 15px; }
-.bar-label { font-size: 10.5px; color: var(--muted); margin-top: 4px; white-space: nowrap; }
+.bar-label { font-size: 11px; color: var(--muted); margin-top: 4px; white-space: nowrap; overflow: visible; }
+.bar-col { overflow: visible; }
 
 .tbar { position: relative; height: 12px; background: var(--fill); border-radius: 6px; overflow: hidden; margin-top: 6px; }
 .tbar-zone { position: absolute; top: 0; bottom: 0; background: var(--green-soft); border-left: 2px solid var(--green); border-right: 2px solid var(--green); }
@@ -338,3 +339,6 @@ select.select { color: var(--text); -webkit-appearance: menulist; border: 0; bac
 .w-80 { width: 84px; height: 40px; font-size: 17px; }
 .w-64 { width: 64px; height: 40px; font-size: 17px; }
 .wk-open .toast { bottom: auto; top: calc(var(--safe-top) + 58px); }
+.ex-foot { display: grid; grid-template-columns: 1fr 1fr 1fr 44px; gap: 6px; }
+.ex-foot .btn { padding: 0 4px; gap: 3px; font-size: 14px; white-space: nowrap; }
+.set-hint { font-size: 12px; color: var(--muted); text-align: center; margin-top: 6px; }

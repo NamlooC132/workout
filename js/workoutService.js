@@ -12,6 +12,14 @@ import { prsInWorkout } from './logic/records.js';
 import { buildHistory } from './logic/history.js';
 import { startRest, skipRest, syncWakeLock } from './timer.js';
 
+/** ~20 % lighter, rounded to the weight step (display units). */
+function dropWeight(kg, step) {
+  if (!kg) return null;
+  const unit = data.settings.unit;
+  const st = step || 2.5;
+  return fromDisplayWeight(Math.max(0, Math.round((toDisplayWeight(kg, unit) * 0.8) / st) * st), unit);
+}
+
 /** Creates a workout entry for an exercise with sets prefilled from last time. */
 export function makeEntry(exercise, item, workout) {
   const cfg = effectiveConfig(exercise, item);
@@ -19,13 +27,14 @@ export function makeEntry(exercise, item, workout) {
   const lastSets = last ? (last.entry.sets || []).filter((s) => s.done) : [];
   const lastWarm = lastSets.filter((s) => s.type === 'warmup');
   const lastWork = lastSets.filter((s) => s.type !== 'warmup');
+  const lastMain = lastWork.filter((s) => s.type !== 'drop');
   const sets = [];
   for (let i = 0; i < (cfg.warmupSets || 0); i++) {
     const src = lastWarm[i] || null;
     sets.push(newSet({ type: 'warmup', kg: src ? src.kg : null, reps: src ? src.reps : null }));
   }
   for (let i = 0; i < Math.max(1, cfg.sets || 1); i++) {
-    const src = lastWork[i] || lastWork[lastWork.length - 1] || null;
+    const src = lastMain[i] || lastMain[lastMain.length - 1] || null;
     sets.push(newSet({
       type: src && src.type !== 'warmup' ? src.type : data.settings.defaultSetType || 'working',
       kg: src ? src.kg : null,
@@ -33,6 +42,14 @@ export function makeEntry(exercise, item, workout) {
       repsL: src ? src.repsL : null,
       repsR: src ? src.repsR : null,
     }));
+  }
+  // Planned drop sets after the last working set: last time's drop weights, else ~20 % lighter.
+  const lastDrops = lastWork.filter((s) => s.type === 'drop');
+  const mainWork = sets.filter((s) => s.type !== 'warmup');
+  for (let i = 0; i < (cfg.dropSets || 0); i++) {
+    const src = lastDrops[i] || null;
+    const base = mainWork[mainWork.length - 1];
+    sets.push(newSet({ type: 'drop', kg: src ? src.kg : dropWeight(base?.kg, cfg.weightStep), reps: src ? src.reps : null }));
   }
   const evalResult = evaluateProgression(exercise, last, cfg, data.settings);
   return {
@@ -88,20 +105,22 @@ export const save = (w) => saveWorkout(w);
 
 // ---------- Sets ----------
 export function addSet(w, entry, type) {
-  const last = entry.sets.filter((s) => s.type !== 'warmup').slice(-1)[0] || entry.sets.slice(-1)[0];
+  const last = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').slice(-1)[0] || entry.sets.slice(-1)[0];
   const set = newSet({ type: type || (last && last.type !== 'warmup' ? 'working' : data.settings.defaultSetType || 'working'), kg: last ? last.kg : null, reps: last ? last.reps : null, repsL: last?.repsL ?? null, repsR: last?.repsR ?? null });
   if (type === 'warmup') {
     const idx = entry.sets.findIndex((s) => s.type !== 'warmup');
     entry.sets.splice(idx < 0 ? entry.sets.length : idx, 0, { ...set, kg: null, reps: null });
-  } else if (type === 'drop' && last && last.kg) {
-    // Drop set: ~20 % lighter, rounded to the weight step.
-    const unit = data.settings.unit;
-    const step = entry.snapshot.weightStep || 2.5;
-    const disp = toDisplayWeight(last.kg || 0, unit) * 0.8;
-    set.kg = fromDisplayWeight(Math.max(0, Math.round(disp / step) * step), unit);
+  } else if (type === 'drop') {
+    // Drop set: ~20 % lighter than the set before it, rounded to the weight step.
+    const prev = entry.sets[entry.sets.length - 1];
+    set.kg = dropWeight(prev?.kg, entry.snapshot.weightStep);
+    set.reps = null;
     entry.sets.push(set);
   } else {
-    entry.sets.push(set);
+    // New working sets go before trailing drop sets.
+    let idx = entry.sets.length;
+    while (idx > 0 && entry.sets[idx - 1].type === 'drop' && type !== 'drop') idx--;
+    entry.sets.splice(idx, 0, set);
   }
   save(w);
 }
@@ -288,14 +307,16 @@ export function updateRoutineFromWorkout(w) {
   const items = w.entries.filter((e) => e.exerciseId && !e.skipped).map((e) => {
     const base = oldItems.get(e.exerciseId) || newRoutineItem(e.exerciseId);
     const ex = exercisesById().get(e.exerciseId);
-    const working = e.sets.filter((s) => s.type !== 'warmup').length;
+    const working = e.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length;
     const warm = e.sets.filter((s) => s.type === 'warmup').length;
+    const drops = e.sets.filter((s) => s.type === 'drop').length;
     let ss = null;
     if (e.supersetId) { if (!ssMap.has(e.supersetId)) ssMap.set(e.supersetId, uid()); ss = ssMap.get(e.supersetId); }
     return {
       ...base,
       sets: ex && ex.sets === working ? null : working,
       warmupSets: ex && (ex.warmupSets || 0) === warm ? null : warm,
+      dropSets: ex && (ex.dropSets || 0) === drops ? null : drops,
       supersetId: ss,
     };
   });

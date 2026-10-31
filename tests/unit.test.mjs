@@ -45,7 +45,7 @@ test('progression step is exactly 2.5 kg or 5 lbs', () => {
 
 // ---------- Progression ----------
 test('all_max: hitting max reps on every set at the same weight suggests +2.5 kg', () => {
-  const ex = newExercise(settings, { repMin: 8, repMax: 12, sets: 3 });
+  const ex = newExercise(settings, { repMin: 8, repMax: 12, sets: 3, progression: { rule: 'all_max' } });
   const last = { workout: workout('w', day(0), []), entry: entry(ex, [S(60, 12), S(60, 12), S(60, 12)]) };
   const r = evaluateProgression(ex, last, cfg(ex), settings);
   assert.equal(r.status, 'increase');
@@ -54,7 +54,7 @@ test('all_max: hitting max reps on every set at the same weight suggests +2.5 kg
 });
 
 test('all_max: missing a rep keeps the weight', () => {
-  const ex = newExercise(settings, { repMax: 12, sets: 3 });
+  const ex = newExercise(settings, { repMax: 12, sets: 3, progression: { rule: 'all_max' } });
   const last = { workout: workout('w', day(0), []), entry: entry(ex, [S(60, 12), S(60, 12), S(60, 11)]) };
   assert.equal(evaluateProgression(ex, last, cfg(ex), settings).status, 'keep');
 });
@@ -257,4 +257,33 @@ test('streaks, templates and number parsing', () => {
   assert.equal(t.exercises.length, 15);
   assert.equal(parseNum('62,5'), 62.5);
   assert.equal(parseNum(''), null);
+});
+
+// ---------- Descending-reps rule (default) ----------
+test('descending: 10, 9, 8 in a 6–10 range suggests more weight', () => {
+  const ex = newExercise(settings, { repMin: 6, repMax: 10, sets: 3 });
+  assert.equal(ex.progression.rule, 'descending');
+  const mk = (reps) => ({ workout: workout('w', day(0), []), entry: entry(ex, reps.map((r) => S(60, r))) });
+  const r = evaluateProgression(ex, mk([10, 9, 8]), cfg(ex), settings);
+  assert.equal(r.status, 'increase');
+  assert.equal(r.suggestedKg, 62.5);
+  assert.match(r.reason, /10, 9, 8/);
+  assert.equal(evaluateProgression(ex, mk([10, 10, 9]), cfg(ex), settings).status, 'increase');
+  assert.equal(evaluateProgression(ex, mk([10, 8, 8]), cfg(ex), settings).status, 'keep');
+  assert.equal(evaluateProgression(ex, mk([9, 9, 8]), cfg(ex), settings).status, 'keep');
+  assert.match(evaluateProgression(ex, mk([9, 9, 8]), cfg(ex), settings).reason, /aim for 10, 9, 8/);
+});
+
+test('descending never asks for fewer reps than the bottom of the range', () => {
+  const ex = newExercise(settings, { repMin: 8, repMax: 10, sets: 4 });
+  const last = { workout: workout('w', day(0), []), entry: entry(ex, [10, 9, 8, 7].map((r) => S(50, r))) };
+  assert.equal(evaluateProgression(ex, last, cfg(ex), settings).status, 'keep'); // 4th set needs 8
+  const ok = { workout: workout('w', day(0), []), entry: entry(ex, [10, 9, 8, 8].map((r) => S(50, r))) };
+  assert.equal(evaluateProgression(ex, ok, cfg(ex), settings).status, 'increase');
+});
+
+test('drop sets and warm-ups are ignored by the descending rule', () => {
+  const ex = newExercise(settings, { repMin: 6, repMax: 10, sets: 2 });
+  const sets = [S(30, 8, { type: 'warmup' }), S(60, 10), S(60, 9), S(47.5, 6, { type: 'drop' })];
+  assert.equal(evaluateProgression(ex, { workout: workout('w', day(0), []), entry: entry(ex, sets) }, cfg(ex), settings).status, 'increase');
 });

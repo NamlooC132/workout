@@ -60,7 +60,7 @@ function Overview(st) {
       statBox('Avg / week', fmtNum(avg, 1), 'last 12 wks'),
       statBox('Total', done.length, 'workouts'),
     ]),
-    h(Section, { title: 'Workouts per week' }, h(BarChart, { bars: freq.map((f) => ({ label: new Date(f.from).toLocaleDateString(undefined, { day: 'numeric', month: 'numeric' }), value: f.count })), formatY: (v) => String(v) })),
+    h(Section, { title: 'Workouts per week' }, h(BarChart, { bars: freq.map((f) => ({ label: new Date(f.from).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }), value: f.count })), formatY: (v) => String(v) })),
     Calendar(st),
     block && adh && h(Section, { title: `Plan · ${block.name}` }, [
       h(Row, { title: `Week ${blockWeek(block)} of ${block.weeks}`, subtitle: block.phase, right: h('b', adh.planned ? `${adh.completed}/${adh.planned} planned done` : 'No plan yet') }),
@@ -174,7 +174,7 @@ function Volume(st) {
     })),
     h('div#trend', h(Section, { title: `${muscleName(st.muscle, s)} – last 12 weeks` }, [
       h('div.chips', { style: { padding: '10px 12px 0', overflowX: 'auto', flexWrap: 'nowrap' } }, muscles.map((m) => h(Chip, { key: m.key, active: st.muscle === m.key, onClick: () => { st.muscle = m.key; update(); } }, m.name))),
-      h(BarChart, { bars: trend.map((t) => ({ label: new Date(t.from).toLocaleDateString(undefined, { day: 'numeric', month: 'numeric' }), value: t.volume[st.muscle]?.total || 0 })) }),
+      h(BarChart, { bars: trend.map((t) => ({ label: new Date(t.from).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }), value: t.volume[st.muscle]?.total || 0 })) }),
     ])),
     h('div.callout', [icon('info', 18), h('div', 'Volume = completed hard sets (warm-ups excluded). Direct sets count 1, indirect sets 0.5 by default. It’s a useful training guide, not a measurement of how much muscle you build – sleep, food, effort and recovery matter too.')]),
   ]);

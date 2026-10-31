@@ -18,16 +18,17 @@ export function setsSummary(sets, snap) {
   const groups = [];
   for (const s of work) {
     const repsText = snap?.unilateral && (s.repsL !== null || s.repsR !== null) ? `${s.repsL ?? 0}/${s.repsR ?? 0}` : String(s.reps ?? 0);
-    const tag = s.type === 'drop' ? 'D' : s.type === 'restpause' ? 'RP' : '';
+    const kind = s.type === 'drop' ? 'drop' : s.type === 'restpause' ? 'rest-pause' : '';
     const g = groups[groups.length - 1];
-    if (g && Math.abs((g.kg ?? -1) - (s.kg ?? -1)) < 0.001) g.reps.push(repsText + tag);
-    else groups.push({ kg: s.kg, reps: [repsText + tag] });
+    if (g && g.kind === kind && Math.abs((g.kg ?? -1) - (s.kg ?? -1)) < 0.001) g.reps.push(repsText);
+    else groups.push({ kg: s.kg, kind, reps: [repsText] });
   }
   return groups.map((g) => {
-    if (snap?.type === 'bodyweight') return `${g.reps.join(', ')} reps`;
+    const label = g.kind ? `${g.kind} ` : '';
+    if (snap?.type === 'bodyweight') return `${label}${g.reps.join(', ')} reps`;
     const w = fmtW(g.kg ?? 0);
     const prefix = snap?.type === 'weighted_bw' ? '+' : snap?.type === 'assisted' ? '−' : '';
-    return `${prefix}${w} × ${g.reps.join(', ')}`;
+    return `${label}${prefix}${w} × ${g.reps.join(', ')}`;
   }).join(' · ');
 }
 
@@ -165,18 +166,17 @@ function ExerciseCard({ w, entry, index }) {
           s.note && h('div.set-note', ['📝 ', s.note]),
         ]);
       }),
+      // One tap each: working set, warm-up (goes on top), drop set (≈20 % lighter, goes last).
       h('div.ex-foot', [
-        h('button.btn.btn-secondary.btn-sm', { onclick: () => openSheet({ type: 'actions', title: 'Add set', actions: [
-          { text: 'Working set', icon: 'plus', onClick: () => WS.addSet(w, entry) },
-          { text: 'Warm-up set', icon: 'flame', onClick: () => WS.addSet(w, entry, 'warmup') },
-          { text: 'Drop set (−20 %)', icon: 'chevronDown', onClick: () => WS.addSet(w, entry, 'drop') },
-          { text: 'Rest-pause set', icon: 'pause', onClick: () => WS.addSet(w, entry, 'restpause') },
-        ] }) }, [icon('plus', 18), 'Add set']),
-        entry.sets.length > 0 && h('button.btn.btn-plain.btn-sm', { onclick: () => {
+        h('button.btn.btn-secondary.btn-sm', { onclick: () => WS.addSet(w, entry), 'aria-label': 'Add working set' }, [icon('plus', 16), 'Set']),
+        h('button.btn.btn-secondary.btn-sm', { onclick: () => WS.addSet(w, entry, 'warmup'), 'aria-label': 'Add warm-up set' }, [icon('plus', 16), 'Warm-up']),
+        h('button.btn.btn-secondary.btn-sm', { onclick: () => WS.addSet(w, entry, 'drop'), 'aria-label': 'Add drop set' }, [icon('plus', 16), 'Drop']),
+        h('button.btn.btn-plain.btn-sm', { disabled: entry.sets.length === 0, onclick: () => {
           const last = entry.sets[entry.sets.length - 1];
-          WS.removeSet(w, entry, last.id);
-        } }, [icon('minus', 18), 'Remove set']),
+          if (last) WS.removeSet(w, entry, last.id);
+        }, 'aria-label': 'Remove last set' }, icon('minus', 18)),
       ]),
+      h('div.set-hint', 'Tap a set number to change its type (warm-up, drop, rest-pause, failure) or add a note.'),
     ],
   ]);
 }

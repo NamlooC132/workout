@@ -11,7 +11,7 @@ import { defaultProgressionStep } from '../logic/units.js';
 import { makeBackup, validateBackup, planImport } from '../logic/backup.js';
 import { wakeLockSupported } from '../timer.js';
 
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.1.0';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -33,6 +33,7 @@ export function SettingsScreen() {
       h(Row, { title: 'Rest time', right: h(Stepper, { value: s.defaultRest, step: REST_STEP, min: REST_MIN, max: REST_MAX, format: fmtClock, onChange: (v) => set({ defaultRest: v }) }) }),
       h(Row, { title: 'Weight step (− / +)', right: select([0.5, 1, 1.25, 2, 2.5, 5, 10].map((x) => ({ value: x, label: `${x} ${unit}` })), s.defaultWeightStep, (v) => set({ defaultWeightStep: Number(v) })) }),
       h(Row, { title: 'Warm-up sets', right: h(Stepper, { value: s.defaultWarmupSets || 0, min: 0, max: 5, onChange: (v) => set({ defaultWarmupSets: v }) }) }),
+      h(Row, { title: 'Drop sets', right: h(Stepper, { value: s.defaultDropSets || 0, min: 0, max: 4, onChange: (v) => set({ defaultDropSets: v }) }) }),
       h(Row, { title: 'Target RIR', right: select([{ value: '', label: 'None' }, ...[0, 1, 2, 3, 4].map((x) => ({ value: String(x), label: String(x) }))], s.defaultRirTarget === null ? '' : String(s.defaultRirTarget), (v) => set({ defaultRirTarget: v === '' ? null : Number(v) })) }),
       h(Row, { title: 'Default set type', right: select([{ value: 'working', label: 'Working' }, { value: 'failure', label: 'To failure' }], s.defaultSetType, (v) => set({ defaultSetType: v })) }),
     ]),
@@ -42,7 +43,7 @@ export function SettingsScreen() {
     ]),
 
     h(Section, { title: 'Progressive overload', footer: 'Used for new exercises; each exercise can have its own rule and step. Suggestions are never applied without your tap.' }, [
-      h(Row, { title: 'Default rule', right: select([{ value: 'all_max', label: 'Max reps on all sets' }, { value: 'avg', label: 'Average reps' }, { value: 'custom', label: 'Custom' }], s.defaultRule, (v) => set({ defaultRule: v })) }),
+      h(Row, { title: 'Default rule', right: select([{ value: 'descending', label: 'Reps drop 1 per set' }, { value: 'all_max', label: 'Max reps on all sets' }, { value: 'avg', label: 'Average reps' }, { value: 'custom', label: 'Custom' }], s.defaultRule, (v) => set({ defaultRule: v })) }),
       h(Row, { title: 'Increase by', right: h('div.hstack', [h(NumberField, { value: s.defaultProgressionStep, placeholder: String(defaultProgressionStep(unit)), class: 'w-80', onChange: (v) => set({ defaultProgressionStep: v || null }) }), h('span.muted', unit)]) }),
     ]),
 

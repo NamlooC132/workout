@@ -246,11 +246,13 @@ export function LineChart({ points, height = 180, formatY = (v) => fmtNum(v, 1),
 export function BarChart({ bars, height = 140, formatY = (v) => fmtNum(v, 1), highlightLast = true }) {
   if (!bars.length) return h('div.chart-empty', 'No data yet');
   const max = Math.max(1, ...bars.map((b) => b.value));
+  // Label only every few bars (always the latest one) so dates never overlap.
+  const every = Math.max(1, Math.ceil(bars.length / 4));
   return h('div.bars', { style: { height: height + 'px' } }, bars.map((b, i) =>
     h('div.bar-col', { key: i }, [
       h('div.bar-val', b.value ? formatY(b.value) : ''),
       h('div.bar', { class: highlightLast && i === bars.length - 1 ? 'current' : '', style: { height: `${(b.value / max) * 100}%` } }),
-      h('div.bar-label', b.label),
+      h('div.bar-label', (bars.length - 1 - i) % every === 0 ? b.label : '\u00a0'),
     ])));
 }
 
