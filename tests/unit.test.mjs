@@ -287,3 +287,37 @@ test('drop sets and warm-ups are ignored by the descending rule', () => {
   const sets = [S(30, 8, { type: 'warmup' }), S(60, 10), S(60, 9), S(47.5, 6, { type: 'drop' })];
   assert.equal(evaluateProgression(ex, { workout: workout('w', day(0), []), entry: entry(ex, sets) }, cfg(ex), settings).status, 'increase');
 });
+
+// ---------- Live PR + catalog ----------
+import { livePr } from '../js/logic/records.js';
+import { CATALOG, guideFor, CATALOG_CODES } from '../js/logic/catalog.js';
+import { BASE_MUSCLES } from '../js/logic/muscles.js';
+
+test('live PR fires once for a new heaviest set, not on the first session', () => {
+  const ex = newExercise(settings);
+  const h = buildHistory([workout('w1', day(0), [entry(ex, [S(60, 10), S(60, 9)])])]);
+  const e = entry(ex, [S(62.5, 8), S(62.5, 8)]);
+  assert.equal(livePr(e, e.sets[0], h.get(ex.id), []).key, 'bestWeight');
+  assert.equal(livePr(e, e.sets[1], h.get(ex.id), []), null); // same weight again today → no second PR
+  const first = entry(ex, [S(100, 5)]);
+  assert.equal(livePr(first, first.sets[0], [], []), null);
+  const warm = entry(ex, [S(100, 5, { type: 'warmup' })]);
+  assert.equal(livePr(warm, warm.sets[0], h.get(ex.id), []), null);
+  const e2 = entry(ex, [S(55, 15)]);
+  assert.equal(livePr(e2, e2.sets[0], h.get(ex.id), []).key, 'bestE1rm');
+});
+
+test('catalog: unique names, valid muscles and rep ranges', () => {
+  const names = CATALOG.map((c) => c.name.toLowerCase());
+  assert.equal(new Set(names).size, names.length);
+  const valid = new Set(BASE_MUSCLES.map((m) => m.key));
+  for (const c of CATALOG) {
+    assert.ok(Object.keys(c.muscles).length > 0, c.name);
+    for (const k of Object.keys(c.muscles)) assert.ok(valid.has(k), `${c.name}: ${k}`);
+    assert.ok(c.repMin <= c.repMax, c.name);
+  }
+  assert.ok(CATALOG.length > 120);
+  assert.match(guideFor({ name: 'Bench Press' }), /simplyfitness\.com\/pages\/barbell-bench-press/);
+  assert.match(guideFor({ name: 'My Weird Exercise' }), /youtube\.com/);
+  assert.ok(Object.keys(CATALOG_CODES).length >= 15);
+});

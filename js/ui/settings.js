@@ -11,7 +11,7 @@ import { defaultProgressionStep } from '../logic/units.js';
 import { makeBackup, validateBackup, planImport } from '../logic/backup.js';
 import { wakeLockSupported } from '../timer.js';
 
-export const APP_VERSION = '1.1.0';
+export const APP_VERSION = '1.2.0';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -40,6 +40,7 @@ export function SettingsScreen() {
 
     h(Section, { title: 'RIR (reps in reserve)', footer: 'RIR = how many more reps you could have done. 0 = failure. Required means a working set can’t be ticked until you pick RIR.' }, [
       h(Row, { title: 'Log RIR', right: h(Segmented, { small: true, value: s.rirMode, onChange: (v) => set({ rirMode: v }), options: [{ value: 'off', label: 'Off' }, { value: 'optional', label: 'Optional' }, { value: 'required', label: 'Required' }] }) }),
+      s.rirMode !== 'off' && h(Row, { title: 'Show RIR buttons', subtitle: 'Compact = only on the set you’re doing now (tap a set number to change others)', right: h(Segmented, { small: true, value: s.rirDisplay || 'current', onChange: (v) => set({ rirDisplay: v }), options: [{ value: 'current', label: 'Compact' }, { value: 'all', label: 'All sets' }] }) }),
     ]),
 
     h(Section, { title: 'Progressive overload', footer: 'Used for new exercises; each exercise can have its own rule and step. Suggestions are never applied without your tap.' }, [
@@ -67,6 +68,7 @@ export function SettingsScreen() {
       title: 'Backup & sharing',
       footer: `Your data lives only on this phone, inside this browser. Export a backup now and then – deleting the app icon or clearing Safari’s website data erases it. ${s.lastBackupAt ? `Last backup: ${fmtDate(s.lastBackupAt)}.` : 'No backup yet.'}`,
     }, [
+      h(Row, { title: 'Weekly backup reminder', right: h(Toggle, { checked: s.backupReminder !== false, onChange: (v) => set({ backupReminder: v }) }) }),
       h(Row, { left: icon('download', 22), title: 'Export all data', subtitle: 'Routines, exercises, photos, history, measurements, settings', onClick: () => exportFile('full') }),
       h(Row, { left: icon('copy', 22), title: 'Share routines', subtitle: 'Pick routines to send to friends – no history', onClick: () => openSheet({ type: 'exportRoutines' }) }),
       h(Row, { left: icon('upload', 22), title: 'Import data', subtitle: 'From a backup or a friend’s routines (also iPhone-app backups)', onClick: () => document.getElementById('import-input').click() }),

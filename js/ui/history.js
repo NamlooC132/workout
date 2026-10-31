@@ -12,6 +12,7 @@ import { prsInWorkout, personalRecords, exerciseSeries, isStalled, progressionHi
 import { muscleName, contributions, SET_TYPES } from '../logic/muscles.js';
 import { newSet } from '../logic/model.js';
 import { makeEntry } from '../workoutService.js';
+import { guideFor } from '../logic/catalog.js';
 
 function workoutTonnage(w) {
   const bw = bodyweightAt(data.measurements, w.startedAt);
@@ -215,6 +216,7 @@ export function ExerciseScreen({ id }) {
         ex && h('div.muted.small', `${ex.sets} × ${ex.repMin}–${ex.repMax} · ${list.length} sessions`),
       ]),
     ]),
+    h('a.mini-link', { href: guideFor(ex || { name }), target: '_blank', rel: 'noopener', style: { margin: '6px 0 0' } }, [icon('info', 15), 'How to do this exercise ↗']),
     ex?.notes && h('div.callout.mt', [icon('info', 18), ex.notes]),
     stalled && h('div.callout.yellow.mt', [icon('info', 18), h('div', [h('b', 'Possibly stalled. '), 'No improvement in your last 3 sessions. Consider a deload, a rep-range change or swapping the exercise.'])]),
 

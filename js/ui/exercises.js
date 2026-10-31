@@ -8,6 +8,7 @@ import { allMuscles, muscleName, contributions, EXERCISE_TYPES, EQUIPMENT, CATEG
 import { fmtClock, deepClone, fmtNum } from '../logic/util.js';
 import { REST_STEP, REST_MIN, REST_MAX } from '../logic/restTimer.js';
 import { defaultProgressionStep } from '../logic/units.js';
+import { CATALOG, guideFor } from '../logic/catalog.js';
 
 export function exerciseSubtitle(ex) {
   const mus = contributions(ex).filter((c) => c.value >= 1).map((c) => muscleName(c.key, data.settings));
@@ -34,10 +35,34 @@ function SearchBox({ value, onChange, placeholder = 'Search exercises' }) {
   ]);
 }
 
+// ---------- Catalog helpers ----------
+/** Catalog exercises not yet in your library that match the search / muscle filter. */
+function catalogMatches(q, muscle) {
+  const have = new Set(data.exercises.map((e) => e.name.toLowerCase()));
+  return CATALOG.filter((c) => !have.has(c.name.toLowerCase()) && matches(c, q, muscle));
+}
+
+/** Adds a catalog exercise to your library (with your default rest/step settings) and returns it. */
+export function addFromCatalog(c) {
+  const ex = newExercise(data.settings, {
+    name: c.name, type: c.type, equipment: c.equipment, category: c.category, muscles: { ...c.muscles },
+    repMin: c.repMin, repMax: c.repMax, sets: c.sets, rest: c.rest, loadMode: c.loadMode,
+    unilateral: c.unilateral, warmupSets: c.warmupSets, notes: c.notes, guide: c.guide,
+  });
+  saveExercise(ex);
+  return ex;
+}
+
+function catSubtitle(c) {
+  const mus = Object.entries(c.muscles).filter(([, v]) => v >= 1).map(([k]) => muscleName(k, data.settings));
+  return `${mus.join(', ')} · ${c.equipment}`;
+}
+
 // ---------- Library screen ----------
 export function LibraryScreen() {
   const st = (ui.tabState.library = ui.tabState.library || { q: '', muscle: null });
   const list = data.exercises.filter((e) => matches(e, st.q, st.muscle)).sort((a, b) => a.name.localeCompare(b.name));
+  const cat = catalogMatches(st.q, st.muscle);
   const hist = history();
   return h(Page, {
     title: 'Exercises', backTo: '/routines',
@@ -45,9 +70,9 @@ export function LibraryScreen() {
   }, [
     h(SearchBox, { value: st.q, onChange: (v) => { st.q = v; update(); } }),
     h(MuscleFilter, { value: st.muscle, onChange: (v) => { st.muscle = v; update(); } }),
-    list.length === 0
-      ? h(Empty, { title: data.exercises.length ? 'No matches' : 'No exercises yet', text: 'Tap + to create one.' })
-      : h(Section, {}, list.map((ex) => h(Row, {
+    h(Section, { title: `My exercises (${list.length})` }, list.length === 0
+      ? h('div.pad.muted', data.exercises.length ? 'No matches.' : 'None yet – add some from the list below or tap +.')
+      : list.map((ex) => h(Row, {
         key: ex.id,
         left: h(Thumb, { image: ex.image, name: ex.name }),
         title: ex.name,
@@ -55,30 +80,56 @@ export function LibraryScreen() {
         chevron: true,
         onClick: () => nav('/exercise/' + ex.id),
       }))),
+    cat.length > 0 && h(Section, { title: `More exercises (${cat.length})`, footer: 'Tap + to add one to your exercises. Muscles, rep range and a “How to” guide link are already set up.' },
+      cat.map((c) => h(Row, {
+        key: 'cat-' + c.name,
+        left: h(Thumb, { name: c.name }),
+        title: c.name,
+        subtitle: catSubtitle(c),
+        right: h('span', { style: { color: 'var(--accent)' } }, icon('plus', 22)),
+        onClick: () => { addFromCatalog(c); toast(`Added ${c.name}`); },
+      }))),
   ]);
 }
 
 // ---------- Picker sheet ----------
 // sheet: { type: 'picker', title, multi, onPick(exercises) }
+// Selection keys are exercise ids, or "cat:<name>" for catalog exercises (created on confirm).
 export function PickerSheet(sheet) {
   sheet.q = sheet.q || '';
   sheet.selected = sheet.selected || [];
   const list = data.exercises.filter((e) => matches(e, sheet.q, sheet.muscle)).sort((a, b) => a.name.localeCompare(b.name));
-  const toggle = (id) => {
+  const cat = catalogMatches(sheet.q, sheet.muscle);
+  const resolve = (key) => {
+    if (key.startsWith('cat:')) {
+      const name = key.slice(4);
+      const existing = data.exercises.find((e) => e.name.toLowerCase() === name.toLowerCase());
+      if (existing) return existing;
+      const c = CATALOG.find((x) => x.name === name);
+      return c ? addFromCatalog(c) : null;
+    }
+    return data.exercises.find((e) => e.id === key);
+  };
+  const toggle = (key) => {
     if (!sheet.multi) {
-      const ex = data.exercises.find((e) => e.id === id);
+      const ex = resolve(key);
       closeSheet();
-      sheet.onPick([ex]);
+      if (ex) sheet.onPick([ex]);
       return;
     }
-    const i = sheet.selected.indexOf(id);
-    if (i >= 0) sheet.selected.splice(i, 1); else sheet.selected.push(id);
+    const i = sheet.selected.indexOf(key);
+    if (i >= 0) sheet.selected.splice(i, 1); else sheet.selected.push(key);
     update();
   };
   const confirmPick = () => {
-    const exs = sheet.selected.map((id) => data.exercises.find((e) => e.id === id)).filter(Boolean);
+    const exs = sheet.selected.map(resolve).filter(Boolean);
     closeSheet();
     sheet.onPick(exs);
+  };
+  const mark = (key) => {
+    if (!sheet.multi) return null;
+    const on = sheet.selected.includes(key);
+    return h('span', { style: { color: on ? 'var(--accent)' : 'var(--muted)' } }, on ? h('span.tag.accent', `#${sheet.selected.indexOf(key) + 1}`) : icon('plus', 22));
   };
   return h(Sheet, {
     title: sheet.title || 'Add Exercises', full: true,
@@ -97,18 +148,22 @@ export function PickerSheet(sheet) {
         }),
       }),
     ]),
-    h(Section, { title: 'Library' }, list.length ? list.map((ex) => {
-      const on = sheet.selected.includes(ex.id);
-      return h(Row, {
-        key: ex.id,
-        left: h(Thumb, { image: ex.image, name: ex.name, size: 40 }),
-        title: ex.name,
-        subtitle: exerciseSubtitle(ex),
-        right: sheet.multi ? h('span', { style: { color: on ? 'var(--accent)' : 'var(--muted)' } }, on ? h('span.tag.accent', `#${sheet.selected.indexOf(ex.id) + 1}`) : icon('plus', 22)) : null,
-        onClick: () => toggle(ex.id),
-        class: on ? 'selected' : '',
-      });
-    }) : h('div.pad.muted', 'No exercises found.')),
+    h(Section, { title: 'My exercises' }, list.length ? list.map((ex) => h(Row, {
+      key: ex.id,
+      left: h(Thumb, { image: ex.image, name: ex.name, size: 40 }),
+      title: ex.name,
+      subtitle: exerciseSubtitle(ex),
+      right: mark(ex.id),
+      onClick: () => toggle(ex.id),
+    })) : h('div.pad.muted', 'No matches in your exercises.')),
+    cat.length > 0 && h(Section, { title: 'More exercises' }, cat.map((c) => h(Row, {
+      key: 'cat-' + c.name,
+      left: h(Thumb, { name: c.name, size: 40 }),
+      title: c.name,
+      subtitle: catSubtitle(c),
+      right: mark('cat:' + c.name),
+      onClick: () => toggle('cat:' + c.name),
+    }))),
   ]);
 }
 
@@ -214,6 +269,10 @@ export function ExerciseEditorSheet(sheet) {
     ]),
 
     h(Section, { title: 'Technique notes (always shown)' }, h('div.field-card', h(TextField, { value: d.notes, onChange: (v) => { d.notes = v; update(); }, placeholder: 'e.g. seat height 4, grip width…', multiline: true }))),
+    h(Section, { title: 'How-to link', footer: 'Optional. Leave empty to use the built-in guide (or a video search).' }, [
+      h('div.field-card', h(TextField, { value: d.guide || '', onChange: (v) => { d.guide = v.trim() || null; }, placeholder: 'https://…' })),
+      d.name && h(Row, { title: h('a', { href: guideFor(d), target: '_blank', rel: 'noopener', style: { color: 'var(--accent)', textDecoration: 'none' } }, 'Open the how-to guide ↗') }),
+    ]),
 
     !sheet.isNew && routinesUsing.length > 1 && h('div.callout.blue', [icon('info', 18), `Used in ${routinesUsing.length} routines – changes here apply to all of them.`]),
 

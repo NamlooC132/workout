@@ -14,6 +14,8 @@ import { fmtClock, uid, deepClone } from '../logic/util.js';
 import { REST_STEP, REST_MIN, REST_MAX } from '../logic/restTimer.js';
 import { TEMPLATES } from '../logic/samples.js';
 import { startWorkout, discardWorkout } from '../workoutService.js';
+import { exportFile } from './settings.js';
+import { saveSettings } from '../store.js';
 
 function lastDoneAt(routineId) {
   const w = doneWorkouts().find((x) => x.routineId === routineId);
@@ -59,6 +61,15 @@ export function RoutinesScreen() {
     for (const f of folders) for (const r of byFolder.get(f)) { if (r.order !== i) saveRoutine({ ...r, order: i }); i++; }
   };
 
+  // Weekly backup reminder: shown when there are workouts newer than the last backup (or none yet),
+  // and the last backup is over 7 days old. "Later" hides it for 3 days.
+  const s = data.settings;
+  const done = doneWorkouts();
+  const now = Date.now();
+  const unsaved = done.filter((w) => !s.lastBackupAt || w.endedAt > s.lastBackupAt).length;
+  const showBackup = s.backupReminder !== false && unsaved > 0 && (!s.lastBackupAt || now - s.lastBackupAt > 7 * 86400000) &&
+    !(s.backupSnoozeUntil && s.backupSnoozeUntil > now) && (done.length >= 2 || (s.lastBackupAt && now - s.lastBackupAt > 7 * 86400000));
+
   return h(Page, {
     title: 'Routines',
     actions: [
@@ -68,6 +79,14 @@ export function RoutinesScreen() {
       h(IconButton, { name: 'plus', label: 'New routine', onClick: () => openSheet({ type: 'newRoutine' }) }),
     ],
   }, [
+    showBackup && h('div.backup-card', [
+      h('div.hstack', [icon('download', 20), h('b', 'Back up your workouts')]),
+      h('div.small', { style: { margin: '6px 0 10px' } }, `${unsaved} workout${unsaved === 1 ? '' : 's'} not backed up yet${s.lastBackupAt ? ` · last backup ${relDay(s.lastBackupAt).toLowerCase()}` : ''}. Your data lives only on this phone – save a copy to Files / iCloud Drive or send it to yourself.`),
+      h('div.hstack', [
+        h(Button, { size: 'sm', onClick: () => exportFile('full') }, 'Back up now'),
+        h(Button, { size: 'sm', kind: 'plain', onClick: () => saveSettings({ backupSnoozeUntil: now + 3 * 86400000 }) }, 'Later'),
+      ]),
+    ]),
     block && h('div.today-card', [
       h('div.k', `${block.name} · ${block.phase || ''} · Week ${blockWeek(block)} of ${block.weeks}${isDeloadWeek(block) ? ' · DELOAD' : ''}`),
       todayRoutines.length

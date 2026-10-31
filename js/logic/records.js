@@ -158,3 +158,38 @@ export function progressionHistory(list) {
 }
 
 export { isProgressionSet };
+
+/**
+ * Live PR check while training: does `set` (just completed) beat every earlier session AND
+ * every earlier set of this workout? Returns { key, label } or null.
+ * Only sets after your first session count (the first time isn't a "record").
+ */
+export function livePr(entry, set, list, measurements, now = Date.now()) {
+  if (!set.done || set.type === 'warmup' || !list || list.length === 0) return null;
+  const snap = entry.snapshot || {};
+  const bw = bodyweightAt(measurements, now);
+  const rec = personalRecords(list, measurements);
+  const all = entry.sets || [];
+  const idx = all.indexOf(set);
+  const earlier = (idx >= 0 ? all.slice(0, idx) : all.filter((s) => s !== set)).filter((s) => s.done && isWorkSet(s));
+  const reps = setReps(set);
+  const load = effectiveLoad(set, snap, bw);
+  const mine = e1rm(load, reps);
+  if (snap.type !== 'bodyweight' && rec.bestWeight) {
+    const kg = set.kg || 0;
+    if (snap.type === 'assisted') {
+      const best = Math.min(rec.bestWeight.value, ...earlier.map((s) => s.kg || 0));
+      if (kg < best - EPS) return { key: 'bestWeight', label: 'least assistance ever' };
+    } else {
+      const best = Math.max(rec.bestWeight.value, ...earlier.map((s) => s.kg || 0));
+      if (kg > best + EPS) return { key: 'bestWeight', label: 'heaviest ever' };
+    }
+  }
+  const bestE = Math.max(rec.bestE1rm ? rec.bestE1rm.value : 0, ...earlier.map((s) => e1rm(effectiveLoad(s, snap, bw), setReps(s))));
+  if (mine > bestE + EPS && mine > 0) return { key: 'bestE1rm', label: 'best estimated 1RM' };
+  if (snap.type === 'bodyweight') {
+    const bestR = Math.max(rec.bestReps ? rec.bestReps.value : 0, ...earlier.map(setReps));
+    if (reps > bestR) return { key: 'bestReps', label: 'most reps ever' };
+  }
+  return null;
+}

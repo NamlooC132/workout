@@ -1,7 +1,7 @@
 // Live workout screen + rest timer panel.
 import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
-import { data, ui, update, openSheet, closeSheet, confirm, toast, exercisesById, saveWorkout } from '../store.js';
+import { data, ui, update, openSheet, closeSheet, confirm, toast, exercisesById, saveWorkout, history } from '../store.js';
 import { Page, Section, Row, Button, IconButton, Sheet, TextField, Thumb, Chip, NumberField, WeightField, DragHandle, fmtW, nav } from './components.js';
 import { fmtClock, fmtDuration, fmtNum, uid } from '../logic/util.js';
 import { SET_TYPES, muscleName } from '../logic/muscles.js';
@@ -10,6 +10,8 @@ import { workoutVolume } from '../logic/volume.js';
 import { tonnage, bodyweightAt } from '../logic/records.js';
 import * as WS from '../workoutService.js';
 import { startRest, adjustRest, skipRest, restRemaining, syncWakeLock } from '../timer.js';
+import { guideFor } from '../logic/catalog.js';
+import { personalRecords } from '../logic/records.js';
 
 // ---------- "Last time" text ----------
 export function setsSummary(sets, snap) {
@@ -112,15 +114,21 @@ function ExerciseCard({ w, entry, index }) {
   const p = entry.progression || {};
   const step = snap.weightStep || data.settings.defaultWeightStep || 2.5;
   let workNo = 0;
+  const compactRir = data.settings.rirDisplay !== 'all';
+  const currentSet = entry.sets.find((s) => !s.done && s.type !== 'warmup');
 
   return h('div', { key: entry.id, class: cx('ex-card', entry.skipped && 'skipped', inSS && 'in-ss') }, [
     ssStart && h('div.ss-label', { style: { marginBottom: '6px' } }, 'SUPERSET – alternate sets, rest after the round'),
     h('div.ex-head', [
-      h(Thumb, { image: ex?.image, name: snap.name, size: 50 }),
+      h('button', { onclick: () => openSheet({ type: 'exHistory', exerciseId: entry.exerciseId, name: snap.name }), 'aria-label': `${snap.name} history` }, h(Thumb, { image: ex?.image, name: snap.name, size: 50 })),
       h('div.grow', [
-        h('div.ex-name', [snap.name, entry.skipped && h('span.tag', { style: { marginLeft: '6px' } }, 'SKIPPED')]),
+        h('button.ex-name', { style: { textAlign: 'left' }, onclick: () => openSheet({ type: 'exHistory', exerciseId: entry.exerciseId, name: snap.name }) }, [snap.name, entry.skipped && h('span.tag', { style: { marginLeft: '6px' } }, 'SKIPPED')]),
         h('div.ex-meta', `${snap.sets} × ${snap.repMin}–${snap.repMax}${snap.rirTarget !== null && snap.rirTarget !== undefined ? ` · target RIR ${snap.rirTarget}` : ''} · rest ${fmtClock(snap.rest || 90)}`),
         h('div.last-time', entry.lastSummary ? `Last time: ${setsSummary(entry.lastSummary.sets, snap)}` : 'First time – no history yet'),
+        h('div.ex-links', [
+          entry.exerciseId && h('button.mini-link', { onclick: () => openSheet({ type: 'exHistory', exerciseId: entry.exerciseId, name: snap.name }) }, [icon('history', 14), 'History']),
+          h('a.mini-link', { href: guideFor(ex || { name: snap.name }), target: '_blank', rel: 'noopener' }, [icon('info', 14), 'How to']),
+        ]),
       ]),
       h(IconButton, { name: 'more', label: 'Exercise options', onClick: () => entryMenu(w, entry) }),
     ]),
@@ -145,7 +153,7 @@ function ExerciseCard({ w, entry, index }) {
         const repsPh = `${snap.repMin}–${snap.repMax}`;
         return h('div', { key: s.id, class: cx('set-wrap', s.done && 'done') }, [
           h('div.set-row', { class: gridCls }, [
-            h('button', { class: cx('set-num', s.type), onclick: () => openSheet({ type: 'setMenu', workoutId: w.id, entryId: entry.id, setId: s.id }), 'aria-label': `Set ${label} options` }, label),
+            h('button', { class: cx('set-num', s.type), onclick: () => openSheet({ type: 'setMenu', workoutId: w.id, entryId: entry.id, setId: s.id }), 'aria-label': `Set ${label} options` }, s.pr ? h('span.pr-num', ['🏆', h('small', label)]) : label),
             showWeight && h('div.wgt', [
               h('button.step', { onclick: () => bump(w, s, -step), 'aria-label': 'Less weight' }, icon('minus', 18)),
               h(WeightField, { kg: s.kg, onChange: (v) => { s.kg = v; WS.save(w); } }),
@@ -159,7 +167,8 @@ function ExerciseCard({ w, entry, index }) {
               : h(NumberField, { value: s.reps, decimals: false, placeholder: isWarm ? '' : repsPh, ariaLabel: 'Reps', onChange: (v) => { s.reps = v; WS.save(w); } }),
             h('button', { class: cx('check', s.done && 'done'), onclick: () => { document.activeElement?.blur?.(); WS.toggleSet(w, entry, s); }, 'aria-label': s.done ? 'Mark set not done' : 'Complete set' }, icon('check', 26, { weight: 3 })),
           ]),
-          rirOn && !isWarm && h('div.set-extra', h('div.rir', [
+          rirOn && !isWarm && compactRir && s !== currentSet && s.rir !== null && s.rir !== undefined && h('div.set-note', `RIR ${s.rir === 5 ? '5+' : s.rir}`),
+          rirOn && !isWarm && (!compactRir || s === currentSet) && h('div.set-extra', h('div.rir', [
             h('span.lbl', 'RIR'),
             ...[0, 1, 2, 3, 4, 5].map((r) => h('button', { class: s.rir === r ? 'on' : '', onclick: () => { s.rir = s.rir === r ? null : r; WS.save(w); }, 'aria-label': `${r} reps in reserve` }, r === 5 ? '5+' : String(r))),
           ])),
@@ -336,6 +345,7 @@ export function SetMenuSheet(sheet) {
   if (!s) return null;
   return h(Sheet, { title: 'Set options' }, [
     h(Section, { title: 'Set type' }, h('div.pad', h('div.chips', SET_TYPES.map((t) => h(Chip, { key: t.key, active: s.type === t.key, onClick: () => { s.type = t.key; WS.save(w); } }, t.name))))),
+    s.type !== 'warmup' && data.settings.rirMode !== 'off' && h(Section, { title: 'RIR (reps in reserve)' }, h('div.pad', h('div.rir', [0, 1, 2, 3, 4, 5].map((r) => h('button', { key: r, class: s.rir === r ? 'on' : '', onclick: () => { s.rir = s.rir === r ? null : r; WS.save(w); } }, r === 5 ? '5+' : String(r)))))),
     h(Section, { title: 'Note for this set' }, h('div.field-card', h(TextField, { value: s.note, placeholder: 'e.g. paused reps, left knee', onChange: (v) => { s.note = v; WS.save(w); } }))),
     h(Button, { kind: 'danger', block: true, onClick: () => { closeSheet(); WS.removeSet(w, entry, s.id); } }, [icon('trash', 18), 'Delete set']),
   ]);
@@ -374,3 +384,33 @@ export function FinishSummarySheet(sheet) {
 }
 
 function muscleLabel(k) { return muscleName(k, data.settings); }
+
+// sheet: { type: 'exHistory', exerciseId, name } – history without leaving the workout
+export function ExHistorySheet(sheet) {
+  const list = (history().get(sheet.exerciseId) || []).slice(0, 8);
+  const ex = exercisesById().get(sheet.exerciseId);
+  const rec = personalRecords(history().get(sheet.exerciseId) || [], data.measurements);
+  const snap = list[0]?.entry.snapshot || { type: ex?.type };
+  return h(Sheet, { title: sheet.name }, [
+    ex?.notes && h('div.callout', { style: { marginBottom: '10px' } }, [icon('info', 18), ex.notes]),
+    list.length === 0
+      ? h('div.pad.muted.center', 'No history yet – this is your first time. Have a great set!')
+      : [
+        h('div.stat-grid', [
+          snap.type !== 'bodyweight' && rec.bestWeight && h('div.stat', { style: { background: 'var(--yellow-soft)' } }, [h('div.k', '🏆 Best'), h('div.v', { style: { fontSize: '18px' } }, `${fmtW(rec.bestWeight.value)}`), h('div.s', `× ${rec.bestWeight.detail.reps}`)]),
+          rec.bestE1rm && h('div.stat', { style: { background: 'var(--yellow-soft)' } }, [h('div.k', 'e1RM'), h('div.v', { style: { fontSize: '18px' } }, fmtW(rec.bestE1rm.value))]),
+          rec.bestReps && h('div.stat', { style: { background: 'var(--yellow-soft)' } }, [h('div.k', 'Most reps'), h('div.v', { style: { fontSize: '18px' } }, String(rec.bestReps.value))]),
+        ]),
+        h(Section, { title: 'Recent sessions' }, list.map((it) => h(Row, {
+          key: it.workout.id + it.entry.id,
+          title: new Date(it.workout.startedAt).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }),
+          subtitle: setsSummary(it.entry.sets.filter((x) => x.done), it.entry.snapshot),
+          right: h('span.small', it.workout.routineName),
+        }))),
+      ],
+    h('div.hstack', { style: { marginTop: '8px' } }, [
+      h('a.btn.btn-secondary.btn-sm', { href: guideFor(ex || { name: sheet.name }), target: '_blank', rel: 'noopener', style: { textDecoration: 'none' } }, [icon('info', 16), 'How to do it']),
+      ex && h('button.btn.btn-plain.btn-sm', { onclick: () => { ui.sheets = []; ui.workoutOpen = false; nav('/exercise/' + ex.id); update(); } }, 'Full progress ›'),
+    ]),
+  ]);
+}

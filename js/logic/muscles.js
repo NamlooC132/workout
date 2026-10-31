@@ -16,6 +16,9 @@ export const BASE_MUSCLES = [
   { key: 'glutes', name: 'Glutes' },
   { key: 'calves', name: 'Calves' },
   { key: 'abs', name: 'Abs' },
+  { key: 'traps', name: 'Traps' },
+  { key: 'forearms', name: 'Forearms' },
+  { key: 'adductors', name: 'Adductors' },
 ];
 
 /** All muscles = built-in + user-defined ones from settings. */

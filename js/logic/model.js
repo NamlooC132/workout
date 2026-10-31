@@ -20,6 +20,7 @@ export function defaultSettings() {
   const targets = {};
   for (const m of BASE_MUSCLES) targets[m.key] = { min: 10, max: 20 };
   for (const k of ['calves', 'abs', 'front_delts']) targets[k] = { min: 6, max: 16 };
+  for (const k of ['traps', 'forearms', 'adductors']) targets[k] = { min: 0, max: 0 }; // no target by default
   return {
     unit: 'kg',
     lengthUnit: 'cm',
@@ -42,6 +43,9 @@ export function defaultSettings() {
     restVibrate: true,
     keepAwake: true,
     theme: 'system',                 // 'system' | 'light' | 'dark'
+    rirDisplay: 'current',           // 'current' (only on the set you're doing) | 'all'
+    backupReminder: true,            // weekly 'back up your workouts' card
+    backupSnoozeUntil: null,
     lastBackupAt: null,
   };
 }
@@ -73,6 +77,7 @@ export function newExercise(settings, fields = {}) {
       step: null,              // display units; null = settings default (2.5 kg / 5 lb)
     },
     notes: '',                 // permanent technique notes
+    guide: null,               // optional 'how to' link (else the catalog guide / a video search)
     createdAt: Date.now(),
     ...fields,
   };

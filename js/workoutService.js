@@ -8,7 +8,7 @@ import { lastSession } from './logic/history.js';
 import { evaluateProgression } from './logic/progression.js';
 import { activeBlock, blockWeek, isDeloadWeek } from './logic/blocks.js';
 import { fromDisplayWeight, toDisplayWeight } from './logic/units.js';
-import { prsInWorkout } from './logic/records.js';
+import { prsInWorkout, livePr } from './logic/records.js';
 import { buildHistory } from './logic/history.js';
 import { startRest, skipRest, syncWakeLock } from './timer.js';
 
@@ -168,6 +168,7 @@ export function toggleSet(w, entry, set) {
   if (set.done) {
     set.done = false;
     set.doneAt = null;
+    set.pr = null;
     save(w);
     return true;
   }
@@ -187,6 +188,10 @@ export function toggleSet(w, entry, set) {
   }
   set.done = true;
   set.doneAt = Date.now();
+  // Live personal-record check against all earlier sessions and earlier sets today.
+  const pr = entry.exerciseId ? livePr(entry, set, history().get(entry.exerciseId) || [], data.measurements) : null;
+  set.pr = pr ? pr.key : null;
+  if (pr) toast(`🏆 New PR! ${entry.snapshot.name} – ${pr.label}`, 3500);
   if (uni && set.reps === null) set.reps = Math.min(set.repsL || 0, set.repsR || 0) || set.repsL || set.repsR;
   try { navigator.vibrate && navigator.vibrate(15); } catch { /* ignore */ }
   save(w);
