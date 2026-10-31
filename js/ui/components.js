@@ -1,6 +1,7 @@
 // Reusable UI pieces: headers, list rows, steppers, number fields, sheets, charts, drag-to-reorder.
 import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
+import { MuscleMap } from './musclemap.js';
 import { data, ui, update, closeSheet } from '../store.js';
 import { parseNum, fmtNum } from '../logic/util.js';
 import { displayWeight, fromDisplayWeight } from '../logic/units.js';
@@ -151,9 +152,13 @@ export function TextField({ value, onChange, placeholder, multiline, label, auto
   return multiline ? h('textarea', { ...props, rows: 3 }) : h('input', { ...props, type: 'text', enterkeyhint: 'done' });
 }
 
-export function Thumb({ image, size = 44, name }) {
-  return h('div.thumb', { style: { width: size + 'px', height: size + 'px', borderRadius: Math.round(size * 0.26) + 'px' } },
-    image ? h('img', { src: image, alt: '' }) : h('span.thumb-ph', name ? initials(name) : icon('dumbbell', Math.round(size * 0.45))));
+/** Exercise picture: your photo, else an automatic muscle map, else initials. */
+export function Thumb({ image, size = 44, name, muscles }) {
+  const hasMuscles = muscles && Object.values(muscles).some((v) => v > 0);
+  return h('div.thumb', { class: !image && hasMuscles ? 'map' : '', style: { width: size + 'px', height: size + 'px', borderRadius: Math.round(size * 0.26) + 'px' } },
+    image ? h('img', { src: image, alt: '' })
+      : hasMuscles ? MuscleMap({ muscles, size: Math.round(size * 1.0) })
+        : h('span.thumb-ph', name ? initials(name) : icon('dumbbell', Math.round(size * 0.45))));
 }
 
 function initials(name) {

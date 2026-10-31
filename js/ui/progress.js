@@ -70,7 +70,7 @@ function Overview(st) {
       ? h('div.pad.muted', 'No new records yet – keep pushing!')
       : recentPrs.slice(0, 12).map((p, i) => h(Row, { key: i, left: h('span.pr', icon('trophy', 20)), title: p.name, subtitle: `${p.kind} · ${relDay(p.date)}`, chevron: true, onClick: () => nav('/exercise/' + p.exerciseId) }))),
     stalled.length > 0 && h(Section, { title: 'Possibly stalled', footer: 'No improvement in estimated 1RM (or reps) over the last 3 sessions.' },
-      stalled.map((e) => h(Row, { key: e.id, left: h(Thumb, { image: e.image, name: e.name, size: 36 }), title: e.name, chevron: true, onClick: () => nav('/exercise/' + e.id) }))),
+      stalled.map((e) => h(Row, { key: e.id, left: h(Thumb, { image: e.image, name: e.name, muscles: e.muscles, size: 36 }), title: e.name, chevron: true, onClick: () => nav('/exercise/' + e.id) }))),
   ]);
 }
 
@@ -191,7 +191,7 @@ function Exercises() {
   return h(Section, { footer: h('button.link-btn', { onclick: () => nav('/library') }, 'All exercises in the library ›') }, list.map(({ e, list: l }) => {
     const rec = personalRecords(l, data.measurements);
     return h(Row, {
-      key: e.id, left: h(Thumb, { image: e.image, name: e.name }), title: e.name,
+      key: e.id, left: h(Thumb, { image: e.image, name: e.name, muscles: e.muscles }), title: e.name,
       subtitle: `${l.length} sessions · last ${relDay(l[0].workout.startedAt)}${rec.bestE1rm ? ` · e1RM ${fmtW(rec.bestE1rm.value)}` : ''}`,
       chevron: true, onClick: () => nav('/exercise/' + e.id),
     });

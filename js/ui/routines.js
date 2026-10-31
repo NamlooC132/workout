@@ -233,7 +233,7 @@ export function RoutineScreen({ id }) {
     return h('div', { key: item.id, 'data-drag-row': '', class: inSS ? 'superset-bar' : '' }, [
       inSS && ssStart && h('div.ss-label', { style: { padding: '8px 16px 0' } }, 'SUPERSET'),
       h(Row, {
-        left: h(Thumb, { image: ex.image, name: ex.name }),
+        left: h(Thumb, { image: ex.image, name: ex.name, muscles: ex.muscles }),
         title: ex.name,
         subtitle: [
           `${cfg.warmupSets ? cfg.warmupSets + 'W + ' : ''}${cfg.sets} × ${cfg.repMin}–${cfg.repMax}${cfg.dropSets ? ` + ${cfg.dropSets} drop` : ''} · Rest ${fmtClock(cfg.rest)}${cfg.rirTarget !== null && cfg.rirTarget !== undefined ? ` · RIR ${cfg.rirTarget}` : ''}`,
@@ -303,7 +303,7 @@ export function ItemEditorSheet(sheet) {
 
   return h(Sheet, { title: ex.name, full: true }, [
     h('div.hstack', { style: { margin: '6px 0 4px', gap: '14px' } }, [
-      h(Thumb, { image: ex.image, name: ex.name, size: 56 }),
+      h(Thumb, { image: ex.image, name: ex.name, muscles: ex.muscles, size: 56 }),
       h('div.grow', [h('div', { style: { fontWeight: 700, fontSize: '19px' } }, ex.name), h('div.muted.small', `${ex.equipment || ''}${ex.notes ? ' · ' + ex.notes : ''}`)]),
     ]),
     h('div.hstack.wrap', { style: { margin: '10px 0' } }, [

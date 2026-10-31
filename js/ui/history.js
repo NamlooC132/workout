@@ -131,7 +131,7 @@ function EntryBlock({ w, e, edit, save }) {
   let n = 0;
   return h(Section, {
     key: e.id,
-    title: h('span.hstack', { style: { gap: '8px', textTransform: 'none', letterSpacing: 0, fontSize: '16px', color: 'var(--text)', fontWeight: 700 } }, [h(Thumb, { image: ex?.image, name: snap.name, size: 28 }), snap.name]),
+    title: h('span.hstack', { style: { gap: '8px', textTransform: 'none', letterSpacing: 0, fontSize: '16px', color: 'var(--text)', fontWeight: 700 } }, [h(Thumb, { image: ex?.image, name: snap.name, muscles: ex?.muscles || snap.muscles, size: 28 }), snap.name]),
     right: !edit && e.exerciseId && ex ? h('button.link-btn', { style: { minHeight: 'auto', padding: 0, textTransform: 'none', fontSize: '14px', letterSpacing: 0 }, onclick: () => nav('/exercise/' + e.exerciseId) }, 'Progress ›') : null,
   }, [
     ...e.sets.map((s, i) => {
@@ -209,7 +209,7 @@ export function ExerciseScreen({ id }) {
     actions: ex ? [h('button.link-btn', { onclick: () => openSheet({ type: 'exerciseEditor', exerciseId: ex.id }) }, 'Edit')] : [],
   }, [
     h('div.hstack', { style: { gap: '14px', margin: '6px 0 4px' } }, [
-      h(Thumb, { image: ex?.image, name, size: 64 }),
+      h(Thumb, { image: ex?.image, name, muscles: ex?.muscles || list[0]?.entry.snapshot.muscles, size: 64 }),
       h('div.grow', [
         h('div', { style: { fontSize: '22px', fontWeight: 800 } }, name),
         ex && h('div.muted.small', contributions(ex).map((c) => `${muscleName(c.key, data.settings)}${c.value < 1 ? ` ${c.value * 100}%` : ''}`).join(' · ') || 'No muscles set'),

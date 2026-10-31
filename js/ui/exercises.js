@@ -74,7 +74,7 @@ export function LibraryScreen() {
       ? h('div.pad.muted', data.exercises.length ? 'No matches.' : 'None yet – add some from the list below or tap +.')
       : list.map((ex) => h(Row, {
         key: ex.id,
-        left: h(Thumb, { image: ex.image, name: ex.name }),
+        left: h(Thumb, { image: ex.image, name: ex.name, muscles: ex.muscles }),
         title: ex.name,
         subtitle: `${exerciseSubtitle(ex)} · ${(hist.get(ex.id) || []).length} sessions`,
         chevron: true,
@@ -83,7 +83,7 @@ export function LibraryScreen() {
     cat.length > 0 && h(Section, { title: `More exercises (${cat.length})`, footer: 'Tap + to add one to your exercises. Muscles, rep range and a “How to” guide link are already set up.' },
       cat.map((c) => h(Row, {
         key: 'cat-' + c.name,
-        left: h(Thumb, { name: c.name }),
+        left: h(Thumb, { name: c.name, muscles: c.muscles }),
         title: c.name,
         subtitle: catSubtitle(c),
         right: h('span', { style: { color: 'var(--accent)' } }, icon('plus', 22)),
@@ -150,7 +150,7 @@ export function PickerSheet(sheet) {
     ]),
     h(Section, { title: 'My exercises' }, list.length ? list.map((ex) => h(Row, {
       key: ex.id,
-      left: h(Thumb, { image: ex.image, name: ex.name, size: 40 }),
+      left: h(Thumb, { image: ex.image, name: ex.name, muscles: ex.muscles, size: 40 }),
       title: ex.name,
       subtitle: exerciseSubtitle(ex),
       right: mark(ex.id),
@@ -158,7 +158,7 @@ export function PickerSheet(sheet) {
     })) : h('div.pad.muted', 'No matches in your exercises.')),
     cat.length > 0 && h(Section, { title: 'More exercises' }, cat.map((c) => h(Row, {
       key: 'cat-' + c.name,
-      left: h(Thumb, { name: c.name, size: 40 }),
+      left: h(Thumb, { name: c.name, muscles: c.muscles, size: 40 }),
       title: c.name,
       subtitle: catSubtitle(c),
       right: mark('cat:' + c.name),
@@ -201,7 +201,7 @@ export function ExerciseEditorSheet(sheet) {
     h(Section, {}, [
       h('div.field-card', h(TextField, { value: d.name, onChange: (v) => { d.name = v; update(); }, placeholder: 'Exercise name', autofocus: sheet.isNew && !d.name })),
       h('div.row', h('div.photo-row', [
-        h(Thumb, { image: d.image, name: d.name, size: 64 }),
+        h(Thumb, { image: d.image, name: d.name, muscles: d.muscles, size: 64 }),
         h('div.photo-btns', [
           h('label.link-btn', { style: { padding: '4px 0', minHeight: 'auto', display: 'inline-flex', gap: '6px', alignItems: 'center' } }, [
             icon('camera', 18), d.image ? 'Change photo' : 'Add photo',

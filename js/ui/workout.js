@@ -94,7 +94,7 @@ function ReorderList({ w, st }) {
   return h('div', [
     h('div.hstack', { style: { justifyContent: 'space-between', margin: '0 4px 8px' } }, [h('span.muted.small', 'Drag ≡ to reorder'), h('button.link-btn.strong', { onclick: () => { st.reorder = false; update(); } }, 'Done')]),
     h('div.card', w.entries.map((e) => h('div', { key: e.id, 'data-drag-row': '' }, h(Row, {
-      left: h(Thumb, { image: exercisesById().get(e.exerciseId)?.image, name: e.snapshot.name, size: 36 }),
+      left: h(Thumb, { image: exercisesById().get(e.exerciseId)?.image, name: e.snapshot.name, muscles: exercisesById().get(e.exerciseId)?.muscles || e.snapshot.muscles, size: 36 }),
       title: e.snapshot.name, subtitle: `${e.sets.filter((s) => s.done).length}/${e.sets.length} sets${e.supersetId ? ' · superset' : ''}`,
       right: h(DragHandle, { onDrop: (a, b) => WS.moveEntry(w, a, b) }),
     })))),
@@ -120,7 +120,7 @@ function ExerciseCard({ w, entry, index }) {
   return h('div', { key: entry.id, class: cx('ex-card', entry.skipped && 'skipped', inSS && 'in-ss') }, [
     ssStart && h('div.ss-label', { style: { marginBottom: '6px' } }, 'SUPERSET – alternate sets, rest after the round'),
     h('div.ex-head', [
-      h('button', { onclick: () => openSheet({ type: 'exHistory', exerciseId: entry.exerciseId, name: snap.name }), 'aria-label': `${snap.name} history` }, h(Thumb, { image: ex?.image, name: snap.name, size: 50 })),
+      h('button', { onclick: () => openSheet({ type: 'exHistory', exerciseId: entry.exerciseId, name: snap.name }), 'aria-label': `${snap.name} history` }, h(Thumb, { image: ex?.image, name: snap.name, muscles: ex?.muscles || snap.muscles, size: 50 })),
       h('div.grow', [
         h('button.ex-name', { style: { textAlign: 'left' }, onclick: () => openSheet({ type: 'exHistory', exerciseId: entry.exerciseId, name: snap.name }) }, [snap.name, entry.skipped && h('span.tag', { style: { marginLeft: '6px' } }, 'SKIPPED')]),
         h('div.ex-meta', `${snap.sets} × ${snap.repMin}–${snap.repMax}${snap.rirTarget !== null && snap.rirTarget !== undefined ? ` · target RIR ${snap.rirTarget}` : ''} · rest ${fmtClock(snap.rest || 90)}`),
