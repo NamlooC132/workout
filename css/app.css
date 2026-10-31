@@ -350,3 +350,8 @@ button.ex-name { display: block; width: 100%; }
 .backup-card { background: var(--blue-soft); border-radius: 16px; padding: 14px; margin: 6px 0 14px; }
 .thumb.map { background: var(--card2); border: 0.5px solid var(--sep); }
 .muscle-map { display: block; }
+.mm-label { fill: var(--muted); font-size: 12px; font-weight: 600; }
+.mm-big { display: flex; align-items: center; gap: 12px; padding: 10px 14px; flex-wrap: wrap; justify-content: center; }
+.mm-legend { flex: 1; min-width: 140px; }
+.mm-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 15px; }
+.mm-row i { width: 12px; height: 12px; border-radius: 4px; flex-shrink: 0; }

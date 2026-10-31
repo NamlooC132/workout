@@ -13,6 +13,7 @@ import { muscleName, contributions, SET_TYPES } from '../logic/muscles.js';
 import { newSet } from '../logic/model.js';
 import { makeEntry } from '../workoutService.js';
 import { guideFor } from '../logic/catalog.js';
+import { MuscleMap } from './musclemap.js';
 
 function workoutTonnage(w) {
   const bw = bodyweightAt(data.measurements, w.startedAt);
@@ -218,6 +219,14 @@ export function ExerciseScreen({ id }) {
     ]),
     h('a.mini-link', { href: guideFor(ex || { name }), target: '_blank', rel: 'noopener', style: { margin: '6px 0 0' } }, [icon('info', 15), 'How to do this exercise ↗']),
     ex?.notes && h('div.callout.mt', [icon('info', 18), ex.notes]),
+    (ex || list[0]) && Object.keys((ex?.muscles || list[0]?.entry.snapshot.muscles) || {}).length > 0 && h(Section, { title: 'Muscles worked' }, h('div.mm-big', [
+      MuscleMap({ muscles: ex?.muscles || list[0].entry.snapshot.muscles, size: 230, labels: true }),
+      h('div.mm-legend', contributions({ muscles: ex?.muscles || list[0].entry.snapshot.muscles }).map((c) => h('div.mm-row', { key: c.key }, [
+        h('i', { style: { background: c.value >= 1 ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 45%, #fff)' } }),
+        h('span.grow', muscleName(c.key, data.settings)),
+        h('span.muted', c.value >= 1 ? 'Main' : `Helper ${Math.round(c.value * 100)}%`),
+      ]))),
+    ])),
     stalled && h('div.callout.yellow.mt', [icon('info', 18), h('div', [h('b', 'Possibly stalled. '), 'No improvement in your last 3 sessions. Consider a deload, a rep-range change or swapping the exercise.'])]),
 
     h(Section, { title: 'Personal records' }, list.length === 0
