@@ -2,9 +2,9 @@
 import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
 import { data, update, closeSheet, openSheet, saveWorkout, deleteWorkout, confirm, toast } from '../store.js';
-import { Page, Section, Row, Empty, Button, Sheet, NumberField, TextField, nav, fmtDate, fmtDateTime } from './components.js';
+import { Page, Section, Row, Empty, Button, Sheet, NumberField, TextField, Chip, nav, fmtDate, fmtDateTime } from './components.js';
 import { uid, deepClone } from '../logic/util.js';
-import { shortcutUrl, parseHealthText, paceS, fmtPace, fmtRunTime, fmtKm, runDurationS } from '../logic/health.js';
+import { shortcutUrl, parseHealthText, detectRuns, paceS, fmtPace, fmtRunTime, fmtKm, runDurationS } from '../logic/health.js';
 
 /** Opens the Shortcut for a time window. */
 export function getFromHealth(from, to) {
@@ -12,21 +12,25 @@ export function getFromHealth(from, to) {
   window.location.href = shortcutUrl(from, to);
 }
 
-/** Reads the Shortcut's result from the clipboard (falls back to a paste box) and keeps the readings in [from, to]. */
-export async function pasteFromHealth(apply, from, to) {
+/** Gets the clipboard text (asks for a manual paste if the browser won't allow it), then calls use(text) → true if it was understood. */
+async function withClipboard(use) {
   let text = null;
   try { text = await navigator.clipboard.readText(); } catch { /* not allowed – use the box */ }
-  const handle = (t) => {
+  if (text && use(text)) return;
+  openSheet({
+    type: 'textInput', title: 'Paste from Health', single: true, placeholder: 'Long-press here → Paste',
+    onSave: (v) => { if (!use(v)) toast('Couldn’t read that – run the shortcut again'); },
+  });
+}
+
+/** Reads the Shortcut's result from the clipboard (falls back to a paste box) and keeps the readings in [from, to]. */
+export async function pasteFromHealth(apply, from, to) {
+  await withClipboard((t) => {
     const r = parseHealthText(t, from, to);
     if (!r) return false;
     if (r.empty) toast('No Health data in this time window – did you wear your Watch?', 4000);
     else { apply(r); toast(healthToast(r) + (r.dailyKcal ? ' · calories need an Apple Watch' : ''), r.dailyKcal ? 4500 : 2600); }
     return true;
-  };
-  if (handle(text)) return;
-  openSheet({
-    type: 'textInput', title: 'Paste from Health', single: true, placeholder: 'Long-press here → Paste',
-    onSave: (v) => { if (!handle(v)) toast('Couldn’t read that – run the shortcut again'); },
   });
 }
 
@@ -83,11 +87,75 @@ export function LogRunSheet(sheet) {
     toast(sheet.isNew ? 'Run saved 🏃' : 'Run updated');
     if (sheet.isNew) nav('/history');
   };
+  const useRun = (run) => {
+    d.startedAt = run.from; d.endedAt = run.to; d.run.km = run.km;
+    const hd = sheet.healthText ? parseHealthText(sheet.healthText, run.from, run.to) : null;
+    if (hd) { if (hd.hr !== null) d.health.hr = hd.hr; if (hd.kcal !== null) d.health.kcal = hd.kcal; }
+    sheet.found = null;
+    toast(`Found your run: ${fmtKm(run.km)} · ${fmtRunTime(runDurationS(d))} 🏃`, 3500);
+    update();
+  };
+  // Your way: you say when you started, "now" is when you finished.
+  const useWindow = (t) => {
+    const from = sheet.startAt, to = sheet.endAt || Date.now();
+    const r = parseHealthText(t, from, to);
+    if (!r) return false;
+    d.startedAt = from; d.endedAt = to;
+    if (r.km !== null) d.run.km = r.km;
+    if (r.hr !== null) d.health.hr = r.hr;
+    if (r.kcal !== null) d.health.kcal = r.kcal;
+    toast(r.km !== null ? `Your run: ${fmtKm(r.km)} · ${fmtRunTime(runDurationS(d))} 🏃` : 'No distance found for that time – check the start time', 3500);
+    update();
+    return true;
+  };
+  const findRun = () => withClipboard((t) => {
+    if (sheet.startAt) return useWindow(t);
+    const runs = detectRuns(t);
+    if (runs === null) return false;
+    sheet.healthText = t;
+    if (!runs.length) { sheet.found = []; toast('No run found in the last 2 days – fill it in below', 4000); }
+    else if (runs.length === 1) useRun(runs[0]);
+    else { sheet.found = runs.slice(0, 6); toast('Pick your run'); }
+    update();
+    return true;
+  });
+  const dayLabel = (ms) => { const t = new Date(ms), now = new Date(); const y = new Date(now); y.setDate(now.getDate() - 1); return t.toDateString() === now.toDateString() ? 'Today' : t.toDateString() === y.toDateString() ? 'Yesterday' : t.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }); };
+  const hhmm = (ms) => new Date(ms).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  const hhmm24 = (ms) => { const t = new Date(ms); return `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`; };
+
   return h(Sheet, {
     title: sheet.isNew ? 'Log a run' : 'Edit run', full: true,
     left: h('button.link-btn', { onclick: closeSheet }, 'Cancel'),
     actions: [h('button.link-btn.strong', { onclick: save, disabled: !canSave }, 'Save')],
   }, [
+    sheet.isNew && h('div.find-run', [
+      h('div.fr-t', [icon('run', 20), 'Just finished a run?']),
+      h('div.fr-s', 'When did you start? The run ends now.'),
+      h('div.chips.fr-chips', [
+        ...[15, 20, 30, 45, 60, 90].map((m) => h(Chip, { key: m, active: sheet.startMin === m, onClick: () => { sheet.startMin = m; sheet.startAt = Math.round((Date.now() - m * 60000) / 60000) * 60000; update(); } }, m < 60 ? `${m} min ago` : m === 60 ? '1 h ago' : '1½ h ago')),
+      ]),
+      h('div.fr-time', [
+        h('span', 'Started at'),
+        h('input.select', { type: 'time', value: sheet.startAt ? hhmm24(sheet.startAt) : '', onchange: (e) => {
+          const [hh, mm] = e.target.value.split(':').map(Number);
+          if (!Number.isFinite(hh)) return;
+          const t = new Date(); t.setHours(hh, mm, 0, 0);
+          if (t.getTime() > Date.now()) t.setDate(t.getDate() - 1); // e.g. 23:30 picked after midnight
+          sheet.startAt = t.getTime(); sheet.startMin = null; update();
+        } }),
+        sheet.startAt && h('span.muted.small', `→ now (${fmtRunTime(Math.max(0, Math.round((Date.now() - sheet.startAt) / 1000)))})`),
+      ]),
+      h('div.fr-btns', [
+        h('button.btn.btn-primary', { onclick: () => { sheet.endAt = Date.now(); getFromHealth(Date.now() - 2 * 86400000, Date.now()); } }, [h('span.fr-n', '1'), 'Get from Health']),
+        h('button.btn.btn-secondary', { onclick: findRun }, [h('span.fr-n', '2'), 'Paste']),
+      ]),
+      sheet.found && sheet.found.length > 1 && h('div.fr-list', sheet.found.map((r) => h('button.fr-item', { key: r.from, onclick: () => useRun(r) }, [
+        h('div.grow', [h('b', `${dayLabel(r.from)} · ${hhmm(r.from)}`), h('div.small.muted', `${fmtRunTime(Math.round((r.to - r.from) / 1000))} · ${fmtPace((r.to - r.from) / 1000 / r.km)} /km`)]),
+        h('span.fr-km', fmtKm(r.km)),
+      ]))),
+      h('div.health-note', sheet.startAt ? '(To get the shortcut ask Freddy)' : 'No start time? Paste anyway and the app looks for your run by itself. (To get the shortcut ask Freddy)'),
+    ]),
+    sheet.isNew && h('div.section-head', { style: { margin: '6px 4px 6px' } }, h('span', 'Or enter it yourself')),
     h('div.run-hero', [
       h('div.run-stat', [h('div.k', 'Distance'), h('div.run-big', [h(NumberField, { value: d.run.km, placeholder: '0.00', class: 'run-input', ariaLabel: 'Distance in km', onChange: (v) => { d.run.km = v; update(); } }), h('span', 'km')])]),
       h('div.run-stat', [h('div.k', 'Time'), h('div.run-time', [

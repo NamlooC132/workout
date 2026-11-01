@@ -67,19 +67,24 @@ export function parseShortcutDate(str) {
  * Shortcut format 2 – raw readings with their times; the app keeps those inside [from, to]:
  *   WL2 / HR / values… / @ / dates… / KC / values… / @ / dates… / DI / values… / @ / dates…
  */
-function parseSamples(text, from, to) {
+function readSections(text) {
   const lines = String(text).split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   const sec = {};
   let cur = null, part = 'v';
   for (const l of lines) {
     const u = l.toUpperCase();
     if (u === 'WL2') continue;
-    if (u === 'HR' || u === 'KC' || u === 'DI') { cur = u; part = 'v'; sec[cur] = { v: [], d: [] }; continue; }
-    if (l === '@') { part = 'd'; continue; }
+    if (u === 'HR' || u === 'KC' || u === 'DI') { cur = u; part = 'v'; sec[cur] = { v: [], d: [], e: [] }; continue; }
+    if (l === '@') { part = part === 'v' ? 'd' : 'e'; continue; }
     if (!cur) continue;
-    if (part === 'v') { const n = parseLocaleNumber(l.replace(/[^\d.,eE+-]/g, '')); sec[cur].v.push(n); }
-    else sec[cur].d.push(parseShortcutDate(l));
+    if (part === 'v') sec[cur].v.push(parseLocaleNumber(l.replace(/[^\d.,eE+-]/g, '')));
+    else sec[cur][part].push(parseShortcutDate(l));
   }
+  return sec;
+}
+
+function parseSamples(text, from, to) {
+  const sec = readSections(text);
   // Some phones (no Apple Watch) store calories as ONE total per day, stamped at midnight.
   // Those can't be split per workout, so ignore them instead of showing a wrong number.
   const atMidnight = (t) => { if (t === null) return false; const d = new Date(t); return d.getHours() === 0 && d.getMinutes() === 0; };
@@ -191,4 +196,48 @@ export function runStats(runs, now, weekStart = 1, weeks = 12) {
   const recentKm = recent.reduce((t, r) => t + r.run.km, 0);
   const recentPace = recentKm ? recent.reduce((t, r) => t + runDurationS(r), 0) / recentKm : null;
   return { weekly, fastest, fastest5k, longest, last4, prev4, recentPace, total: runs.length, totalKm: runs.reduce((t, r) => t + (r.run?.km || 0), 0) };
+}
+
+/**
+ * Finds runs in the Shortcut's distance readings (last 2 days), newest first:
+ * [{ from, to, km }]. A reading counts as running when its speed is ≥ 6.5 km/h.
+ * Uses each reading's end time when the Shortcut sends it (3rd list); otherwise estimates it.
+ */
+export const RUN_SPEED_KMH = 6.5;
+export function detectRuns(text) {
+  if (!text || !/(^|\n)\s*WL2\s*(\n|$)/i.test(String(text))) return null;
+  const di = readSections(text).DI;
+  if (!di) return [];
+  const MIN = 60000;
+  const raw = [];
+  for (let i = 0; i < Math.min(di.v.length, di.d.length); i++) {
+    if (di.v[i] === null || di.d[i] === null) continue;
+    raw.push({ s: di.d[i], e: di.e[i] ?? null, km: di.v[i] });
+  }
+  raw.sort((a, b) => a.s - b.s);
+  // Daily totals at midnight can't be used.
+  if (raw.length && raw.filter((r) => { const d = new Date(r.s); return d.getHours() === 0 && d.getMinutes() === 0; }).length > raw.length / 2) return [];
+  raw.forEach((r, i) => {
+    if (!(r.e > r.s)) {
+      const next = raw[i + 1];
+      r.e = Math.min(next ? next.s : r.s + 10 * MIN, r.s + 10 * MIN);
+      if (r.e <= r.s) r.e = r.s + MIN; // same-minute timestamps (no seconds)
+    }
+  });
+  const isRun = (r) => r.km / ((r.e - r.s) / 3600000) >= RUN_SPEED_KMH && r.km >= 0.05;
+  const runs = [];
+  let cur = null;
+  for (const r of raw) {
+    if (!isRun(r)) {
+      // a short slower bit (stopping at a light) doesn't end the run
+      if (cur && r.e - r.s <= 3 * MIN && r.s - cur.to <= 3 * MIN) { cur.to = Math.max(cur.to, r.e); cur.km += r.km; }
+      continue;
+    }
+    if (cur && r.s - cur.to <= 4 * MIN) { cur.to = Math.max(cur.to, r.e); cur.km += r.km; }
+    else { cur = { from: r.s, to: r.e, km: r.km }; runs.push(cur); }
+  }
+  return runs
+    .filter((r) => r.km >= 0.8 && r.to - r.from >= 5 * MIN)
+    .map((r) => ({ ...r, km: Math.round(r.km * 100) / 100 }))
+    .sort((a, b) => b.from - a.from);
 }
