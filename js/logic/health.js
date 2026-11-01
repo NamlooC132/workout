@@ -20,13 +20,18 @@ export function shortcutUrl(from, to) {
   return `shortcuts://run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}&input=text&text=${encodeURIComponent(text)}`;
 }
 
-/** "1,024" → 1024, "5,21" → 5.21, "148.0" → 148. */
+/**
+ * Numbers as Shortcuts prints them. A dot is always a decimal point ("1.801" = 1.801);
+ * with both separators the last one is the decimal; a single comma is a decimal comma ("5,21");
+ * several commas are thousands ("1,024,000"). Scientific notation ("6.5e-05") is fine.
+ */
 export function parseLocaleNumber(s) {
   if (s === null || s === undefined) return null;
-  let t = String(s).trim().replace(/\s/g, '');
-  if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) t = t.replace(/,/g, '');
-  else if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)) t = t.replace(/\./g, '').replace(',', '.');
-  else t = t.replace(',', '.');
+  let t = String(s).trim().replace(/[\s\u00a0\u202f]/g, '');
+  const hasDot = t.includes('.'), commas = (t.match(/,/g) || []).length;
+  if (hasDot && commas) t = t.lastIndexOf('.') > t.lastIndexOf(',') ? t.replace(/,/g, '') : t.replace(/\./g, '').replace(',', '.');
+  else if (commas > 1) t = t.replace(/,/g, '');
+  else if (commas === 1) t = t.replace(',', '.');
   const n = parseFloat(t);
   return Number.isFinite(n) ? n : null;
 }
@@ -72,7 +77,7 @@ function parseSamples(text, from, to) {
     if (u === 'HR' || u === 'KC' || u === 'DI') { cur = u; part = 'v'; sec[cur] = { v: [], d: [] }; continue; }
     if (l === '@') { part = 'd'; continue; }
     if (!cur) continue;
-    if (part === 'v') { const n = parseLocaleNumber(l.replace(/[^\d.,]/g, '')); sec[cur].v.push(n); }
+    if (part === 'v') { const n = parseLocaleNumber(l.replace(/[^\d.,eE+-]/g, '')); sec[cur].v.push(n); }
     else sec[cur].d.push(parseShortcutDate(l));
   }
   const lo = from - 60000, hi = to + 60000;
