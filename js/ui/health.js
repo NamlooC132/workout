@@ -12,15 +12,21 @@ export function getFromHealth(from, to) {
   window.location.href = shortcutUrl(from, to);
 }
 
-/** Reads the Shortcut's result from the clipboard; falls back to a paste box. */
-export async function pasteFromHealth(apply) {
+/** Reads the Shortcut's result from the clipboard (falls back to a paste box) and keeps the readings in [from, to]. */
+export async function pasteFromHealth(apply, from, to) {
   let text = null;
   try { text = await navigator.clipboard.readText(); } catch { /* not allowed – use the box */ }
-  const res = parseHealthText(text);
-  if (res) { apply(res); toast(healthToast(res)); return; }
+  const handle = (t) => {
+    const r = parseHealthText(t, from, to);
+    if (!r) return false;
+    if (r.empty) toast('No Health data in this time window – did you wear your Watch?', 4000);
+    else { apply(r); toast(healthToast(r)); }
+    return true;
+  };
+  if (handle(text)) return;
   openSheet({
     type: 'textInput', title: 'Paste from Health', single: true, placeholder: 'Long-press here → Paste',
-    onSave: (v) => { const r = parseHealthText(v); if (r) { apply(r); toast(healthToast(r)); } else toast('Couldn’t read that – run the shortcut again'); },
+    onSave: (v) => { if (!handle(v)) toast('Couldn’t read that – run the shortcut again'); },
   });
 }
 
@@ -47,7 +53,7 @@ export function HealthBox({ health, from, to, onChange, onDistance }) {
     ]),
     h('div.health-btns', [
       h('button.btn.btn-secondary.btn-sm', { onclick: () => getFromHealth(from, to) }, [icon('heart', 16), 'Get from Health']),
-      h('button.btn.btn-plain.btn-sm', { onclick: () => pasteFromHealth(apply) }, [icon('copy', 16), 'Paste']),
+      h('button.btn.btn-plain.btn-sm', { onclick: () => pasteFromHealth(apply, from, to) }, [icon('copy', 16), 'Paste']),
     ]),
     h('div.health-note', '(To get the shortcut ask Freddy)'),
   ]);

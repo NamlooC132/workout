@@ -31,8 +31,81 @@ export function parseLocaleNumber(s) {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Reads the Shortcut's text. Returns { hr, kcal, km } (missing values are null) or null if nothing usable. */
-export function parseHealthText(text) {
+const MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, sept: 8, oct: 9, nov: 10, dec: 11 };
+
+/**
+ * Dates as Shortcuts prints them: "1 Nov 2026 at 15:14", "Nov 1, 2026 at 3:14 PM",
+ * "1 November 2026 at 15:14:05", or ISO "2026-11-01T15:14:05". Returns ms or null.
+ */
+export function parseShortcutDate(str) {
+  if (!str) return null;
+  const s = String(str).replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim();
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)).getTime();
+  const time = s.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp]\.?\s?[Mm]\.?)?/);
+  let day, mon, year;
+  if ((m = s.match(/(\d{1,2})\s+([A-Za-z]{3,})\.?,?\s+(\d{4})/))) { day = +m[1]; mon = MONTHS[m[2].slice(0, 4).toLowerCase()] ?? MONTHS[m[2].slice(0, 3).toLowerCase()]; year = +m[3]; }
+  else if ((m = s.match(/([A-Za-z]{3,})\.?\s+(\d{1,2}),?\s+(\d{4})/))) { mon = MONTHS[m[1].slice(0, 4).toLowerCase()] ?? MONTHS[m[1].slice(0, 3).toLowerCase()]; day = +m[2]; year = +m[3]; }
+  else if ((m = s.match(/(\d{1,2})[./](\d{1,2})[./](\d{2,4})/))) { day = +m[1]; mon = +m[2] - 1; year = +m[3] < 100 ? 2000 + +m[3] : +m[3]; }
+  if (mon === undefined || !year || !day) return null;
+  let hh = 0, mm = 0, ss = 0;
+  if (time) {
+    hh = +time[1]; mm = +time[2]; ss = +(time[3] || 0);
+    const ap = time[4] ? time[4].toLowerCase()[0] : null;
+    if (ap === 'p' && hh < 12) hh += 12;
+    if (ap === 'a' && hh === 12) hh = 0;
+  }
+  return new Date(year, mon, day, hh, mm, ss).getTime();
+}
+
+/**
+ * Shortcut format 2 – raw readings with their times; the app keeps those inside [from, to]:
+ *   WL2 / HR / values… / @ / dates… / KC / values… / @ / dates… / DI / values… / @ / dates…
+ */
+function parseSamples(text, from, to) {
+  const lines = String(text).split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const sec = {};
+  let cur = null, part = 'v';
+  for (const l of lines) {
+    const u = l.toUpperCase();
+    if (u === 'WL2') continue;
+    if (u === 'HR' || u === 'KC' || u === 'DI') { cur = u; part = 'v'; sec[cur] = { v: [], d: [] }; continue; }
+    if (l === '@') { part = 'd'; continue; }
+    if (!cur) continue;
+    if (part === 'v') { const n = parseLocaleNumber(l.replace(/[^\d.,]/g, '')); sec[cur].v.push(n); }
+    else sec[cur].d.push(parseShortcutDate(l));
+  }
+  const lo = from - 60000, hi = to + 60000;
+  const pick = (k) => {
+    const s = sec[k];
+    if (!s) return [];
+    const out = [];
+    const n = Math.min(s.v.length, s.d.length);
+    for (let i = 0; i < n; i++) if (s.v[i] !== null && s.d[i] !== null && s.d[i] >= lo && s.d[i] <= hi) out.push(s.v[i]);
+    return out;
+  };
+  const hrs = pick('HR'), kc = pick('KC'), di = pick('DI');
+  const sum = (a) => a.reduce((t, x) => t + x, 0);
+  const hr = hrs.length ? Math.round(sum(hrs) / hrs.length) : null;
+  const kcal = kc.length ? Math.round(sum(kc)) : null;
+  const km = di.length && sum(di) > 0.01 ? Math.round(sum(di) * 100) / 100 : null;
+  const found = Object.keys(sec).length > 0;
+  return { hr, kcal, km, found, counts: { hr: hrs.length, kcal: kc.length, km: di.length } };
+}
+
+/**
+ * Reads the Shortcut's text. Returns { hr, kcal, km } (missing values are null), or null if it isn't
+ * Shortcut output. With the WL2 format, from/to choose the readings that belong to the workout.
+ */
+export function parseHealthText(text, from = null, to = null) {
+  if (text && /(^|\n)\s*WL2\s*(\n|$)/i.test(String(text)) && from !== null && to !== null) {
+    const r = parseSamples(text, from, to);
+    return r.found ? { hr: r.hr, kcal: r.kcal, km: r.km, empty: r.hr === null && r.kcal === null && r.km === null } : null;
+  }
+  return parseHealthTextV1(text);
+}
+
+function parseHealthTextV1(text) {
   if (!text) return null;
   const s = String(text);
   const grab = (key) => {
