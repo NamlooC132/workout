@@ -20,7 +20,7 @@ export async function pasteFromHealth(apply, from, to) {
     const r = parseHealthText(t, from, to);
     if (!r) return false;
     if (r.empty) toast('No Health data in this time window – did you wear your Watch?', 4000);
-    else { apply(r); toast(healthToast(r)); }
+    else { apply(r); toast(healthToast(r) + (r.dailyKcal ? ' · calories need an Apple Watch' : ''), r.dailyKcal ? 4500 : 2600); }
     return true;
   };
   if (handle(text)) return;

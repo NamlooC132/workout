@@ -80,6 +80,13 @@ function parseSamples(text, from, to) {
     if (part === 'v') { const n = parseLocaleNumber(l.replace(/[^\d.,eE+-]/g, '')); sec[cur].v.push(n); }
     else sec[cur].d.push(parseShortcutDate(l));
   }
+  // Some phones (no Apple Watch) store calories as ONE total per day, stamped at midnight.
+  // Those can't be split per workout, so ignore them instead of showing a wrong number.
+  const atMidnight = (t) => { if (t === null) return false; const d = new Date(t); return d.getHours() === 0 && d.getMinutes() === 0; };
+  for (const k of ['KC', 'DI']) {
+    const s = sec[k];
+    if (s && s.d.length && s.d.filter(atMidnight).length > s.d.length / 2) { s.v = []; s.d = []; s.daily = true; }
+  }
   const lo = from - 60000, hi = to + 60000;
   const pick = (k) => {
     const s = sec[k];
@@ -95,7 +102,7 @@ function parseSamples(text, from, to) {
   const kcal = kc.length ? Math.round(sum(kc)) : null;
   const km = di.length && sum(di) > 0.01 ? Math.round(sum(di) * 100) / 100 : null;
   const found = Object.keys(sec).length > 0;
-  return { hr, kcal, km, found, counts: { hr: hrs.length, kcal: kc.length, km: di.length } };
+  return { hr, kcal, km, found, dailyKcal: !!sec.KC?.daily, counts: { hr: hrs.length, kcal: kc.length, km: di.length } };
 }
 
 /**
@@ -105,7 +112,7 @@ function parseSamples(text, from, to) {
 export function parseHealthText(text, from = null, to = null) {
   if (text && /(^|\n)\s*WL2\s*(\n|$)/i.test(String(text)) && from !== null && to !== null) {
     const r = parseSamples(text, from, to);
-    return r.found ? { hr: r.hr, kcal: r.kcal, km: r.km, empty: r.hr === null && r.kcal === null && r.km === null } : null;
+    return r.found ? { hr: r.hr, kcal: r.kcal, km: r.km, empty: r.hr === null && r.kcal === null && r.km === null, dailyKcal: r.dailyKcal } : null;
   }
   return parseHealthTextV1(text);
 }
