@@ -10,6 +10,8 @@
 
 import { uid } from './util.js';
 import { SCHEMA_VERSION, newExercise, newRoutineItem, newSet, defaultSettings } from './model.js';
+import { splitBackMuscles } from './muscles.js';
+import { catalogEntry } from './catalog.js';
 
 export const FORMAT = 'workoutlog-web';
 
@@ -58,7 +60,7 @@ export function validateBackup(raw) {
     const base = newExercise(null);
     data.exercises.push({
       ...base, ...e,
-      muscles: sanitizeMuscles(e.muscles),
+      muscles: splitBack(sanitizeMuscles(e.muscles), e.name),
       sets: Math.max(1, Math.round(numOr(e.sets, 3))),
       repMin: Math.max(1, Math.round(numOr(e.repMin, 8))),
       repMax: Math.max(Math.round(numOr(e.repMin, 8)), Math.round(numOr(e.repMax, 12))),
@@ -84,7 +86,7 @@ export function validateBackup(raw) {
       entries: w.entries.filter((e) => e && Array.isArray(e.sets)).map((e) => ({
         ...e,
         id: isStr(e.id) ? e.id : uid(),
-        snapshot: { name: e.snapshot?.name || 'Exercise', muscles: sanitizeMuscles(e.snapshot?.muscles), ...(e.snapshot || {}) },
+        snapshot: { ...(e.snapshot || {}), name: e.snapshot?.name || 'Exercise', muscles: splitBack(sanitizeMuscles(e.snapshot?.muscles), e.snapshot?.name) },
         sets: e.sets.filter((s) => s && typeof s === 'object').map((s) => ({ ...newSet(), ...s, kg: numOrNull(s.kg), reps: numOrNull(s.reps), done: !!s.done })),
       })),
     });
@@ -97,8 +99,44 @@ export function validateBackup(raw) {
     if (!b || !isStr(b.id) || !isStr(b.name)) { warnings.push('Skipped a damaged training block.'); continue; }
     data.blocks.push({ deloadWeeks: [], schedule: {}, ...b });
   }
-  if (raw.settings && typeof raw.settings === 'object') data.settings = { ...defaultSettings(), ...raw.settings };
+  if (raw.settings && typeof raw.settings === 'object') data.settings = splitBackTargets({ ...defaultSettings(), ...raw.settings });
   return { ok: true, warnings, data };
+}
+
+/** One old "back" muscle → lats / upper back / lower back (catalog first, then the name). */
+export function splitBack(muscles, name) {
+  return splitBackMuscles(muscles, name, catalogEntry(name)?.muscles || null);
+}
+
+/** Old weekly "back" target becomes the lats and upper-back targets. */
+export function splitBackTargets(settings) {
+  const t = settings.volumeTargets;
+  if (!t || !t.back) return settings;
+  const def = defaultSettings().volumeTargets;
+  const vt = { ...t };
+  vt.lats = { ...t.back };
+  vt.upper_back = { ...t.back };
+  if (!vt.lower_back) vt.lower_back = def.lower_back;
+  delete vt.back;
+  return { ...settings, volumeTargets: vt };
+}
+
+/** Converts everything in place; returns the changed exercises and workouts. */
+export function migrateBackData(d) {
+  const exercises = [], workouts = [];
+  for (const e of d.exercises) {
+    if (e.muscles && 'back' in e.muscles) { e.muscles = splitBack(e.muscles, e.name); exercises.push(e); }
+  }
+  for (const w of d.workouts) {
+    let ch = false;
+    for (const en of w.entries || []) {
+      const m = en.snapshot?.muscles;
+      if (m && 'back' in m) { en.snapshot.muscles = splitBack(m, en.snapshot.name); ch = true; }
+    }
+    if (ch) workouts.push(w);
+  }
+  d.settings = splitBackTargets(d.settings);
+  return { exercises, workouts };
 }
 
 function sanitizeMuscles(m) {

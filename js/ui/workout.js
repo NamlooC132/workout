@@ -121,7 +121,7 @@ function ExerciseCard({ w, entry, index, st }) {
   return h('div', { key: entry.id, class: cx('ex-card', entry.skipped && 'skipped', inSS && 'in-ss') }, [
     ssStart && h('div.ss-label', 'Superset · alternate sets'),
     h('div.ex-head', [
-      h('button', { onclick: openHistory, 'aria-label': `${snap.name} history` }, h(Thumb, { image: ex?.image, name: snap.name, muscles: ex?.muscles || snap.muscles, size: 46 })),
+      h(Thumb, { image: ex?.image, name: snap.name, muscles: ex?.muscles || snap.muscles, size: 52 }),
       h('div.grow', [
         h('button.ex-name', { onclick: openHistory }, [snap.name, entry.skipped && h('span.tag', { style: { marginLeft: '6px' } }, 'Skipped')]),
         h('div.last-time', entry.lastSummary ? `Last: ${setsSummary(entry.lastSummary.sets, snap)}` : `First time · aim for ${snap.repMin}–${snap.repMax} reps`),

@@ -9,11 +9,13 @@ import { WorkoutView, RestPanel, ManualRestSheet, SetMenuSheet, TextInputSheet, 
 import { HistoryScreen, WorkoutDetailScreen, ExerciseScreen } from './ui/history.js';
 import { ProgressScreen, MeasurementSheet } from './ui/progress.js';
 import { PlanScreen, BlockEditorSheet } from './ui/plan.js';
+import { MuscleViewSheet } from './ui/muscleview.js';
 import { SettingsScreen, AdvancedSettingsScreen, ExportRoutinesSheet, ImportPreviewSheet, TargetsSheet, MusclesSheet, ActionsSheet } from './ui/settings.js';
 import { resumeTimer, unlockAudio, syncWakeLock } from './timer.js';
 import { fmtDuration } from './logic/util.js';
 
 const SHEETS = {
+  muscleView: MuscleViewSheet,
   picker: PickerSheet,
   exerciseEditor: ExerciseEditorSheet,
   newRoutine: NewRoutineSheet,

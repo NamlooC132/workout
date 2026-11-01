@@ -14,13 +14,13 @@
 import { uid } from './util.js';
 import { BASE_MUSCLES } from './muscles.js';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export function defaultSettings() {
   const targets = {};
   for (const m of BASE_MUSCLES) targets[m.key] = { min: 10, max: 20 };
   for (const k of ['calves', 'abs', 'front_delts']) targets[k] = { min: 6, max: 16 };
-  for (const k of ['traps', 'forearms', 'adductors']) targets[k] = { min: 0, max: 0 }; // no target by default
+  for (const k of ['traps', 'forearms', 'adductors', 'lower_back']) targets[k] = { min: 0, max: 0 }; // no target by default
   return {
     unit: 'kg',
     lengthUnit: 'cm',

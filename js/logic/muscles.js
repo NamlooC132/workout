@@ -5,7 +5,9 @@
 
 export const BASE_MUSCLES = [
   { key: 'chest', name: 'Chest' },
-  { key: 'back', name: 'Back' },
+  { key: 'lats', name: 'Lats' },
+  { key: 'upper_back', name: 'Upper back' },
+  { key: 'lower_back', name: 'Lower back' },
   { key: 'front_delts', name: 'Front delts' },
   { key: 'side_delts', name: 'Side delts' },
   { key: 'rear_delts', name: 'Rear delts' },
@@ -75,4 +77,39 @@ export function contributions(exercise) {
 
 export function primaryMuscle(exercise) {
   return contributions(exercise)[0]?.key || null;
+}
+
+/**
+ * Old data had one "back" muscle. Splits it into lats / upper back / lower back,
+ * using the built-in catalog when the exercise is known, else the exercise name.
+ * Returns a new muscles object (unchanged if there is no "back").
+ */
+export function splitBackMuscles(muscles, name, catalogMuscles = null) {
+  if (!muscles || !(muscles.back > 0)) {
+    if (muscles && 'back' in muscles) { const m = { ...muscles }; delete m.back; return m; }
+    return muscles;
+  }
+  const v = muscles.back;
+  const out = { ...muscles };
+  delete out.back;
+  const put = (k, x) => { const r = Math.round(x * 4) / 4; if (r > 0) out[k] = Math.max(out[k] || 0, r); };
+  if (catalogMuscles && ['lats', 'upper_back', 'lower_back'].some((k) => catalogMuscles[k])) {
+    for (const k of ['lats', 'upper_back', 'lower_back']) if (catalogMuscles[k]) put(k, catalogMuscles[k]);
+    return out;
+  }
+  const n = String(name || '').toLowerCase();
+  if (/deadlift|rack pull|good morning|extension|hyperext|superman|rdl/.test(n)) {
+    put('lower_back', v);
+    if (v >= 1 && /deadlift|rack pull/.test(n) && !/romanian|stiff|rdl/.test(n)) put('upper_back', 0.5);
+  } else if (/straight.?arm|pullover|hang/.test(n)) {
+    put('lats', v);
+  } else if (/pull.?up|chin|pulldown|lat /.test(n)) {
+    put('lats', v); put('upper_back', v / 2);
+  } else if (/row|face pull|reverse fly|rear delt/.test(n)) {
+    if (/single|one.?arm|dumbbell row|kroc|meadows|kettlebell/.test(n)) { put('lats', v); put('upper_back', v / 2); }
+    else { put('upper_back', v); put('lats', v / 2); }
+  } else {
+    put('lats', v); put('upper_back', v / 2);
+  }
+  return out;
 }

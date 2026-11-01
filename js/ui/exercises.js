@@ -250,7 +250,7 @@ export function ExerciseEditorSheet(sheet) {
   }, [
     h('div.ed-top', [
       h('label.ed-photo', { 'aria-label': d.image ? 'Change photo' : 'Add photo' }, [
-        h(Thumb, { image: d.image, name: d.name, muscles: d.muscles, size: 72 }),
+        h(Thumb, { image: d.image, name: d.name, muscles: d.muscles, size: 72, zoom: false }),
         h('span.ed-photo-badge', icon('camera', 14)),
         h('input.hidden-input', { type: 'file', accept: 'image/*', onchange: (e) => pickImage(e, (url) => set({ image: url })) }),
       ]),

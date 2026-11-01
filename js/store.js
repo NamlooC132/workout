@@ -9,6 +9,7 @@ import * as idb from './db.js';
 import { defaultSettings, SCHEMA_VERSION } from './logic/model.js';
 import { buildHistory } from './logic/history.js';
 import { sampleExercises, buildTemplate } from './logic/samples.js';
+import { migrateBackData } from './logic/backup.js';
 
 export const data = {
   settings: defaultSettings(),
@@ -222,6 +223,11 @@ async function migrateData(from) {
     }
     if (data.settings.defaultRule === 'all_max') data.settings.defaultRule = 'descending';
     await idb.putMany({ exercises: changed }, { settings: data.settings });
+  }
+  if (from >= 1 && from < 3) {
+    // v3: "Back" is split into Lats, Upper back and Lower back (exercises, past workouts, targets).
+    const ch = migrateBackData(data);
+    await idb.putMany({ exercises: ch.exercises, workouts: ch.workouts }, { settings: data.settings });
   }
   await idb.putMeta('schemaVersion', SCHEMA_VERSION);
 }

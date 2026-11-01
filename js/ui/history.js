@@ -231,10 +231,10 @@ export function ExerciseScreen({ id }) {
         h('div.is', `Your ${what} ${since}.${stalled ? ' No gain in the last 3 sessions – consider a deload or new rep range.' : ''}`),
       ]);
     })(),
-    (ex || list[0]) && Object.keys((ex?.muscles || list[0]?.entry.snapshot.muscles) || {}).length > 0 && h(Section, { title: 'Muscles worked' }, h('div.mm-big', [
-      MuscleMap({ muscles: ex?.muscles || list[0].entry.snapshot.muscles, size: 230, labels: true }),
+    (ex || list[0]) && Object.keys((ex?.muscles || list[0]?.entry.snapshot.muscles) || {}).length > 0 && h(Section, { title: 'Muscles worked', right: h('span.small.muted', { style: { textTransform: 'none', letterSpacing: 0 } }, 'Tap to zoom') }, h('div.mm-big', [
+      h('button.mm-zoom', { onclick: () => openSheet({ type: 'muscleView', name, muscles: ex?.muscles || list[0].entry.snapshot.muscles }), 'aria-label': 'Zoom muscle picture' }, MuscleMap({ muscles: ex?.muscles || list[0].entry.snapshot.muscles, size: 230, labels: true })),
       h('div.mm-legend', contributions({ muscles: ex?.muscles || list[0].entry.snapshot.muscles }).map((c) => h('div.mm-row', { key: c.key }, [
-        h('i', { style: { background: c.value >= 1 ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 45%, #fff)' } }),
+        h('i', { class: c.value >= 1 ? 'main' : 'help' }),
         h('span.grow', muscleName(c.key, data.settings)),
         h('span.muted', c.value >= 1 ? 'Main' : `Helper ${Math.round(c.value * 100)}%`),
       ]))),
