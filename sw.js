@@ -1,6 +1,6 @@
 // Service worker: caches the whole app so it opens and works with no internet (e.g. in the gym basement).
 // Bump VERSION whenever you upload changed files so phones pick up the new version.
-const VERSION = 'workoutlog-v1.7.2';
+const VERSION = 'workoutlog-v1.8.0';
 const FILES = [
   './',
   './index.html',
@@ -29,9 +29,11 @@ const FILES = [
   './js/logic/samples.js',
   './js/logic/catalog.js',
   './js/logic/restTimer.js',
+  './js/logic/health.js',
   './js/ui/icons.js',
   './js/ui/musclemap.js',
   './js/ui/muscleview.js',
+  './js/ui/health.js',
   './js/ui/components.js',
   './js/ui/exercises.js',
   './js/ui/routines.js',

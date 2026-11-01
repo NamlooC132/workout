@@ -17,6 +17,7 @@ import { tonnage, bodyweightAt, personalRecords } from '../logic/records.js';
 import * as WS from '../workoutService.js';
 import { startRest, adjustRest, skipRest, restRemaining, syncWakeLock } from '../timer.js';
 import { guideFor } from '../logic/catalog.js';
+import { HealthBox } from './health.js';
 
 // ---------- "Last time" text ----------
 export function setsSummary(sets, snap) {
@@ -369,6 +370,7 @@ export function FinishSummarySheet(sheet) {
       h('div.stat', [h('div.v', String(sets)), h('div.k', 'Sets done')]),
       h('div.stat', { style: prs.length ? { background: 'var(--yellow-soft)' } : null }, [h('div.v', String(prs.length)), h('div.k', 'New records')]),
     ]),
+    h(Section, { title: 'Heart rate & calories' }, h('div.pad', HealthBox({ health: (w.health = w.health || { hr: null, kcal: null }), from: w.startedAt, to: w.endedAt, onChange: () => saveWorkout(w) }))),
     prs.length > 0 && h(Section, {}, prs.map((p, i) => h(Row, {
       key: i, left: h('span.pr', icon('trophy', 20)), title: p.name, subtitle: p.kind,
       right: h('b', p.key === 'bestE1rm' || p.key === 'bestSessionVolume' ? fmtW(p.value) : p.key === 'bestReps' ? `${p.value} reps` : `${fmtW(p.detail?.kg)} × ${p.detail?.reps}`),

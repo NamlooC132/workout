@@ -39,6 +39,8 @@ const P = {
   sparkle: 'M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z',
   volume: 'M4 20h4V10H4zM10 20h4V4h-4zM16 20h4v-7h-4z',
   pause: 'M8 5v14M16 5v14',
+  heart: 'M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z',
+  run: 'M13 4a2 2 0 104 0 2 2 0 00-4 0M6 21l3-5 3 2 1-5 3 3h3M9 11l2-3 4 1 2 3M7 12l2-1',
 };
 
 export function icon(name, size = 22, extra = {}) {

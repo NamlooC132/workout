@@ -14,6 +14,8 @@ import { newSet } from '../logic/model.js';
 import { makeEntry } from '../workoutService.js';
 import { guideFor } from '../logic/catalog.js';
 import { MuscleMap } from './musclemap.js';
+import { HealthBox, RunDetailScreen, runSummary } from './health.js';
+import { isRun } from '../logic/health.js';
 
 function workoutTonnage(w) {
   const bw = bodyweightAt(data.measurements, w.startedAt);
@@ -40,13 +42,18 @@ export function HistoryScreen() {
     list.length === 0 && h(Empty, { iconName: 'history', title: 'No workouts yet', text: 'Finished workouts show up here.' }),
     ...groups.map((g) => h(Section, { key: g.key, title: `${g.key} · ${g.items.length} workout${g.items.length === 1 ? '' : 's'}` },
       g.items.map((w) => {
+        if (isRun(w)) return h(Row, {
+          key: w.id, left: h('span.run-ico', icon('run', 22)),
+          title: w.routineName || 'Run', subtitle: [h('div', fmtDateTime(w.startedAt)), h('div', runSummary(w))],
+          chevron: true, onClick: () => nav('/workout/' + w.id),
+        });
         const prs = cachedPrs(w, hist);
         return h(Row, {
           key: w.id,
           title: [w.routineName, w.deload && h('span.tag.blue', { style: { marginLeft: '6px' } }, 'DELOAD'), prs > 0 && h('span.pr', { style: { marginLeft: '6px' } }, `🏆${prs > 1 ? '×' + prs : ''}`)],
           subtitle: [
             h('div', fmtDateTime(w.startedAt)),
-            h('div', `${fmtDuration(w.endedAt - w.startedAt)} · ${workSetCount(w)} sets · ${fmtNum(displayWeight(workoutTonnage(w), data.settings.unit), 0)} ${data.settings.unit}`),
+            h('div', [`${fmtDuration(w.endedAt - w.startedAt)} · ${workSetCount(w)} sets · ${fmtNum(displayWeight(workoutTonnage(w), data.settings.unit), 0)} ${data.settings.unit}`, w.health?.hr ? ` · ♥ ${w.health.hr}` : '', w.health?.kcal ? ` · ${w.health.kcal} kcal` : '']),
           ],
           chevron: true,
           onClick: () => nav('/workout/' + w.id),
@@ -63,6 +70,7 @@ function cachedPrs(w, hist) {
 export function WorkoutDetailScreen({ id }) {
   const w = data.workouts.find((x) => x.id === id && x.status === 'done');
   if (!w) return h(Page, { title: 'Workout', backTo: '/history' }, h(Empty, { title: 'Workout not found' }));
+  if (isRun(w)) return RunDetailScreen({ w });
   const st = (ui.tabState['wd_' + id] = ui.tabState['wd_' + id] || { edit: false });
   const edit = st.edit;
   const vol = workoutVolume(w, data.settings);
@@ -96,6 +104,11 @@ export function WorkoutDetailScreen({ id }) {
         stat('Sets', workSetCount(w)),
         stat('Volume', fmtNum(displayWeight(workoutTonnage(w), data.settings.unit), 0), data.settings.unit),
       ]),
+    !edit && (w.health?.hr || w.health?.kcal) && h('div.stat-grid.two', { style: { margin: '0 0 4px' } }, [
+      stat('Avg heart rate', w.health.hr ? `${w.health.hr}` : '–', 'bpm'),
+      stat('Calories', w.health.kcal ? `${w.health.kcal}` : '–', 'kcal'),
+    ]),
+    (edit || !(w.health?.hr || w.health?.kcal)) && h(Section, { title: 'Heart rate & calories' }, h('div.pad', HealthBox({ health: (w.health = w.health || { hr: null, kcal: null }), from: w.startedAt, to: w.endedAt, onChange: save }))),
     !edit && w.notes && h('div.callout.mt', [icon('note', 18), w.notes]),
     !edit && w.deload && h('div.callout.blue.mt', [icon('info', 18), 'Deload workout – not used for weight suggestions.']),
     !edit && prs.length > 0 && h(Section, { title: 'Personal records' }, prs.map((p, i) => h(Row, { key: i, left: h('span.pr', icon('trophy', 20)), title: p.name, subtitle: p.kind }))),

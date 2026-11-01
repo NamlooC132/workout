@@ -8,6 +8,7 @@ import { fmtNum, addDays, startOfWeek, startOfMonth, addMonths, dateKey, uid, pa
 import { allMuscles, muscleName } from '../logic/muscles.js';
 import { volumeBetween, weekRange, weeklySeries, monthRange, targetStatus } from '../logic/volume.js';
 import { weeklyFrequency, weekStreak, strengthTrend, trendBuckets } from '../logic/analytics.js';
+import { isRun, runStats, fmtPace, fmtKm, paceS, fmtRunTime, runDurationS } from '../logic/health.js';
 import { prsInWorkout, isStalled, personalRecords } from '../logic/records.js';
 import { activeBlock, blockRange, planVsDone, adherence, blockWeek } from '../logic/blocks.js';
 import { displayWeight, fromDisplayWeight, toDisplayLength, fromDisplayLength } from '../logic/units.js';
@@ -76,6 +77,13 @@ function Overview(st) {
   const impT = tb.up.length ? `${exName(tb.up[0])} is improving most` : trend.length ? 'No clear gains yet' : 'Not enough data yet';
   const impS = tb.up.length ? `${pct(tb.up[0].change)} in the last 8 weeks.` : trend.length ? 'Try the suggested weight increases when they appear.' : 'Train an exercise at least twice to compare.';
 
+  // Takeaway 4: running
+  const runs = done.filter(isRun);
+  const rs = runStats(runs, now, ws);
+  const thisWeekKm = rs.weekly[rs.weekly.length - 1].km;
+  const runT = thisWeekKm > 0 ? `${fmtNum(thisWeekKm, 1)} km this week` : `${fmtNum(rs.last4 / 4, 1)} km a week`;
+  const runS = `${fmtNum(rs.last4, 1)} km in the last 4 weeks${rs.prev4 > 0 ? ` (${rs.last4 > rs.prev4 * 1.05 ? 'up from' : rs.last4 < rs.prev4 * 0.95 ? 'down from' : 'about the same as'} ${fmtNum(rs.prev4, 1)})` : ''}${rs.recentPace ? ` · average pace ${fmtPace(rs.recentPace)} /km` : ''}.`;
+
   return h('div', [
     Insight({ q: 'Am I getting stronger?', t: strongT, s: strongS, tone: tb.up.length > tb.down.length ? 'good' : tb.down.length > tb.up.length ? 'warn' : '' },
       trend.length > 0 && h('div.trend-chips', [
@@ -84,6 +92,15 @@ function Overview(st) {
 
     Insight({ q: 'How often did I train?', t: freqT, s: freqS },
       h(BarChart, { bars: freq.map((f) => ({ label: new Date(f.from).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }), value: f.count })), formatY: (v) => String(v) })),
+
+    runs.length > 0 && Insight({ q: 'How is my running going?', t: runT, s: runS, tone: rs.last4 > rs.prev4 * 1.05 ? 'good' : '' }, [
+      h(BarChart, { bars: rs.weekly.map((wk) => ({ label: new Date(wk.from).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }), value: Math.round(wk.km * 10) / 10 })), formatY: (v) => `${fmtNum(v, 1)}` }),
+      h('div.run-recs', [
+        rs.longest && h('button.rr', { onclick: () => nav('/workout/' + rs.longest.id) }, [h('div.k', 'Longest run'), h('div.v', fmtKm(rs.longest.run.km))]),
+        rs.fastest && h('button.rr', { onclick: () => nav('/workout/' + rs.fastest.id) }, [h('div.k', 'Best pace'), h('div.v', `${fmtPace(paceS(rs.fastest))} /km`)]),
+        rs.fastest5k && h('button.rr', { onclick: () => nav('/workout/' + rs.fastest5k.id) }, [h('div.k', 'Fastest 5 km'), h('div.v', fmtRunTime(Math.round(paceS(rs.fastest5k) * 5)))]),
+      ]),
+    ]),
 
     Insight({ q: 'Which exercises are improving?', t: impT, s: impS },
       trend.length > 0 && h('div.trend-list', trend.slice(0, 8).map((t) => h('button.trend-row', { key: t.exerciseId, onclick: () => nav('/exercise/' + t.exerciseId) }, [

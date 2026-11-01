@@ -11,7 +11,7 @@ import { defaultProgressionStep } from '../logic/units.js';
 import { makeBackup, validateBackup, planImport } from '../logic/backup.js';
 import { wakeLockSupported } from '../timer.js';
 
-export const APP_VERSION = '1.7.2';
+export const APP_VERSION = '1.8.0';
 
 export function SettingsScreen() {
   const s = data.settings;

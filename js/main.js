@@ -10,12 +10,14 @@ import { HistoryScreen, WorkoutDetailScreen, ExerciseScreen } from './ui/history
 import { ProgressScreen, MeasurementSheet } from './ui/progress.js';
 import { PlanScreen, BlockEditorSheet } from './ui/plan.js';
 import { MuscleViewSheet } from './ui/muscleview.js';
+import { LogRunSheet } from './ui/health.js';
 import { SettingsScreen, AdvancedSettingsScreen, ExportRoutinesSheet, ImportPreviewSheet, TargetsSheet, MusclesSheet, ActionsSheet } from './ui/settings.js';
 import { resumeTimer, unlockAudio, syncWakeLock } from './timer.js';
 import { fmtDuration } from './logic/util.js';
 
 const SHEETS = {
   muscleView: MuscleViewSheet,
+  logRun: LogRunSheet,
   picker: PickerSheet,
   exerciseEditor: ExerciseEditorSheet,
   newRoutine: NewRoutineSheet,

@@ -442,3 +442,40 @@ button.ex-name { display: block; width: 100%; }
 .mv-row.on { background: var(--accent-soft); }
 .mv-pct { font-size: 14px; color: var(--muted); font-weight: 500; }
 .mv-hint { font-size: 13px; color: var(--muted); text-align: center; margin-top: 8px; }
+
+/* ---------- Heart rate, calories & runs ---------- */
+.health-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hf { display: block; background: var(--fill); border-radius: 14px; padding: 10px 12px; }
+.hf-k { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 650; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; }
+.hf-k .icon { color: var(--red); }
+.hf-v { display: flex; align-items: baseline; gap: 4px; margin-top: 2px; }
+.hf-input.num-field { width: 100%; min-width: 0; border: 0; background: transparent; font-size: 26px; font-weight: 800; padding: 0; text-align: left; color: var(--text); font-variant-numeric: tabular-nums; }
+.hf-u { font-size: 14px; color: var(--muted); font-weight: 600; }
+.health-btns { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.health-btns .btn { min-height: 44px; }
+.health-note { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.stat-grid.two { grid-template-columns: 1fr 1fr; }
+.run-ico { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--blue) 16%, transparent); color: var(--blue); }
+.run-hero { background: var(--card); border-radius: 20px; padding: 16px; margin: 4px 0 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.run-stat .k { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+.run-big { display: flex; align-items: baseline; gap: 4px; }
+.run-big span { font-size: 16px; color: var(--muted); font-weight: 650; }
+.run-input.num-field { width: 100%; min-width: 0; border: 0; background: var(--fill); border-radius: 12px; font-size: 30px; font-weight: 800; padding: 6px 8px; text-align: left; color: var(--text); }
+.run-time { display: flex; align-items: center; gap: 2px; font-size: 22px; font-weight: 800; color: var(--muted); }
+.rt-input.num-field { width: 100%; min-width: 0; border: 0; background: var(--fill); border-radius: 10px; font-size: 24px; font-weight: 800; padding: 8px 2px; text-align: center; color: var(--text); }
+.rt-cap { font-size: 11px; color: var(--muted); text-align: center; margin-top: 3px; }
+.run-pace { grid-column: 1 / -1; font-size: 15px; color: var(--muted); }
+.run-pace b { color: var(--text); font-size: 20px; }
+.run-card { background: linear-gradient(135deg, color-mix(in srgb, var(--blue) 85%, #000), color-mix(in srgb, var(--blue) 60%, #40d0ff)); color: #fff; border-radius: 22px; padding: 18px; margin: 6px 0 14px; box-shadow: var(--shadow); }
+.run-when { font-size: 14px; opacity: 0.85; font-weight: 600; }
+.run-km { font-size: 52px; font-weight: 850; letter-spacing: -1px; line-height: 1.05; margin: 4px 0 12px; }
+.run-km small { font-size: 20px; font-weight: 700; opacity: 0.85; }
+.run-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rc { background: rgba(255,255,255,0.16); border-radius: 14px; padding: 10px 12px; }
+.rc .k { font-size: 12px; opacity: 0.85; font-weight: 650; text-transform: uppercase; letter-spacing: 0.3px; }
+.rc .v { font-size: 19px; font-weight: 800; margin-top: 2px; }
+.run-recs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.rr { background: var(--fill); border-radius: 12px; padding: 8px 10px; text-align: left; color: var(--text); }
+.rr .k { font-size: 11px; color: var(--muted); font-weight: 650; text-transform: uppercase; }
+.rr .v { font-size: 16px; font-weight: 800; }
+input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
