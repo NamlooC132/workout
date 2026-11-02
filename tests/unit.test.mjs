@@ -11,7 +11,7 @@ import { toDisplayWeight, fromDisplayWeight, addInDisplayUnit, displayWeight } f
 import { snapRest, startTimer, adjustTimer, remainingMs } from '../js/logic/restTimer.js';
 import { validateBackup, planImport, makeBackup } from '../js/logic/backup.js';
 import { activeBlock, blockWeek, isDeloadWeek, plannedRoutineIds } from '../js/logic/blocks.js';
-import { weekStreak } from '../js/logic/analytics.js';
+import { weekStreak, strengthTrend, trendBuckets } from '../js/logic/analytics.js';
 import { buildTemplate } from '../js/logic/samples.js';
 import { parseNum, fmtClock } from '../js/logic/util.js';
 
@@ -320,4 +320,115 @@ test('catalog: unique names, valid muscles and rep ranges', () => {
   assert.match(guideFor({ name: 'Bench Press' }), /simplyfitness\.com\/pages\/barbell-bench-press/);
   assert.match(guideFor({ name: 'My Weird Exercise' }), /youtube\.com/);
   assert.ok(Object.keys(CATALOG_CODES).length >= 15);
+});
+
+test('strength trend: first session in window vs best of the latest two', () => {
+  const up = newExercise(settings, { name: 'Up' });
+  const flat = newExercise(settings, { name: 'Flat' });
+  const once = newExercise(settings, { name: 'Once' });
+  const ws = [
+    workout('a', day(0), [entry(up, [S(60, 8)]), entry(flat, [S(40, 10)]), entry(once, [S(20, 10)])]),
+    workout('b', day(7), [entry(up, [S(62.5, 8)]), entry(flat, [S(40, 10)])]),
+    workout('c', day(14), [entry(up, [S(65, 8)]), entry(flat, [S(40, 10)])]),
+  ];
+  const tr = strengthTrend(buildHistory(ws), [], day(15));
+  assert.equal(tr.length, 2);
+  assert.equal(tr[0].name, 'Up');
+  assert.ok(tr[0].change > 0.07 && tr[0].change < 0.09);
+  assert.equal(tr[1].change, 0);
+  const b = trendBuckets(tr);
+  assert.equal(b.up.length, 1); assert.equal(b.steady.length, 1); assert.equal(b.down.length, 0);
+  assert.equal(strengthTrend(buildHistory(ws), [], day(100)).length, 0); // outside the 8-week window
+});
+
+test('old "back" muscle splits into lats / upper back / lower back', async () => {
+  const { migrateBackData, splitBack } = await import('../js/logic/backup.js');
+  assert.deepEqual(splitBack({ back: 1, biceps: 0.5 }, 'Lat Pulldown'), { biceps: 0.5, lats: 1, upper_back: 0.5 });
+  assert.deepEqual(splitBack({ back: 1, biceps: 0.5 }, 'My Funky Row'), { biceps: 0.5, upper_back: 1, lats: 0.5 });
+  assert.deepEqual(splitBack({ hamstrings: 1, back: 0.5 }, 'Romanian Deadlift'), { hamstrings: 1, lower_back: 0.5 });
+  assert.deepEqual(splitBack({ back: 1 }, 'Single-Arm Machine Row'), { lats: 1, upper_back: 0.5 });
+  assert.deepEqual(splitBack({ chest: 1 }, 'Bench Press'), { chest: 1 });
+  const d = {
+    exercises: [{ name: 'Barbell Row', muscles: { back: 1, rear_delts: 0.5 } }, { name: 'Bench Press', muscles: { chest: 1 } }],
+    workouts: [{ entries: [{ snapshot: { name: 'Pull-up', muscles: { back: 1 } } }] }],
+    settings: { ...defaultSettings(), volumeTargets: { back: { min: 12, max: 22 }, chest: { min: 10, max: 20 } } },
+  };
+  const ch = migrateBackData(d);
+  assert.equal(ch.exercises.length, 1); assert.equal(ch.workouts.length, 1);
+  assert.equal(d.exercises[0].muscles.upper_back, 1);
+  assert.equal(d.workouts[0].entries[0].snapshot.muscles.lats, 1);
+  assert.deepEqual(d.settings.volumeTargets.lats, { min: 12, max: 22 });
+  assert.equal(d.settings.volumeTargets.back, undefined);
+});
+
+test('health: parse the shortcut text and build the shortcut link', async () => {
+  const H = await import('../js/logic/health.js');
+  assert.deepEqual(H.parseHealthText('WL hr=148 kcal=420 dist=5.21 unit=km'), { hr: 148, kcal: 420, km: 5.21 });
+  assert.deepEqual(H.parseHealthText('WL hr=147.6 kcal=1024 dist=3,2 unit=mi'), { hr: 148, kcal: 1024, km: 5.15 });
+  assert.equal(H.parseLocaleNumber('1.801'), 1.801);
+  assert.equal(H.parseLocaleNumber('6.5e-05'), 0.000065);
+  assert.equal(H.parseLocaleNumber('1,024,000'), 1024000);
+  assert.equal(H.parseLocaleNumber('1.234,5'), 1234.5);
+  assert.deepEqual(H.parseHealthText('WL hr= kcal=310 dist=0 unit=km'), { hr: null, kcal: 310, km: null });
+  assert.equal(H.parseHealthText('hello'), null);
+  assert.equal(H.parseHealthText(''), null);
+  const url = H.shortcutUrl(new Date(2026, 10, 1, 9, 5, 0).getTime(), new Date(2026, 10, 1, 10, 0, 0).getTime());
+  assert.match(url, /^shortcuts:\/\/run-shortcut\?name=Workout%20Log%20Health&input=text&text=/);
+  assert.ok(decodeURIComponent(url).endsWith('2026-11-01 09:05:00|2026-11-01 10:00:00'));
+});
+
+test('runs: pace, records and weekly km', async () => {
+  const H = await import('../js/logic/health.js');
+  const run = (id, d, km, min) => ({ id, kind: 'run', status: 'done', startedAt: day(d), endedAt: day(d) + min * 60000, entries: [], run: { km } });
+  const runs = [run('c', 14, 5, 25), run('b', 7, 10, 55), run('a', 0, 3, 18)];
+  assert.equal(H.fmtPace(H.paceS(runs[0])), '5:00');
+  const st = H.runStats(runs, day(15), 1, 4);
+  assert.equal(st.longest.id, 'b');
+  assert.equal(st.fastest.id, 'c');
+  assert.equal(st.fastest5k.id, 'c');
+  assert.equal(Math.round(st.totalKm), 18);
+  assert.equal(st.weekly.length, 4);
+});
+
+test('health v2: raw readings with times are filtered to the workout window', async () => {
+  const H = await import('../js/logic/health.js');
+  assert.equal(H.parseShortcutDate('1 Nov 2026 at 15:14'), new Date(2026, 10, 1, 15, 14).getTime());
+  assert.equal(H.parseShortcutDate('Nov 1, 2026 at 3:14 PM'), new Date(2026, 10, 1, 15, 14).getTime());
+  assert.equal(H.parseShortcutDate('1 November 2026 at 09:05:30'), new Date(2026, 10, 1, 9, 5, 30).getTime());
+  assert.equal(H.parseShortcutDate('2026-11-01T15:14:05+02:00'), new Date(2026, 10, 1, 15, 14, 5).getTime());
+  const text = [
+    'WL2', 'HR', '70', '140', '150', '@', '1 Nov 2026 at 13:00', '1 Nov 2026 at 15:10', '1 Nov 2026 at 15:40',
+    'KC', '5', '120,5', '200', '@', '1 Nov 2026 at 12:00', '1 Nov 2026 at 15:20', '1 Nov 2026 at 15:50',
+    'DI', '0.4', '2.1', '3.0', '@', '31 Oct 2026 at 18:00', '1 Nov 2026 at 15:15', '1 Nov 2026 at 15:45',
+  ].join('\n');
+  const from = new Date(2026, 10, 1, 15, 0).getTime(), to = new Date(2026, 10, 1, 16, 0).getTime();
+  assert.deepEqual(H.parseHealthText(text, from, to), { hr: 145, kcal: 321, km: 5.1, empty: false, dailyKcal: false });
+  const none = H.parseHealthText(text, from + 86400000, to + 86400000);
+  assert.equal(none.empty, true);
+  assert.equal(H.parseHealthText('random text', from, to), null);
+  const daily = ['WL2', 'HR', '@', 'KC', '711', '512', '13', '@', '31 Oct 2026 at 0:00', '1 Nov 2026 at 0:00', '2 Nov 2026 at 0:00', 'DI', '0.5', '@', '1 Nov 2026 at 15:30'].join('\n');
+  const rd = H.parseHealthText(daily, from, new Date(2026, 10, 2, 1, 0).getTime());
+  assert.equal(rd.kcal, null); assert.equal(rd.km, 0.5); assert.equal(rd.dailyKcal, true);
+  // old one-line format still works
+  assert.equal(H.parseHealthText('WL hr=148 kcal=420 dist=5.21 unit=km', from, to).hr, 148);
+});
+
+test('runs are found automatically in the distance readings', async () => {
+  const H = await import('../js/logic/health.js');
+  const f = (h, m) => `1 Nov 2026 at ${h}:${String(m).padStart(2, '0')}`;
+  // walking all day (0.3 km per 10 min ≈ 1.8 km/h), a 30-min run at 18:00 (1.6 km per 10 min ≈ 9.6 km/h)
+  const vals = [], starts = [], ends = [];
+  const add = (h, m, km, mins) => { vals.push(String(km)); starts.push(f(h, m)); const e = new Date(2026, 10, 1, h, m + mins); ends.push(f(e.getHours(), e.getMinutes())); };
+  add(9, 0, 0.3, 10); add(12, 0, 0.25, 10); add(18, 0, 1.6, 10); add(18, 10, 1.65, 10); add(18, 20, 1.55, 10); add(18, 31, 0.1, 9); add(20, 0, 0.3, 10);
+  const withEnds = ['WL2', 'HR', '@', 'KC', '@', 'DI', ...vals, '@', ...starts, '@', ...ends].join('\n');
+  const runs = H.detectRuns(withEnds);
+  assert.equal(runs.length, 1);
+  assert.equal(runs[0].from, new Date(2026, 10, 1, 18, 0).getTime());
+  assert.equal(runs[0].to, new Date(2026, 10, 1, 18, 30).getTime());
+  assert.equal(runs[0].km, 4.8);
+  // without end times (older shortcut) it still finds it
+  const noEnds = ['WL2', 'HR', '@', 'KC', '@', 'DI', ...vals, '@', ...starts].join('\n');
+  const r2 = H.detectRuns(noEnds);
+  assert.equal(r2.length, 1); assert.equal(r2[0].km, 4.8);
+  assert.equal(H.detectRuns('nothing'), null);
 });

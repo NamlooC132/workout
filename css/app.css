@@ -552,7 +552,10 @@ input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
 .lr-start-wrap { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
 .lr-start-wrap .lr-start { flex: 1; margin-top: 0; }
 .lr-clear { width: 44px; height: 50px; flex-shrink: 0; border-radius: 14px; background: var(--fill); color: var(--muted); display: flex; align-items: center; justify-content: center; }
-.ex-photo { margin: 0 0 14px; border-radius: 18px; overflow: hidden; background: var(--fill); position: relative; aspect-ratio: 4 / 3; }
-.ex-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.ex-photo figcaption { position: absolute; right: 8px; bottom: 8px; }
-.ex-photo figcaption a { font-size: 11px; font-weight: 600; color: #fff; background: rgba(0, 0, 0, 0.45); padding: 3px 8px; border-radius: 10px; text-decoration: none; }
+.ex-photo { margin: 0 0 14px; border-radius: 18px; overflow: hidden; background: var(--fill); position: relative; }
+.ex-photo img { width: 100%; height: auto; display: block; }
+.ex-photo { overflow: visible; background: none; }
+.ex-photo img { border-radius: 18px; background: var(--fill); }
+.ex-photo figcaption { font-size: 11px; font-weight: 600; color: var(--muted); text-align: right; padding: 4px 4px 0; }
+.ex-photo figcaption:empty { display: none; }
+.ex-photo figcaption a { color: inherit; text-decoration: none; }
