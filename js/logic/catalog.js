@@ -487,6 +487,19 @@ const LOCAL_PHOTOS = {
   'single-arm lat pulldown': 'single-arm-lat-pulldown',
   'machine lat pulldown': 'machine-lat-pulldown',
   'pendlay row': 'pendlay-row',
+  'chin-up': 'chin-up',
+  'dumbbell row': 'dumbbell-row',
+  't-bar row': 't-bar-row',
+  'wide-grip cable row': 'wide-grip-cable-row',
+  'single-arm cable row': 'single-arm-cable-row',
+  'seated machine row': 'seated-machine-row',
+  'seal row': 'seal-row',
+  'kroc row': 'kroc-row',
+  'barbell shrug': 'barbell-shrug',
+  'dumbbell shrug': 'dumbbell-shrug',
+  'cable crunch': 'cable-crunch',
+  'crunch': 'crunch',
+  'hanging leg raise': 'hanging-leg-raise',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
