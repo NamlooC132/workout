@@ -549,3 +549,10 @@ input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
 .lr-cell .v { height: 26px; line-height: 26px; display: flex; align-items: center; justify-content: center; }
 .lr-cell-input.num-field { height: 26px; line-height: 26px; }
 .lr-chip.on b { color: inherit; }
+.lr-start-wrap { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.lr-start-wrap .lr-start { flex: 1; margin-top: 0; }
+.lr-clear { width: 44px; height: 50px; flex-shrink: 0; border-radius: 14px; background: var(--fill); color: var(--muted); display: flex; align-items: center; justify-content: center; }
+.ex-photo { margin: 0 0 14px; border-radius: 18px; overflow: hidden; background: var(--fill); position: relative; aspect-ratio: 4 / 3; }
+.ex-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ex-photo figcaption { position: absolute; right: 8px; bottom: 8px; }
+.ex-photo figcaption a { font-size: 11px; font-weight: 600; color: #fff; background: rgba(0, 0, 0, 0.45); padding: 3px 8px; border-radius: 10px; text-decoration: none; }

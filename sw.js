@@ -1,6 +1,6 @@
 // Service worker: caches the whole app so it opens and works with no internet (e.g. in the gym basement).
 // Bump VERSION whenever you upload changed files so phones pick up the new version.
-const VERSION = 'workoutlog-v1.9.3';
+const VERSION = 'workoutlog-v1.11.0';
 const FILES = [
   './',
   './index.html',
@@ -50,7 +50,7 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== 'photos-v1').map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
@@ -58,7 +58,14 @@ self.addEventListener('activate', (event) => {
 // Cache first (instant, offline), falling back to the network.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.hostname === 'images.pexels.com' || url.hostname === 'images.unsplash.com' || (url.origin === self.location.origin && url.pathname.includes('/images/exercises/'))) {
+    // Example photos: show the saved copy (works offline), fetch it once otherwise.
+    event.respondWith(caches.open('photos-v1').then((c) => c.match(req).then((hit) => hit || fetch(req).then((res) => { if (res.ok || res.type === 'opaque') c.put(req, res.clone()); return res; }))));
+    return;
+  }
+  if (url.origin !== self.location.origin) return;
   event.respondWith(
     caches.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req).then((res) => {
       if (res.ok) {

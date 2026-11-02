@@ -8,7 +8,7 @@
 import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
 import { data, ui, update, openSheet, closeSheet, confirm, toast, exercisesById, saveWorkout, history } from '../store.js';
-import { Page, Section, Row, Button, IconButton, Sheet, TextField, Thumb, Chip, NumberField, WeightField, DragHandle, fmtW, nav } from './components.js';
+import { Page, Section, Row, Button, IconButton, Sheet, TextField, Thumb, Chip, NumberField, WeightField, DragHandle, ExercisePhoto, fmtW, nav } from './components.js';
 import { fmtClock, fmtDuration, fmtNum } from '../logic/util.js';
 import { SET_TYPES, muscleName } from '../logic/muscles.js';
 import { displayWeight, fromDisplayWeight } from '../logic/units.js';
@@ -16,7 +16,7 @@ import { workoutVolume } from '../logic/volume.js';
 import { tonnage, bodyweightAt, personalRecords } from '../logic/records.js';
 import * as WS from '../workoutService.js';
 import { startRest, adjustRest, skipRest, restRemaining, syncWakeLock } from '../timer.js';
-import { guideFor } from '../logic/catalog.js';
+import { guideFor, photoFor } from '../logic/catalog.js';
 import { HealthBox } from './health.js';
 
 // ---------- "Last time" text ----------
@@ -403,6 +403,7 @@ export function ExHistorySheet(sheet) {
   const rec = personalRecords(history().get(sheet.exerciseId) || [], data.measurements);
   const snap = list[0]?.entry.snapshot || { type: ex?.type };
   return h(Sheet, { title: sheet.name }, [
+    ExercisePhoto({ name: sheet.name, photo: photoFor(sheet.name) }),
     ex?.notes && h('div.callout', { style: { marginBottom: '10px' } }, [icon('info', 18), ex.notes]),
     list.length === 0
       ? h('div.pad.muted.center', 'No history yet – this is your first time. Have a great set!')

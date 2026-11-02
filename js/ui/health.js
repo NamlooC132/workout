@@ -77,6 +77,7 @@ export function LogRunSheet(sheet) {
   }
   const d = sheet.draft;
   const isNew = sheet.isNew;
+  const clearStart = () => { sheet.startAt = null; sheet.startMin = null; sheet.applied = false; update(); };
   const setStart = (t, min = null) => { sheet.startAt = Math.round(t / 60000) * 60000; sheet.startMin = min; sheet.applied = false; update(); };
   // New run: the time runs from your start until you tapped Get from Health (or now).
   const winEnd = () => sheet.endAt || Date.now();
@@ -162,15 +163,15 @@ export function LogRunSheet(sheet) {
     h('div.lr-step', [
       h('div.lr-head', [h('span.lr-num', '1'), h('div', [h('div.lr-title', 'When did you start?'), h('div.lr-sub', 'The run ends when you tap Get from Health')])]),
       h('div.lr-chips', [
-        ...quick.map(([m, l]) => h('button', { key: m, class: cx('lr-chip', sheet.startMin === m && 'on'), onclick: () => setStart(Date.now() - m * 60000, m) }, [h('b', l), h('small', 'ago')])),
-        h('button', { key: 'c', class: cx('lr-chip', sheet.startMin === 'custom' && 'on'), onclick: () => { sheet.customAgo = ago; setStart(Date.now() - (ago.h * 60 + ago.m) * 60000, 'custom'); } }, [h('b', 'Custom'), h('small', 'ago')]),
+        ...quick.map(([m, l]) => h('button', { key: m, class: cx('lr-chip', sheet.startMin === m && 'on'), onclick: () => (sheet.startMin === m ? clearStart() : setStart(Date.now() - m * 60000, m)) }, [h('b', l), h('small', 'ago')])),
+        h('button', { key: 'c', class: cx('lr-chip', sheet.startMin === 'custom' && 'on'), onclick: () => { if (sheet.startMin === 'custom') return clearStart(); sheet.customAgo = ago; setStart(Date.now() - (ago.h * 60 + ago.m) * 60000, 'custom'); } }, [h('b', 'Custom'), h('small', 'ago')]),
       ]),
       sheet.startMin === 'custom' && h('div.lr-ago', [
         h('label.lr-wheel', [h('select', { 'aria-label': 'Hours ago', onchange: (e) => setAgo('h', e.target.value) }, [0, 1, 2, 3, 4, 5, 6].map((x) => h('option', { value: x, selected: ago.h === x }, String(x)))), h('span', 'h')]),
         h('label.lr-wheel', [h('select', { 'aria-label': 'Minutes ago', onchange: (e) => setAgo('m', e.target.value) }, Array.from({ length: 60 }, (_, x) => h('option', { value: x, selected: ago.m === x }, String(x).padStart(2, '0')))), h('span', 'min')]),
         h('span.lr-ago-l', 'ago'),
       ]),
-      h('label.lr-start', [
+      h('div.lr-start-wrap', [h('label.lr-start', [
         icon('calendar', 18),
         h('span.grow', [h('span.muted', 'Started  '), h('b', startLabel)]),
         sheet.startAt && !sheet.applied && h('span.lr-so-far', fmtRunTime(dur)),
@@ -181,6 +182,8 @@ export function LogRunSheet(sheet) {
           if (t > Date.now()) { toast('That time is in the future'); return; }
           setStart(t, null);
         } }),
+      ]),
+      sheet.startAt && h('button.lr-clear', { onclick: clearStart, 'aria-label': 'Clear start time' }, icon('x', 18)),
       ]),
     ]),
 

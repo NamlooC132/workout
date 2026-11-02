@@ -152,6 +152,15 @@ export function TextField({ value, onChange, placeholder, multiline, label, auto
   return multiline ? h('textarea', { ...props, rows: 3 }) : h('input', { ...props, type: 'text', enterkeyhint: 'done' });
 }
 
+/** Example photo of an exercise (from Pexels) with a small credit; nothing if there's none. */
+export function ExercisePhoto({ name, photo }) {
+  if (!photo) return null;
+  return h('figure.ex-photo', [
+    h('img', { src: photo.src, alt: `${name} – example`, loading: 'lazy', onerror: (e) => { e.target.closest('figure').style.display = 'none'; } }),
+    h('figcaption', photo.page ? h('a', { href: photo.page, target: '_blank', rel: 'noopener' }, photo.credit || 'Photo') : (photo.credit || '')),
+  ]);
+}
+
 /** Exercise picture: your photo, else an automatic muscle map, else initials. Tap to zoom the muscles. */
 export function Thumb({ image, size = 44, name, muscles, zoom = true }) {
   const hasMuscles = muscles && Object.values(muscles).some((v) => v > 0);

@@ -1,7 +1,8 @@
 // Zoomed muscle picture: tap any exercise picture to see the worked muscles large.
 import { h, cx } from '../vdom.js';
 import { data, update } from '../store.js';
-import { Sheet, Segmented } from './components.js';
+import { Sheet, Segmented, ExercisePhoto } from './components.js';
+import { photoFor } from '../logic/catalog.js';
 import { MuscleMap, sideOf } from './musclemap.js';
 import { muscleName } from '../logic/muscles.js';
 
@@ -29,6 +30,7 @@ export function MuscleViewSheet(sheet) {
   ]);
 
   return h(Sheet, { title: sheet.name || 'Muscles worked' }, [
+    ExercisePhoto({ name: sheet.name, photo: photoFor(sheet.name) }),
     h(Segmented, { small: true, value: sheet.view, onChange: (v) => { sheet.view = v; update(); }, options: [{ value: 'both', label: 'Both' }, { value: 'front', label: 'Front' }, { value: 'back', label: 'Back' }] }),
     h('div.mv-stage', MuscleMap({ muscles, size, labels: true, view: sheet.view, focus: sheet.focus })),
     list.length === 0 ? h('div.pad.muted.center', 'No muscles set for this exercise yet.') : h('div.mv-legend', [

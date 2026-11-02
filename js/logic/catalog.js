@@ -361,3 +361,53 @@ export function guideFor(exercise) {
 }
 
 export const CATALOG_CODES = CODES;
+
+// ---------- Example photos (Pexels – free to use, no attribution required; we credit anyway) ----------
+// Picked by the photo's description on pexels.com. Shown only when you open an exercise.
+const PEXELS = {
+  'wide-grip pull-up': 9644832,   // "Man Doing Pull Ups in a Gym"
+  'pull-up': 9644832,
+  'cable fly': 5327498,           // "A Man Working Out Using the Cable Crossover Machine"
+  'leg press': 18060020,          // "Bodybuilder Using Leg Press at the Gym"
+  'romanian deadlift': 20817818,  // "Man in Dead Lift at Gym"
+  'bench press': 14036074,        // "Young Muscular Man Bench Pressing at the Gym"
+  'lat pulldown': 30165244,       // "Bodybuilder Performing Lat Pulldown in Gym"
+};
+
+// Unsplash (free to use; we credit the photographer as Unsplash asks).
+const U = (photo, slug, by) => ({ src: `https://images.unsplash.com/${photo}?ixlib=rb-4.1.0&fm=jpg&fit=max&q=80&w=640`, page: `https://unsplash.com/photos/${slug}?utm_source=workout_log&utm_medium=referral`, credit: `Photo: ${by} / Unsplash` });
+const VIBES = 'Stefan Vibes';
+const UNSPLASH = {
+  'triceps pushdown': U('photo-1790094180750-188588292d9b', 'zxAu1GOwjvU', VIBES),       // man doing a cable triceps pushdown
+  'iso-lateral row': U('photo-1790094180967-3262f3149a78', 'ktT4AX6j9uY', VIBES),        // seated row machine (machine only)
+  'seated machine row': U('photo-1790094180967-3262f3149a78', 'ktT4AX6j9uY', VIBES),
+  'hack squat': U('photo-1790094180961-8396479c6542', '0pqS38CPeEk', VIBES),              // hack squat machine (machine only)
+  'leg curl': U('photo-1790094180729-9591f2cb625c', 'g1ZHI3RcbHY', VIBES),                // leg curl machine (machine only)
+  'machine shoulder press': U('photo-1790094180990-02826069d59b', 'A37mI2hAkaI', VIBES),  // man using a shoulder press machine
+  'leg extension': U('photo-1790094180933-c40f27936296', 'ZSU_fk5bZ1c', VIBES),           // leg extension machine (machine only)
+  'machine chest press': U('photo-1780343063335-2d80e44f6dd3', '5R43QIxsRvw', 'Alirio Garcia'), // man on an (outdoor) chest press machine
+  'dumbbell shoulder press': U('photo-1704223523449-ca3925f89dcc', 'Pv97-3sdjdY', 'Samuel Girven'),
+};
+
+/** { src, page, credit } for an exercise's example photo, or null. */
+const LOCAL_PHOTOS = {
+  'close grip seated row': 'close-grip-seated-row', 'seated cable row': 'close-grip-seated-row',
+  'lat pullover': 'lat-pullover', 'straight-arm pulldown': 'lat-pullover',
+  'back extension': 'back-extension', 'seated incline curl': 'seated-incline-curl', 'incline dumbbell curl': 'seated-incline-curl',
+  'smith machine incline press': 'smith-machine-incline-press', 'face pull': 'face-pull', 'skull crusher': 'skull-crusher',
+  'machine crunch': 'machine-crunch', 'standing calf raise': 'standing-calf-raise', 'incline dumbbell press': 'incline-dumbbell-press',
+  'machine preacher curl': 'machine-preacher-curl', 'machine lateral raise': 'machine-lateral-raise',
+  'chest-supported dumbbell row': 'chest-supported-dumbbell-row', 'romanian deadlift': 'romanian-deadlift',
+};
+export function photoFor(name) {
+  const key = String(name || '').trim().toLowerCase();
+  if (LOCAL_PHOTOS[key]) return { src: `./images/exercises/${LOCAL_PHOTOS[key]}.jpg`, page: null, credit: 'AI-generated image' };
+  if (UNSPLASH[key]) return UNSPLASH[key];
+  const id = PEXELS[key];
+  if (!id) return null;
+  return {
+    src: `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=640`,
+    page: `https://www.pexels.com/photo/${id}/`,
+    credit: 'Photo: Pexels',
+  };
+}

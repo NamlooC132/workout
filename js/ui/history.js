@@ -2,7 +2,7 @@
 import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
 import { data, ui, update, openSheet, confirm, toast, history, exercisesById, doneWorkouts, saveWorkout, deleteWorkout, cached } from '../store.js';
-import { Page, Section, Row, Empty, Button, IconButton, Thumb, Segmented, NumberField, WeightField, LineChart, nav, fmtW, fmtDate, fmtDateTime, relDay } from './components.js';
+import { Page, Section, Row, Empty, Button, IconButton, Thumb, Segmented, NumberField, WeightField, LineChart, ExercisePhoto, nav, fmtW, fmtDate, fmtDateTime, relDay } from './components.js';
 import { setsSummary } from './workout.js';
 import { select } from './exercises.js';
 import { fmtDuration, fmtNum, deepClone } from '../logic/util.js';
@@ -12,7 +12,7 @@ import { prsInWorkout, personalRecords, exerciseSeries, isStalled, progressionHi
 import { muscleName, contributions, SET_TYPES } from '../logic/muscles.js';
 import { newSet } from '../logic/model.js';
 import { makeEntry } from '../workoutService.js';
-import { guideFor } from '../logic/catalog.js';
+import { guideFor, photoFor } from '../logic/catalog.js';
 import { MuscleMap } from './musclemap.js';
 import { HealthBox, RunDetailScreen, runSummary } from './health.js';
 import { isRun } from '../logic/health.js';
@@ -230,6 +230,7 @@ export function ExerciseScreen({ id }) {
         ex && h('div.muted.small', `${ex.sets} × ${ex.repMin}–${ex.repMax} · ${list.length} sessions`),
       ]),
     ]),
+    h('div.mt', ExercisePhoto({ name, photo: photoFor(name) })),
     h('a.mini-link', { href: guideFor(ex || { name }), target: '_blank', rel: 'noopener', style: { margin: '6px 0 0' } }, [icon('info', 15), 'How to do this exercise ↗']),
     ex?.notes && h('div.callout.mt', [icon('info', 18), ex.notes]),
     series.length >= 2 && (() => {
