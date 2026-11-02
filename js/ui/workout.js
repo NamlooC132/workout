@@ -376,6 +376,7 @@ export function FinishSummarySheet(sheet) {
       key: i, left: h('span.pr', icon('trophy', 20)), title: p.name, subtitle: p.kind,
       right: h('b', p.key === 'bestE1rm' || p.key === 'bestSessionVolume' ? fmtW(p.value) : p.key === 'bestReps' ? `${p.value} reps` : `${fmtW(p.detail?.kg)} × ${p.detail?.reps}`),
     }))),
+    !data.settings.dataInfoSeen && h('button.di-note', { onclick: () => openSheet({ type: 'dataInfo' }) }, [icon('info', 18), h('span', ['Saved on this phone only. ', h('b', 'How to keep it safe ›')])]),
     sheet.more ? Details(w) : h('button.link-btn', { style: { display: 'block', margin: '0 auto' }, onclick: () => { sheet.more = true; update(); } }, 'More details'),
     h('div.mt', h(Button, { block: true, size: 'lg', onClick: () => { closeSheet(); nav('/history'); } }, 'Done')),
   ]);

@@ -88,8 +88,8 @@ export function RoutinesScreen() {
   const done = doneWorkouts();
   const now = Date.now();
   const unsaved = done.filter((w) => !s.lastBackupAt || w.endedAt > s.lastBackupAt).length;
-  const showBackup = s.backupReminder !== false && unsaved > 0 && (!s.lastBackupAt || now - s.lastBackupAt > 7 * 86400000) &&
-    !(s.backupSnoozeUntil && s.backupSnoozeUntil > now) && (done.length >= 2 || (s.lastBackupAt && now - s.lastBackupAt > 7 * 86400000));
+  const showBackup = s.backupReminder !== false && unsaved >= 3 && (!s.lastBackupAt || now - s.lastBackupAt > 14 * 86400000) &&
+    !(s.backupSnoozeUntil && s.backupSnoozeUntil > now);
 
   const routineLine = (r) => {
     const last = lastDoneAt(r.id);
@@ -155,10 +155,10 @@ export function RoutinesScreen() {
 
     showBackup && h('div.backup-card', [
       h('div.hstack', [icon('download', 20), h('b', 'Back up your workouts')]),
-      h('div.small', { style: { margin: '6px 0 10px' } }, `${unsaved} workout${unsaved === 1 ? '' : 's'} not backed up yet${s.lastBackupAt ? ` · last backup ${relDay(s.lastBackupAt).toLowerCase()}` : ''}. Your data lives only on this phone – save a copy to Files / iCloud Drive.`),
+      h('div.small', { style: { margin: '6px 0 10px' } }, [`${unsaved} workouts not backed up${s.lastBackupAt ? ` · last backup ${relDay(s.lastBackupAt).toLowerCase()}` : ''}. `, h('button.link-btn.inline-link', { onclick: () => openSheet({ type: 'dataInfo' }) }, 'Why?')]),
       h('div.hstack', [
         h(Button, { size: 'sm', onClick: () => exportFile('full') }, 'Back up now'),
-        h(Button, { size: 'sm', kind: 'plain', onClick: () => saveSettings({ backupSnoozeUntil: now + 3 * 86400000 }) }, 'Later'),
+        h(Button, { size: 'sm', kind: 'plain', onClick: () => saveSettings({ backupSnoozeUntil: now + 7 * 86400000 }) }, 'Later'),
       ]),
     ]),
   ]);

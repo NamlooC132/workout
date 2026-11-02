@@ -572,3 +572,15 @@ input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
 .howto-list.setup li::before, .howto-list.steps li::before { content: counter(step); background: var(--accent); color: #fff; }
 .howto-list.mistakes li::before { content: '✕'; background: #ff3b30; color: #fff; }
 .howto-list.tips li::before { content: '✓'; background: #34c759; color: #fff; }
+
+/* ---------- Data / backup info ---------- */
+.di-lead { font-size: 16px; line-height: 1.45; margin: 4px 0 14px; }
+.di-h { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 8px; }
+.di-risks { display: grid; gap: 6px; }
+.di-risk { display: flex; gap: 10px; align-items: center; padding: 10px 12px; background: var(--fill); border-radius: 12px; font-size: 15px; }
+.di-risk svg { color: #ff3b30; flex: none; }
+.di-text { font-size: 15px; line-height: 1.45; }
+.di-actions { display: grid; gap: 6px; margin-top: 16px; }
+.di-note { display: flex; gap: 8px; align-items: center; width: 100%; text-align: left; padding: 10px 12px; margin: 10px 0; border-radius: 12px; background: var(--blue-soft); color: var(--text); font-size: 14px; }
+.di-note b { color: var(--accent); }
+.inline-link { display: inline; min-height: auto; padding: 0; font-size: inherit; }

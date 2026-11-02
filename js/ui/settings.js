@@ -11,7 +11,7 @@ import { defaultProgressionStep } from '../logic/units.js';
 import { makeBackup, validateBackup, planImport } from '../logic/backup.js';
 import { wakeLockSupported } from '../timer.js';
 
-export const APP_VERSION = '1.15.0';
+export const APP_VERSION = '1.15.1';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -38,9 +38,10 @@ export function SettingsScreen() {
 
     h(Section, {
       title: 'Backup & sharing',
-      footer: `Your data lives only on this phone, inside this browser. Export a backup now and then – deleting the app icon or clearing Safari’s website data erases it. ${s.lastBackupAt ? `Last backup: ${fmtDate(s.lastBackupAt)}.` : 'No backup yet.'}`,
+      footer: s.lastBackupAt ? `Last backup: ${fmtDate(s.lastBackupAt)}.` : 'No backup yet.',
     }, [
-      h(Row, { title: 'Weekly backup reminder', right: h(Toggle, { checked: s.backupReminder !== false, onChange: (v) => set({ backupReminder: v }) }) }),
+      h(Row, { left: icon('info', 22), title: 'Where is my data saved?', chevron: true, onClick: () => openSheet({ type: 'dataInfo' }) }),
+      h(Row, { title: 'Backup reminder', right: h(Toggle, { checked: s.backupReminder !== false, onChange: (v) => set({ backupReminder: v }) }) }),
       h(Row, { left: icon('download', 22), title: 'Export all data', subtitle: 'Routines, exercises, photos, history, measurements, settings', onClick: () => exportFile('full') }),
       h(Row, { left: icon('copy', 22), title: 'Share routines', subtitle: 'Pick routines to send to friends – no history', onClick: () => openSheet({ type: 'exportRoutines' }) }),
       h(Row, { left: icon('upload', 22), title: 'Import data', subtitle: 'From a backup or a friend’s routines (also iPhone-app backups)', onClick: () => document.getElementById('import-input').click() }),
