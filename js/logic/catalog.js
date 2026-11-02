@@ -514,6 +514,19 @@ const LOCAL_PHOTOS = {
   'cable woodchop': 'cable-woodchop',
   'plank': 'plank',
   'dead bug': 'dead-bug',
+  'wrist curl': 'wrist-curl',
+  'wrist extension': 'wrist-extension',
+  'farmer’s walk': 'farmers-walk',
+  'wide-grip bench press': 'wide-grip-bench-press',
+  'floor press': 'floor-press',
+  'dumbbell floor press': 'dumbbell-floor-press',
+  'neutral-grip dumbbell press': 'neutral-grip-dumbbell-press',
+  'incline hammer-grip dumbbell press': 'incline-hammer-grip-dumbbell-press',
+  'cable chest press': 'cable-chest-press',
+  'incline cable chest press': 'incline-cable-chest-press',
+  'low-to-high cable fly': 'low-to-high-cable-fly',
+  'high-to-low cable fly': 'high-to-low-cable-fly',
+  'incline cable fly': 'incline-cable-fly',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
