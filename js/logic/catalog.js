@@ -640,6 +640,7 @@ const LOCAL_PHOTOS = {
   'side plank': 'side-plank',
   'wrist roller': 'wrist-roller',
   'dead hang': 'dead-hang',
+  'plate pinch': 'plate-pinch',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
