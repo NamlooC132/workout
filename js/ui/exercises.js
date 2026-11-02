@@ -3,12 +3,13 @@ import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
 import { data, ui, update, openSheet, closeSheet, saveExercise, deleteExercise, saveRoutine, confirm, toast, history, doneWorkouts } from '../store.js';
 import { Page, Section, Row, Empty, Button, IconButton, Stepper, Toggle, Segmented, Chip, Sheet, TextField, Thumb, NumberField, nav } from './components.js';
-import { newExercise } from '../logic/model.js';
+import { newExercise, effectiveConfig, withConfig } from '../logic/model.js';
 import { allMuscles, muscleName, contributions, EXERCISE_TYPES, EQUIPMENT, CATEGORIES } from '../logic/muscles.js';
 import { fmtClock, deepClone, fmtNum } from '../logic/util.js';
 import { REST_STEP, REST_MIN, REST_MAX } from '../logic/restTimer.js';
 import { defaultProgressionStep } from '../logic/units.js';
 import { setGoals } from '../logic/progression.js';
+import { routineItemActions } from './routines.js';
 import { CATALOG, guideFor, catalogEntry } from '../logic/catalog.js';
 import { heName, tr } from '../i18n.js';
 
@@ -213,9 +214,21 @@ export function PickerSheet(sheet) {
 // sheet: { type: 'exerciseEditor', exerciseId, onSaved, presetName }
 export function ExerciseEditorSheet(sheet) {
   const s = data.settings;
+  // Routine mode: { routineId, itemId } – edits are saved as overrides for that routine only.
+  const routine = sheet.routineId ? data.routines.find((r) => r.id === sheet.routineId) : null;
+  const item = routine ? routine.items.find((i) => i.id === sheet.itemId) : null;
+  const inRoutine = !!item;
+  const libEx = sheet.exerciseId ? data.exercises.find((e) => e.id === sheet.exerciseId) : null;
   if (!sheet.draft) {
-    const existing = sheet.exerciseId && data.exercises.find((e) => e.id === sheet.exerciseId);
+    const existing = libEx;
     sheet.draft = existing ? deepClone(existing) : newExercise(s, { name: sheet.presetName || '' });
+    if (inRoutine && existing) {
+      const cfg = effectiveConfig(existing, item);
+      Object.assign(sheet.draft, deepClone(withConfig(existing, cfg)), {
+        sets: cfg.sets, warmupSets: cfg.warmupSets, dropSets: cfg.dropSets, repMin: cfg.repMin, repMax: cfg.repMax,
+        rest: cfg.rest, weightStep: cfg.weightStep, rirTarget: cfg.rirTarget, notes: item.notes || '',
+      });
+    }
     sheet.isNew = !existing;
   }
   const d = sheet.draft;
@@ -224,6 +237,13 @@ export function ExerciseEditorSheet(sheet) {
   const canSave = d.name.trim().length > 0;
   const routinesUsing = data.routines.filter((r) => r.items.some((i) => i.exerciseId === d.id));
   const save = () => {
+    if (inRoutine) {
+      if (d.repMin > d.repMax) [d.repMin, d.repMax] = [d.repMax, d.repMin];
+      saveRoutine({ ...routine, items: routine.items.map((i) => (i.id === item.id ? { ...i, ...routineOverrides(libEx, d) } : i)) });
+      closeSheet();
+      toast(`Saved for ${routine.name} only`);
+      return;
+    }
     d.name = d.name.trim();
     if (d.repMin > d.repMax) [d.repMin, d.repMax] = [d.repMax, d.repMin];
     saveExercise(deepClone(d));
@@ -261,12 +281,20 @@ export function ExerciseEditorSheet(sheet) {
     applyGoals(g);
   };
 
+  const overridden = inRoutine && ROUTINE_KEYS.some((k) => item[k] !== null && item[k] !== undefined);
   return h(Sheet, {
-    title: sheet.isNew ? 'New exercise' : 'Edit exercise', full: true,
+    title: inRoutine ? d.name : sheet.isNew ? 'New exercise' : 'Edit exercise', full: true,
     left: h('button.link-btn', { onclick: closeSheet }, 'Cancel'),
     actions: [h('button.link-btn.strong', { onclick: save, disabled: !canSave }, 'Save')],
   }, [
-    h('div.ed-top', [
+    inRoutine && h('div.callout.blue', { style: { marginBottom: '6px' } }, [icon('info', 18), h('div', [
+      h('div', [h('b', `Only for “${routine.name}”. `), 'Your library exercise and other routines stay the same.']),
+      h('div.hstack.wrap', { style: { marginTop: '8px', gap: '8px' } }, [
+        h('button.btn.btn-secondary.btn-sm', { onclick: () => openSheet({ type: 'exerciseEditor', exerciseId: d.id }) }, [icon('edit', 15), 'Edit in library']),
+        overridden && h('button.btn.btn-plain.btn-sm', { onclick: () => { saveRoutine({ ...routine, items: routine.items.map((i) => (i.id === item.id ? { ...i, ...Object.fromEntries(ROUTINE_KEYS.map((k) => [k, null])) } : i)) }); sheet.draft = null; update(); toast('Reset to library'); } }, 'Reset to library'),
+      ]),
+    ])]),
+    !inRoutine && h('div.ed-top', [
       h('label.ed-photo', { 'aria-label': d.image ? 'Change photo' : 'Add photo' }, [
         h(Thumb, { image: d.image, name: d.name, muscles: d.muscles, size: 72, zoom: false }),
         h('span.ed-photo-badge', icon('camera', 14)),
@@ -280,7 +308,7 @@ export function ExerciseEditorSheet(sheet) {
 
     h(Section, { title: 'Type' }, h('div.pad', h('div.chips', EXERCISE_TYPES.map((t) => h(Chip, { key: t.key, active: d.type === t.key, onClick: () => set({ type: t.key }) }, t.name))))),
 
-    h(Section, { title: 'Muscles', footer: 'Tap once for a main muscle, twice for a helper, again to remove.' }, h('div.pad', h('div.chips', allMuscles(s).map((m) => {
+    !inRoutine && h(Section, { title: 'Muscles', footer: 'Tap once for a main muscle, twice for a helper, again to remove.' }, h('div.pad', h('div.chips', allMuscles(s).map((m) => {
       const v = d.muscles[m.key] || 0;
       return h('button', { key: m.key, class: cx('chip', v >= 1 && 'active', v > 0 && v < 1 && 'chip-helper'), onclick: () => cycleMuscle(m.key) }, [m.name, v > 0 && v < 1 && h('small', 'helper')]);
     })))),
@@ -295,7 +323,7 @@ export function ExerciseEditorSheet(sheet) {
       h(Row, { title: 'Rest timer', right: h(Stepper, { value: d.rest, step: REST_STEP, min: REST_MIN, max: REST_MAX, format: fmtClock, onChange: (v) => set({ rest: v }) }) }),
     ]),
 
-    h(Section, { title: 'Notes' }, h('div.field-card', h(TextField, { value: d.notes, onChange: (v) => { d.notes = v; update(); }, placeholder: 'Shown during workouts, e.g. seat height 4', multiline: true }))),
+    h(Section, { title: inRoutine ? 'Routine notes' : 'Notes' }, h('div.field-card', h(TextField, { value: d.notes, onChange: (v) => { d.notes = v; update(); }, placeholder: inRoutine ? 'Only shown in this routine' : 'Shown during workouts, e.g. seat height 4', multiline: true }))),
 
     h('button.adv-toggle', { onclick: () => { sheet.advanced = !adv; update(); } }, [h('span', 'Advanced'), h('span.muted.small', adv ? 'Hide' : 'Equipment, exact %, warm-ups, overload…'), icon(adv ? 'chevronUp' : 'chevronDown', 18)]),
 
@@ -303,10 +331,10 @@ export function ExerciseEditorSheet(sheet) {
       h(Section, { title: 'Details' }, [
         d.type === 'dumbbell' && h(Row, { title: 'Weight is entered', right: h(Segmented, { small: true, value: d.loadMode, onChange: (v) => set({ loadMode: v }), options: [{ value: 'per_hand', label: 'Per hand' }, { value: 'total', label: 'Total' }] }) }),
         h(Row, { title: 'One side at a time', subtitle: 'Log left and right reps separately', right: h(Toggle, { checked: d.unilateral, onChange: (v) => set({ unilateral: v }) }) }),
-        h(Row, { title: 'Equipment', right: select(EQUIPMENT, d.equipment, (v) => set({ equipment: v })) }),
-        h(Row, { title: 'Category', right: select(CATEGORIES, d.category, (v) => set({ category: v })) }),
+        !inRoutine && h(Row, { title: 'Equipment', right: select(EQUIPMENT, d.equipment, (v) => set({ equipment: v })) }),
+        !inRoutine && h(Row, { title: 'Category', right: select(CATEGORIES, d.category, (v) => set({ category: v })) }),
       ]),
-      h(Section, { title: 'Exact muscle %', footer: 'How much one working set counts for each muscle.' }, allMuscles(s).filter((m) => d.muscles[m.key] > 0).map((m) => {
+      !inRoutine && h(Section, { title: 'Exact muscle %', footer: 'How much one working set counts for each muscle.' }, allMuscles(s).filter((m) => d.muscles[m.key] > 0).map((m) => {
         const v = d.muscles[m.key] || 0;
         return h(Row, {
           key: m.key, title: m.name,
@@ -351,15 +379,17 @@ export function ExerciseEditorSheet(sheet) {
           ]),
         }),
       ]),
-      h(Section, { title: 'How-to link', footer: 'Optional. Leave empty to use the built-in guide (or a video search).' }, [
+      !inRoutine && h(Section, { title: 'How-to link', footer: 'Optional. Leave empty to use the built-in guide (or a video search).' }, [
         h('div.field-card', h(TextField, { value: d.guide || '', onChange: (v) => { d.guide = v.trim() || null; }, placeholder: 'https://…' })),
         d.name && h(Row, { title: h('a', { href: guideFor(d), target: '_blank', rel: 'noopener', style: { color: 'var(--accent)', textDecoration: 'none' } }, 'Open the how-to guide ↗') }),
       ]),
     ],
 
-    !sheet.isNew && routinesUsing.length > 1 && h('div.callout.blue', [icon('info', 18), `Used in ${routinesUsing.length} routines – changes here apply to all of them.`]),
+    inRoutine && routineItemActions(routine, item, libEx),
 
-    !sheet.isNew && h('div.mt', h(Button, {
+    !inRoutine && !sheet.isNew && routinesUsing.length > 1 && h('div.callout.blue', [icon('info', 18), `Used in ${routinesUsing.length} routines – changes here apply to all of them.`]),
+
+    !inRoutine && !sheet.isNew && h('div.mt', h(Button, {
       kind: 'danger', block: true,
       onClick: () => confirm({
         title: `Delete “${d.name}”?`,
@@ -375,6 +405,27 @@ export function ExerciseEditorSheet(sheet) {
       }),
     }, [icon('trash', 18), 'Delete exercise'])),
   ]);
+}
+
+// Fields a routine can override (null = use the library value).
+const ROUTINE_KEYS = ['sets', 'warmupSets', 'dropSets', 'repMin', 'repMax', 'rest', 'weightStep', 'rirTarget', 'type', 'loadMode', 'unilateral', 'progression'];
+const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+/** Differences between the edited draft and the library exercise, as routine overrides. */
+function routineOverrides(ex, d) {
+  const out = { notes: d.notes || '' };
+  for (const k of ROUTINE_KEYS) {
+    if (k === 'progression') {
+      const base = ex.progression || {};
+      const diff = {};
+      for (const [pk, pv] of Object.entries(d.progression || {})) if (!same(pv, base[pk])) diff[pk] = pv;
+      out.progression = Object.keys(diff).length ? diff : null;
+    } else if (k === 'unilateral') {
+      out.unilateral = !!d.unilateral === !!ex.unilateral ? null : !!d.unilateral;
+    } else {
+      out[k] = same(d[k], ex[k]) ? null : d[k];
+    }
+  }
+  return out;
 }
 
 function progressionFooter(d, s) {

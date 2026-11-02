@@ -302,7 +302,7 @@ export function RoutineScreen({ id }) {
         ],
         right: st.edit ? h(DragHandle, { onDrop: (a, b) => saveRoutine({ ...r, items: moveItem(r.items.filter((i) => exById.has(i.exerciseId)), a, b) }) })
           : (prog.status === 'increase' && !deload ? h('span', { style: { color: 'var(--green)' }, title: 'Ready to add weight' }, icon('arrowUp', 20)) : null),
-        onClick: st.edit ? null : () => openSheet({ type: 'itemEditor', routineId: r.id, itemId: item.id }),
+        onClick: st.edit ? null : () => openSheet({ type: 'exerciseEditor', exerciseId: item.exerciseId, routineId: r.id, itemId: item.id, advanced: false }),
       }),
     ]);
   });
@@ -343,100 +343,11 @@ function stat(k, v, small) {
   return h('div.stat', [h('div.v', { style: small ? { fontSize: '14px', paddingTop: '5px' } : null }, String(v)), h('div.k', k)]);
 }
 
-// ---------- Item editor (per-routine overrides) ----------
-// sheet: { type: 'itemEditor', routineId, itemId }
-export function ItemEditorSheet(sheet) {
-  const r = data.routines.find((x) => x.id === sheet.routineId);
-  const item = r && r.items.find((i) => i.id === sheet.itemId);
-  const ex = item && exercisesById().get(item.exerciseId);
-  if (!ex) return h(Sheet, { title: 'Exercise' }, h('div.pad', 'Not found.'));
-  const cfg = effectiveConfig(ex, item);
-  const s = data.settings;
-  const setOverride = (k, v) => {
-    const val = v === ex[k] ? null : v;
-    saveRoutine({ ...r, items: r.items.map((i) => (i.id === item.id ? { ...i, [k]: val } : i)) });
-  };
-  const patchItem = (patch) => saveRoutine({ ...r, items: r.items.map((i) => (i.id === item.id ? { ...i, ...patch } : i)) });
-  const prog = cfg.progression || {};
-  // Overload rule for this routine only (stored as a partial override on the item).
-  const setProg = (patch) => patchItem({ progression: { ...(item.progression || {}), ...patch } });
-  const perSet = prog.rule === 'per_set';
-  const goalList = perSet ? setGoals({ ...cfg, progression: prog }, cfg.sets) : [];
-  const applyGoals = (goals) => {
-    goals = goals.map((g) => Math.max(1, Math.min(200, Math.round(g || 1))));
-    patchItem({ progression: { ...(item.progression || {}), rule: 'per_set', setGoals: goals }, sets: goals.length, repMin: Math.min(...goals), repMax: Math.max(...goals) });
-  };
-  const setSets = (v) => {
-    if (!perSet) return setOverride('sets', v);
-    const g = goalList.slice(0, v);
-    while (g.length < v) g.push(g[g.length - 1] || cfg.repMax || 10);
-    applyGoals(g);
-  };
+// ---------- Routine item actions (shown at the bottom of the exercise editor in routine mode) ----------
+export function routineItemActions(r, item, ex) {
   const idx = r.items.indexOf(item);
   const next = r.items[idx + 1];
-  const overridden = ['sets', 'warmupSets', 'dropSets', 'repMin', 'repMax', 'rest', 'weightStep', 'rirTarget', 'type', 'loadMode', 'unilateral', 'progression'].some((k) => item[k] !== null && item[k] !== undefined);
-  const lib = (k, f = (x) => x) => `Library: ${f(ex[k] ?? '–')}`;
-
-  return h(Sheet, { title: ex.name, full: true }, [
-    h('div.hstack', { style: { margin: '6px 0 4px', gap: '14px' } }, [
-      h(Thumb, { image: ex.image, name: ex.name, muscles: ex.muscles, size: 56 }),
-      h('div.grow', [h('div', { style: { fontWeight: 700, fontSize: '19px' } }, ex.name), h('div.muted.small', `${ex.equipment || ''}${ex.notes ? ' · ' + ex.notes : ''}`)]),
-    ]),
-    h('div.hstack.wrap', { style: { margin: '10px 0' } }, [
-      h(Button, { kind: 'secondary', size: 'sm', onClick: () => openSheet({ type: 'exerciseEditor', exerciseId: ex.id }) }, [icon('edit', 16), 'Edit in library']),
-      h(Button, { kind: 'secondary', size: 'sm', onClick: () => { ui.sheets = []; nav('/exercise/' + ex.id); update(); } }, [icon('chart', 16), 'Progress']),
-    ]),
-    h(Section, {
-      title: 'In this routine only',
-      footer: 'These settings only change this routine. The exercise’s history is shared everywhere.',
-      right: overridden && h('button.link-btn', { style: { minHeight: 'auto', padding: 0, textTransform: 'none', letterSpacing: 0, fontSize: '13px' }, onclick: () => saveRoutine({ ...r, items: r.items.map((i) => (i.id === item.id ? { ...newRoutineItem(i.exerciseId), id: i.id, notes: i.notes, supersetId: i.supersetId } : i)) }) }, 'Reset to library'),
-    }, [
-      h(Row, { title: 'Working sets', subtitle: lib('sets'), right: h(Stepper, { value: cfg.sets, min: 1, max: 20, onChange: setSets }) }),
-      h(Row, { title: 'Warm-up sets', subtitle: lib('warmupSets'), right: h(Stepper, { value: cfg.warmupSets || 0, min: 0, max: 6, onChange: (v) => setOverride('warmupSets', v) }) }),
-      h(Row, { title: 'Drop sets', subtitle: lib('dropSets', (x) => x || 0), right: h(Stepper, { value: cfg.dropSets || 0, min: 0, max: 4, onChange: (v) => setOverride('dropSets', v) }) }),
-      !perSet && h(Row, { title: 'Min reps', subtitle: lib('repMin'), right: h(Stepper, { value: cfg.repMin, min: 1, max: cfg.repMax, onChange: (v) => setOverride('repMin', v) }) }),
-      !perSet && h(Row, { title: 'Max reps', subtitle: lib('repMax'), right: h(Stepper, { value: cfg.repMax, min: cfg.repMin, max: 100, onChange: (v) => setOverride('repMax', v) }) }),
-      h(Row, { title: 'Rest', subtitle: lib('rest', fmtClock), right: h(Stepper, { value: cfg.rest, step: REST_STEP, min: REST_MIN, max: REST_MAX, format: fmtClock, onChange: (v) => setOverride('rest', v) }) }),
-      ex.type !== 'bodyweight' && h(Row, { title: '− / + buttons change weight by', subtitle: lib('weightStep', (x) => `${x} ${s.unit}`), right: select([0.5, 1, 1.25, 2, 2.5, 5, 10].map((x) => ({ value: x, label: `${x} ${s.unit}` })), cfg.weightStep, (v) => setOverride('weightStep', Number(v))) }),
-      h(Row, { title: 'Target RIR', right: select([{ value: '', label: 'None' }, ...[0, 1, 2, 3, 4, 5].map((x) => ({ value: String(x), label: x === 5 ? '5+' : String(x) }))], cfg.rirTarget === null || cfg.rirTarget === undefined ? '' : String(cfg.rirTarget), (v) => setOverride('rirTarget', v === '' ? null : Number(v))) }),
-      h(Row, { title: 'Type', subtitle: lib('type', (x) => EXERCISE_TYPES.find((t) => t.key === x)?.name || x), right: select(EXERCISE_TYPES.map((t) => ({ value: t.key, label: t.name })), cfg.type, (v) => setOverride('type', v)) }),
-      cfg.type === 'dumbbell' && h(Row, { title: 'Weight is entered', right: h(Segmented, { small: true, value: cfg.loadMode || 'per_hand', onChange: (v) => setOverride('loadMode', v), options: [{ value: 'per_hand', label: 'Per hand' }, { value: 'total', label: 'Total' }] }) }),
-      h(Row, { title: 'One side at a time', subtitle: 'Log left and right reps separately', right: h(Toggle, { checked: !!cfg.unilateral, onChange: (v) => patchItem({ unilateral: v === !!ex.unilateral ? null : v }) }) }),
-    ]),
-    h(Section, { title: 'Progressive overload · this routine' }, [
-      h(Row, { title: 'Rule', right: select([
-        { value: 'descending', label: 'Reps drop 1 per set (10, 9, 8)' },
-        { value: 'all_max', label: 'Max reps on all sets' },
-        { value: 'avg', label: 'Average reps' },
-        { value: 'custom', label: 'Custom' },
-        { value: 'per_set', label: 'Goal for each set' },
-      ], prog.rule || 'descending', (v) => {
-        if (v === 'per_set' && !(prog.setGoals || []).length) applyGoals(setGoals({ ...cfg, progression: { ...prog, rule: 'descending' } }, cfg.sets));
-        else setProg({ rule: v });
-      }) }),
-      perSet && h('div.pad', [
-        h('div.small.muted', { style: { marginBottom: '8px' } }, 'Rep goal for each working set. Adding a set adds a box.'),
-        h('div.goal-grid', goalList.map((g, i) => h('label.goal-box', { key: i }, [
-          h('span.goal-lbl', `Set ${i + 1}`),
-          h(NumberField, { value: g, decimals: false, class: 'goal-input', ariaLabel: `Set ${i + 1} goal`, onChange: (v) => { const nx = goalList.slice(); nx[i] = v || 1; applyGoals(nx); } }),
-          goalList.length > 1 && h('button.goal-x', { onclick: (e) => { e.preventDefault(); applyGoals(goalList.filter((_, k) => k !== i)); }, 'aria-label': `Remove set ${i + 1}` }, '×'),
-        ]))),
-        goalList.length < 20 && h('button.btn.btn-secondary.btn-sm', { style: { marginTop: '10px' }, onclick: () => setSets(goalList.length + 1) }, [icon('plus', 16), 'Add set']),
-      ]),
-      prog.rule === 'avg' && h(Row, { title: 'Average reps needed', right: h(Stepper, { value: prog.avgTarget || cfg.repMax, min: 1, max: 100, onChange: (v) => setProg({ avgTarget: v }) }) }),
-      prog.rule === 'custom' && h(Row, { title: 'Reps on every set', right: h(Stepper, { value: prog.customReps || cfg.repMax, min: 1, max: 100, onChange: (v) => setProg({ customReps: v }) }) }),
-      cfg.type !== 'bodyweight' && h(Row, {
-        title: cfg.type === 'assisted' ? 'Reduce assistance by' : 'Increase by',
-        right: h('div.hstack', [
-          h(NumberField, { value: prog.step ?? null, placeholder: fmtNum(progressionStep({ progression: {} }, s)), onChange: (v) => setProg({ step: v || null }), class: 'w-80' }),
-          h('span.muted', s.unit),
-        ]),
-      }),
-    ]),
-    h(Section, { title: 'Routine notes' }, h('div.field-card', h(TextField, {
-      value: item.notes, placeholder: 'Only shown in this routine', multiline: true,
-      onChange: (v) => { item.notes = v; saveRoutine({ ...r }); },
-    }))),
+  return [
     h(Section, {}, [
       next && !item.supersetId && h(Row, { title: 'Superset with next exercise', subtitle: exercisesById().get(next.exerciseId)?.name, left: icon('link', 20), onClick: () => {
         const id = next.supersetId || uid();
@@ -460,7 +371,7 @@ export function ItemEditorSheet(sheet) {
         toast(`Removed ${ex.name}`, 5000, { text: 'Undo', onClick: () => saveRoutine(before) });
       } }),
     ]),
-  ]);
+  ];
 }
 
 // Re-exported for other modules.

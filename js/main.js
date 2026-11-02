@@ -4,7 +4,7 @@ import { setLang, tr } from './i18n.js';
 import { icon } from './ui/icons.js';
 import { data, ui, update, setRenderer, load, activeWorkout, toast } from './store.js';
 import { Dialog, Toast, nav } from './ui/components.js';
-import { RoutinesScreen, RoutineScreen, NewRoutineSheet, RoutineMetaSheet, ItemEditorSheet } from './ui/routines.js';
+import { RoutinesScreen, RoutineScreen, NewRoutineSheet, RoutineMetaSheet } from './ui/routines.js';
 import { LibraryScreen, PickerSheet, ExerciseEditorSheet } from './ui/exercises.js';
 import { WorkoutView, RestPanel, ManualRestSheet, SetMenuSheet, TextInputSheet, FinishSummarySheet, ExHistorySheet } from './ui/workout.js';
 import { HistoryScreen, WorkoutDetailScreen, ExerciseScreen } from './ui/history.js';
@@ -13,7 +13,6 @@ import { PlanScreen, BlockEditorSheet } from './ui/plan.js';
 import { MuscleViewSheet } from './ui/muscleview.js';
 import { HowToSheet } from './ui/howto.js';
 import { DataInfoSheet } from './ui/datainfo.js';
-import { EntrySettingsSheet } from './ui/entrysettings.js';
 import { LogRunSheet } from './ui/health.js';
 import { SettingsScreen, AdvancedSettingsScreen, ExportRoutinesSheet, ImportPreviewSheet, TargetsSheet, MusclesSheet, ActionsSheet } from './ui/settings.js';
 import { resumeTimer, unlockAudio, syncWakeLock } from './timer.js';
@@ -26,13 +25,11 @@ const SHEETS = {
   exerciseEditor: ExerciseEditorSheet,
   newRoutine: NewRoutineSheet,
   routineMeta: RoutineMetaSheet,
-  itemEditor: ItemEditorSheet,
   manualRest: ManualRestSheet,
   setMenu: SetMenuSheet,
   exHistory: ExHistorySheet,
   howTo: HowToSheet,
   dataInfo: DataInfoSheet,
-  entrySettings: EntrySettingsSheet,
   textInput: TextInputSheet,
   finishSummary: FinishSummarySheet,
   measurement: MeasurementSheet,
