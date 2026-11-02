@@ -9,6 +9,11 @@
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+// Display-text translator (set by i18n). Applied to text and to placeholder / aria-label / title.
+let TR = (s) => s;
+export function setTranslator(fn) { TR = fn || ((s) => s); }
+const TR_ATTRS = ['placeholder', 'aria-label', 'title', 'alt'];
+
 export function h(tag, props, ...children) {
   if (props == null || typeof props !== 'object' || Array.isArray(props) || props.__v) {
     if (props !== undefined && props !== null) children.unshift(props);
@@ -31,6 +36,7 @@ export function h(tag, props, ...children) {
     }
   }
   const finalProps = { ...props };
+  if (typeof tag === 'string' && tag !== 'path') for (const a of TR_ATTRS) if (typeof finalProps[a] === 'string') finalProps[a] = TR(finalProps[a]);
   if (cls) finalProps.class = cls; else delete finalProps.class;
   if (id) finalProps.id = id;
   return { __v: true, tag, props: finalProps, children: flat, key: props.key };
@@ -41,7 +47,7 @@ function flatten(list, out) {
     if (c === null || c === undefined || c === false || c === true) continue;
     if (Array.isArray(c)) flatten(c, out);
     else if (typeof c === 'object' && c.__v) out.push(c);
-    else out.push({ __v: true, text: String(c) });
+    else out.push({ __v: true, text: TR(String(c)) });
   }
 }
 

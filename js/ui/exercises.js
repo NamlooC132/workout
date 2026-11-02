@@ -9,6 +9,7 @@ import { fmtClock, deepClone, fmtNum } from '../logic/util.js';
 import { REST_STEP, REST_MIN, REST_MAX } from '../logic/restTimer.js';
 import { defaultProgressionStep } from '../logic/units.js';
 import { CATALOG, guideFor } from '../logic/catalog.js';
+import { heName, tr } from '../i18n.js';
 
 export function exerciseSubtitle(ex) {
   const mus = contributions(ex).filter((c) => c.value >= 1).map((c) => muscleName(c.key, data.settings));
@@ -18,9 +19,9 @@ export function exerciseSubtitle(ex) {
 // Search by name, equipment, type or muscle ("chest", "cable fly", "db shoulders" …).
 const ALIASES = { db: 'dumbbell', dbs: 'dumbbell', bb: 'barbell', kb: 'kettlebell', bw: 'bodyweight', ohp: 'overhead press', rdl: 'romanian deadlift', delts: 'delts', shoulders: 'delts', shoulder: 'delts', legs: 'quadriceps hamstrings glutes calves', arms: 'biceps triceps forearms', lats: 'back', quads: 'quadriceps', hams: 'hamstrings', abs: 'abs', core: 'abs', pecs: 'chest' };
 function haystack(ex) {
-  const mus = Object.entries(ex.muscles || {}).filter(([, v]) => v > 0).map(([k]) => `${muscleName(k, data.settings)} ${k.replace('_', ' ')}`);
+  const mus = Object.entries(ex.muscles || {}).filter(([, v]) => v > 0).map(([k]) => `${muscleName(k, data.settings)} ${tr(muscleName(k, data.settings))} ${k.replace('_', ' ')}`);
   const type = EXERCISE_TYPES.find((t) => t.key === ex.type)?.name || '';
-  return `${ex.name} ${ex.equipment || ''} ${ex.category || ''} ${type} ${mus.join(' ')}`.toLowerCase();
+  return `${ex.name} ${heName(ex.name) || ''} ${ex.equipment || ''} ${tr(ex.equipment || '')} ${ex.category || ''} ${type} ${mus.join(' ')}`.toLowerCase();
 }
 export function matches(ex, q, muscle) {
   if (muscle && !(ex.muscles && ex.muscles[muscle] > 0)) return false;

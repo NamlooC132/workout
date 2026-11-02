@@ -11,7 +11,7 @@ import { defaultProgressionStep } from '../logic/units.js';
 import { makeBackup, validateBackup, planImport } from '../logic/backup.js';
 import { wakeLockSupported } from '../timer.js';
 
-export const APP_VERSION = '1.15.1';
+export const APP_VERSION = '1.16.0';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -33,6 +33,8 @@ export function SettingsScreen() {
       h(Row, { title: 'Sound', right: h(Toggle, { checked: s.restSound, onChange: (v) => set({ restSound: v }) }) }),
       h(Row, { title: 'Keep screen on during workouts', right: h(Toggle, { checked: s.keepAwake, onChange: (v) => set({ keepAwake: v }) }) }),
     ]),
+
+    h(Section, { title: 'Language · שפה' }, h(Row, { title: 'App language', right: h(Segmented, { small: true, value: s.language || 'en', onChange: (v) => set({ language: v }), options: [{ value: 'en', label: 'English' }, { value: 'he', label: 'עברית' }] }) })),
 
     h(Section, { title: 'Appearance' }, h(Row, { title: 'Theme', right: h(Segmented, { small: true, value: s.theme, onChange: (v) => set({ theme: v }), options: [{ value: 'system', label: 'Auto' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }] }) })),
 

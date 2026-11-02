@@ -1,5 +1,6 @@
 // App entry: loads data, routes between screens, renders the tab bar, sheets and the live workout.
-import { h, render, cx } from './vdom.js';
+import { h, render, cx, setTranslator } from './vdom.js';
+import { setLang, tr } from './i18n.js';
 import { icon } from './ui/icons.js';
 import { data, ui, update, setRenderer, load, activeWorkout, toast } from './store.js';
 import { Dialog, Toast, nav } from './ui/components.js';
@@ -125,7 +126,9 @@ function applyTheme() {
 
 const root = document.getElementById('app');
 let lastHash = location.hash;
+setTranslator(tr);
 setRenderer(() => {
+  setLang(data.settings.language);
   applyTheme();
   render(App(), root);
   // Scroll to top when the screen changes.

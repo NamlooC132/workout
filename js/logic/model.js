@@ -43,6 +43,7 @@ export function defaultSettings() {
     restVibrate: true,
     keepAwake: true,
     theme: 'system',                 // 'system' | 'light' | 'dark'
+    language: 'en',                  // 'en' | 'he'
     rirDisplay: 'current',           // 'current' (only on the set you're doing) | 'all'
     backupReminder: true,            // weekly 'back up your workouts' card
     backupSnoozeUntil: null,
