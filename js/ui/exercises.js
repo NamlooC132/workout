@@ -281,6 +281,7 @@ export function ExerciseEditorSheet(sheet) {
     applyGoals(g);
   };
 
+  const otherRoutines = inRoutine ? data.routines.filter((x) => x.id !== routine.id && x.items.some((i) => i.exerciseId === d.id)) : [];
   const overridden = inRoutine && ROUTINE_KEYS.some((k) => item[k] !== null && item[k] !== undefined);
   return h(Sheet, {
     title: inRoutine ? d.name : sheet.isNew ? 'New exercise' : 'Edit exercise', full: true,
@@ -288,9 +289,15 @@ export function ExerciseEditorSheet(sheet) {
     actions: [h('button.link-btn.strong', { onclick: save, disabled: !canSave }, 'Save')],
   }, [
     inRoutine && h('div.callout.blue', { style: { marginBottom: '6px' } }, [icon('info', 18), h('div', [
-      h('div', [h('b', `Only for “${routine.name}”. `), 'Your library exercise and other routines stay the same.']),
+      h('div', [
+        h('div', { style: { fontWeight: 700, marginBottom: '4px' } }, `You are editing ${d.name} for the ${routine.name} routine only.`),
+        h('div', `When you tap Save, these settings are used every time you do ${routine.name}.`),
+        h('div', otherRoutines.length
+          ? `${d.name} in ${otherRoutines.map((x) => x.name).join(', ')} and in your exercise library will not change.`
+          : `${d.name} in your exercise library will not change.`),
+      ]),
       h('div.hstack.wrap', { style: { marginTop: '8px', gap: '8px' } }, [
-        h('button.btn.btn-secondary.btn-sm', { onclick: () => openSheet({ type: 'exerciseEditor', exerciseId: d.id }) }, [icon('edit', 15), 'Edit in library']),
+        h('button.btn.btn-secondary.btn-sm', { onclick: () => openSheet({ type: 'exerciseEditor', exerciseId: d.id }) }, [icon('edit', 15), 'Edit in library (all routines)']),
         overridden && h('button.btn.btn-plain.btn-sm', { onclick: () => { saveRoutine({ ...routine, items: routine.items.map((i) => (i.id === item.id ? { ...i, ...Object.fromEntries(ROUTINE_KEYS.map((k) => [k, null])) } : i)) }); sheet.draft = null; update(); toast('Reset to library'); } }, 'Reset to library'),
       ]),
     ])]),
