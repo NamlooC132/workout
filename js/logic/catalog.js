@@ -429,6 +429,12 @@ const LOCAL_PHOTOS = {
   'machine bicep curl': 'machine-bicep-curl',
   'concentration curl': 'concentration-curl',
   'cable curl': 'cable-curl',
+  'dumbbell shoulder press': 'dumbbell-shoulder-press',
+  'arnold press': 'arnold-press',
+  'push press': 'push-press',
+  'dumbbell front raise': 'dumbbell-front-raise',
+  'cable front raise': 'cable-front-raise',
+  'bayesian curl': 'bayesian-curl',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
