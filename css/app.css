@@ -559,3 +559,16 @@ input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
 .ex-photo figcaption { font-size: 11px; font-weight: 600; color: var(--muted); text-align: right; padding: 4px 4px 0; }
 .ex-photo figcaption:empty { display: none; }
 .ex-photo figcaption a { color: inherit; text-decoration: none; }
+
+/* ---------- How-to guide sheet ---------- */
+.ex-head .howto-btn { color: var(--accent); margin-top: -6px; }
+.howto-name { font-size: 22px; font-weight: 800; margin: 2px 0 10px; }
+.howto-sec { margin: 16px 0 0; }
+.howto-h { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 8px; }
+.howto-list { margin: 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 8px; }
+.howto-list li { position: relative; padding: 10px 12px 10px 42px; background: var(--fill); border-radius: 12px; font-size: 15.5px; line-height: 1.4; }
+.howto-list li::before { position: absolute; left: 10px; top: 9px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; }
+.howto-list.setup li, .howto-list.steps li { counter-increment: step; }
+.howto-list.setup li::before, .howto-list.steps li::before { content: counter(step); background: var(--accent); color: #fff; }
+.howto-list.mistakes li::before { content: '✕'; background: #ff3b30; color: #fff; }
+.howto-list.tips li::before { content: '✓'; background: #34c759; color: #fff; }

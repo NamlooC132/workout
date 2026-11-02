@@ -127,6 +127,7 @@ function ExerciseCard({ w, entry, index, st }) {
         h('button.ex-name', { onclick: openHistory }, [snap.name, entry.skipped && h('span.tag', { style: { marginLeft: '6px' } }, 'Skipped')]),
         h('div.last-time', entry.lastSummary ? `Last: ${setsSummary(entry.lastSummary.sets, snap)}` : `First time · aim for ${snap.repMin}–${snap.repMax} reps`),
       ]),
+      h(IconButton, { name: 'info', label: `How to do ${snap.name}`, class: 'howto-btn', onClick: () => openSheet({ type: 'howTo', name: snap.name, exerciseId: entry.exerciseId }) }),
       h(IconButton, { name: 'more', label: 'Exercise options', onClick: () => entryMenu(w, entry) }),
     ]),
     notes && h('div.notes-line', [icon('note', 14), h('span', notes)]),
@@ -246,7 +247,7 @@ function entryMenu(w, entry) {
   openSheet({
     type: 'actions', title: entry.snapshot.name, actions: [
       entry.exerciseId && { text: 'History', icon: 'history', onClick: () => openSheet({ type: 'exHistory', exerciseId: entry.exerciseId, name: entry.snapshot.name }) },
-      { text: 'How to do it', icon: 'info', onClick: () => window.open(guideFor(ex || { name: entry.snapshot.name }), '_blank', 'noopener') },
+      { text: 'How to do it', icon: 'info', onClick: () => openSheet({ type: 'howTo', name: entry.snapshot.name, exerciseId: entry.exerciseId }) },
       { text: 'Add warm-up set', icon: 'flame', onClick: () => WS.addSet(w, entry, 'warmup') },
       { text: 'Add drop set', icon: 'chevronDown', onClick: () => WS.addSet(w, entry, 'drop') },
       { text: entry.notes ? 'Edit note' : 'Add note', icon: 'note', onClick: () => openSheet({ type: 'textInput', title: 'Note for this workout', value: entry.notes, placeholder: 'Only for this workout', onSave: (v) => { entry.notes = v; WS.save(w); } }) },
@@ -421,7 +422,7 @@ export function ExHistorySheet(sheet) {
         }))),
       ],
     h('div.hstack', { style: { marginTop: '8px' } }, [
-      h('a.btn.btn-secondary.btn-sm', { href: guideFor(ex || { name: sheet.name }), target: '_blank', rel: 'noopener', style: { textDecoration: 'none' } }, [icon('info', 16), 'How to do it']),
+      h('button.btn.btn-secondary.btn-sm', { onclick: () => openSheet({ type: 'howTo', name: sheet.name, exerciseId: sheet.exerciseId }) }, [icon('info', 16), 'How to do it']),
       ex && h('button.btn.btn-plain.btn-sm', { onclick: () => { ui.sheets = []; ui.workoutOpen = false; nav('/exercise/' + ex.id); update(); } }, 'Full progress ›'),
     ]),
   ]);

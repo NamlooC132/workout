@@ -231,7 +231,7 @@ export function ExerciseScreen({ id }) {
       ]),
     ]),
     h('div.mt', ExercisePhoto({ name, photo: photoFor(name) })),
-    h('a.mini-link', { href: guideFor(ex || { name }), target: '_blank', rel: 'noopener', style: { margin: '6px 0 0' } }, [icon('info', 15), 'How to do this exercise ↗']),
+    h('button.btn.btn-secondary.btn-sm', { onclick: () => openSheet({ type: 'howTo', name, exerciseId: ex?.id }), style: { marginTop: '8px' } }, [icon('info', 16), 'How to do this exercise']),
     ex?.notes && h('div.callout.mt', [icon('info', 18), ex.notes]),
     series.length >= 2 && (() => {
       const base = monthAgo || series[0];
