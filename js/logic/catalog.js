@@ -645,6 +645,7 @@ const LOCAL_PHOTOS = {
   'wrist roller': 'wrist-roller',
   'dead hang': 'dead-hang',
   'plate pinch': 'plate-pinch',
+  'machine glute kickback': 'machine-glute-kickback-2',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
