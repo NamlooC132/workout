@@ -605,6 +605,14 @@ const LOCAL_PHOTOS = {
   'smith machine calf raise': 'standing-calf-raise',
   'single-leg calf raise': 'single-leg-calf-raise',
   'donkey calf raise': 'donkey-calf-raise',
+  'standing barbell calf raise': 'standing-barbell-calf-raise',
+  'wide-grip pull-up': 'pull-up',
+  'neutral-grip pull-up': 'neutral-grip-pull-up',
+  'neutral-grip lat pulldown': 'neutral-grip-lat-pulldown',
+  'rope pulldown': 'rope-pulldown',
+  'rope straight-arm pulldown': 'rope-straight-arm-pulldown',
+  'reverse-grip barbell row': 'reverse-grip-barbell-row',
+  'two-dumbbell bent-over row': 'two-dumbbell-bent-over-row',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
