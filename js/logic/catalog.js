@@ -395,7 +395,7 @@ const LOCAL_PHOTOS = {
   'lat pullover': 'lat-pullover', 'straight-arm pulldown': 'lat-pullover',
   'back extension': 'back-extension', 'seated incline curl': 'seated-incline-curl', 'incline dumbbell curl': 'seated-incline-curl',
   'smith machine incline press': 'smith-machine-incline-press', 'face pull': 'face-pull', 'skull crusher': 'skull-crusher',
-  'machine crunch': 'machine-crunch-2', 'seated leg curl': 'seated-leg-curl', 'hack squat': 'hack-squat', 'standing calf raise': 'standing-calf-raise', 'incline dumbbell press': 'incline-dumbbell-press',
+  'machine crunch': 'machine-crunch-2', 'seated leg curl': 'seated-leg-curl', 'hack squat': 'hack-squat', 'squat': 'squat', 'deadlift': 'deadlift', 'barbell row': 'barbell-row', 'overhead press': 'overhead-press', 'dumbbell curl': 'dumbbell-curl', 'hammer curl': 'hammer-curl', 'lateral raise': 'lateral-raise', 'hip thrust': 'hip-thrust', 'bulgarian split squat': 'bulgarian-split-squat', 'pec deck': 'pec-deck', 'standing calf raise': 'standing-calf-raise', 'incline dumbbell press': 'incline-dumbbell-press',
   'machine preacher curl': 'machine-preacher-curl', 'machine lateral raise': 'machine-lateral-raise',
   'chest-supported dumbbell row': 'chest-supported-dumbbell-row', 'romanian deadlift': 'romanian-deadlift',
 };
