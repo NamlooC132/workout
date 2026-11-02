@@ -632,6 +632,14 @@ const LOCAL_PHOTOS = {
   'russian twist': 'russian-twist',
   'cable russian twist': 'cable-russian-twist',
   'toes to bar': 'toes-to-bar',
+  'v-up': 'v-up',
+  'jackknife sit-up': 'jackknife-sit-up',
+  'heel touch': 'heel-touch',
+  'hanging windshield wiper': 'hanging-windshield-wiper',
+  'landmine rotation': 'landmine-rotation',
+  'side plank': 'side-plank',
+  'wrist roller': 'wrist-roller',
+  'dead hang': 'dead-hang',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
