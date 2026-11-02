@@ -624,6 +624,14 @@ const LOCAL_PHOTOS = {
   'dumbbell wrist curl': 'wrist-curl',
   'reverse wrist curl': 'wrist-extension',
   'behind-the-back wrist curl': 'wrist-curl',
+  'decline crunch': 'decline-crunch',
+  'decline sit-up': 'decline-sit-up',
+  'weighted crunch': 'weighted-crunch',
+  'standing cable crunch': 'standing-cable-crunch',
+  'cable reverse crunch': 'cable-reverse-crunch',
+  'russian twist': 'russian-twist',
+  'cable russian twist': 'cable-russian-twist',
+  'toes to bar': 'toes-to-bar',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
