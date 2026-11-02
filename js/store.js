@@ -5,6 +5,7 @@
 // writes to IndexedDB straight away and schedules a re-render.
 // `ui` holds screen state that isn't saved (open sheets, selected tabs…).
 
+import { catalogMatch } from './logic/catalog.js';
 import * as idb from './db.js';
 import { defaultSettings, SCHEMA_VERSION } from './logic/model.js';
 import { buildHistory } from './logic/history.js';
@@ -192,6 +193,7 @@ export async function load() {
     data.timer = (await idb.getMeta('timer')) || null;
     const schema = (await idb.getMeta('schemaVersion')) || 0;
     if (schema < SCHEMA_VERSION) await migrateData(schema);
+    await fillMissingMuscles();
     const seeded = await idb.getMeta('seeded');
     if (!seeded && data.routines.length === 0 && data.exercises.length === 0) await seedSamples();
     await idb.putMeta('seeded', true);
@@ -206,6 +208,31 @@ export async function load() {
     }
   } catch { /* not supported */ }
   version++;
+}
+
+/**
+ * Exercises without any muscles (custom or imported) get the muscles of the built-in exercise
+ * with the same name, e.g. "Pull Up" → Pull-up. Past workouts of that exercise are updated too,
+ * so they count in the muscle charts. Exercises that already have muscles are never touched.
+ */
+async function fillMissingMuscles() {
+  const has = (m) => m && Object.values(m).some((v) => v > 0);
+  const fixed = new Map();
+  for (const e of data.exercises) {
+    if (has(e.muscles)) continue;
+    const c = catalogMatch(e.name);
+    if (c && has(c.muscles)) { e.muscles = { ...c.muscles }; fixed.set(e.id, e.muscles); }
+  }
+  if (!fixed.size) return;
+  const workouts = [];
+  for (const w of data.workouts) {
+    let touched = false;
+    for (const en of w.entries || []) {
+      if (fixed.has(en.exerciseId) && en.snapshot && !has(en.snapshot.muscles)) { en.snapshot.muscles = { ...fixed.get(en.exerciseId) }; touched = true; }
+    }
+    if (touched) workouts.push(w);
+  }
+  await idb.putMany({ exercises: data.exercises.filter((e) => fixed.has(e.id)), workouts });
 }
 
 /** Data-shape migrations between app versions (runs once per upgrade). */

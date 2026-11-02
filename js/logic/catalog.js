@@ -408,6 +408,18 @@ export function videoFor(name) {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} exercise how to`)}`;
 }
 
+/** Built-in exercise matching a name loosely ("Pull Up", "pullup" → "Pull-up"), also by other known names. */
+const squash = (s) => String(s || '').toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9]/g, '');
+let LOOSE = null;
+export function catalogMatch(name) {
+  if (!LOOSE) {
+    LOOSE = new Map();
+    for (const c of CATALOG) LOOSE.set(squash(c.name), c);
+    for (const c of CATALOG) for (const a of (c.aka || '').split(/\s{2,}|,/)) if (a.trim() && !LOOSE.has(squash(a))) LOOSE.set(squash(a), c);
+  }
+  return catalogEntry(name) || LOOSE.get(squash(name)) || null;
+}
+
 export const CATALOG_CODES = CODES;
 
 // ---------- Example photos (Pexels – free to use, no attribution required; we credit anyway) ----------
