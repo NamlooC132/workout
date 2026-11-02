@@ -527,6 +527,18 @@ const LOCAL_PHOTOS = {
   'low-to-high cable fly': 'low-to-high-cable-fly',
   'high-to-low cable fly': 'high-to-low-cable-fly',
   'incline cable fly': 'incline-cable-fly',
+  'smith machine decline press': 'smith-machine-decline-press',
+  'single-arm cable fly': 'single-arm-cable-fly',
+  'wide push-up': 'wide-push-up',
+  'incline push-up': 'incline-push-up',
+  'decline push-up': 'decline-push-up',
+  'weighted push-up': 'weighted-push-up',
+  'behind-the-neck press': 'behind-the-neck-press',
+  'seated dumbbell shoulder press': 'seated-dumbbell-shoulder-press',
+  'single-arm dumbbell shoulder press': 'single-arm-dumbbell-shoulder-press',
+  'cable shoulder press': 'cable-shoulder-press',
+  'kettlebell press': 'kettlebell-press',
+  'cable y-raise': 'cable-y-raise',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
