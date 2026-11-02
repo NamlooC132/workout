@@ -298,9 +298,9 @@ export const DICT = {
   'Not sure how it looks? Watch a video ↗': 'לא בטוחים איך זה נראה? צפו בסרטון ↗',
   'Watch a video on YouTube ↗': 'צפו בסרטון ביוטיוב ↗',
   'Goal for each set': 'יעד לכל סט', 'Rep goal for each working set. Adding a set adds a box.': 'יעד חזרות לכל סט עבודה. הוספת סט מוסיפה תיבה.', 'Reps for each working set, in order. The number of sets follows this list.': 'חזרות לכל סט עבודה, לפי הסדר. מספר הסטים נקבע לפי הרשימה.',
-  '− / + buttons change weight by': 'כפתורי − / + משנים את המשקל ב-',
+  '− / + buttons change weight by': 'קפיצה בכפתורי − / + של המשקל',
   'Only for the buttons next to the weight. Automatic increases use “Increase by” below.': 'רק לכפתורים שליד המשקל. העלאות אוטומטיות משתמשות ב"הוסף" למטה.',
-  '− / + buttons change rest by': 'כפתורי − / + משנים את המנוחה ב-', 'Step-by-step guide with pictures ↗': 'מדריך מצולם שלב אחר שלב ↗', 'kg': 'ק״ג', 'lbs': 'ליברות', 'Thigh pad: 3': 'ריפוד ירכיים: 3', 'Seat position 4': 'מיקום כיסא 4',
+  '− / + buttons change rest by': 'קפיצה בכפתורי − / + של המנוחה', 'Step-by-step guide with pictures ↗': 'מדריך מצולם שלב אחר שלב ↗', 'kg': 'ק״ג', 'lbs': 'ליברות', 'Thigh pad: 3': 'ריפוד ירכיים: 3', 'Seat position 4': 'מיקום כיסא 4',
 };
 
 const n = (x) => x; // numbers stay as they are

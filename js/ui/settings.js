@@ -11,7 +11,7 @@ import { defaultProgressionStep } from '../logic/units.js';
 import { makeBackup, validateBackup, planImport } from '../logic/backup.js';
 import { wakeLockSupported } from '../timer.js';
 
-export const APP_VERSION = '1.17.1';
+export const APP_VERSION = '1.17.2';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -30,7 +30,7 @@ export function SettingsScreen() {
 
     h(Section, { title: 'Rest timer', footer: wakeLockSupported() ? 'A website can’t ring while the phone is locked, so the app keeps the screen on during workouts. Sound follows your phone’s silent switch; iPhones don’t allow websites to vibrate.' : 'Your browser can’t keep the screen on – keep the app open between sets to hear the timer.' }, [
       h(Row, { title: 'Start automatically after a set', right: h(Toggle, { checked: s.autoRest, onChange: (v) => set({ autoRest: v }) }) }),
-      h(Row, { title: '− / + buttons change rest by', right: h(Segmented, { small: true, value: s.restAdjustStep || 15, onChange: (v) => set({ restAdjustStep: v }), options: [5, 10, 15, 30, 60].map((x) => ({ value: x, label: `${x}s` })) }) }),
+      h(Row, { title: '− / + buttons change rest by', right: select([5, 10, 15, 30, 60].map((x) => ({ value: x, label: `${x}s` })), s.restAdjustStep || 15, (v) => set({ restAdjustStep: Number(v) })) }),
       h(Row, { title: 'Sound', right: h(Toggle, { checked: s.restSound, onChange: (v) => set({ restSound: v }) }) }),
       h(Row, { title: 'Keep screen on during workouts', right: h(Toggle, { checked: s.keepAwake, onChange: (v) => set({ keepAwake: v }) }) }),
     ]),
@@ -63,7 +63,7 @@ export function AdvancedSettingsScreen() {
   return h(Page, { title: 'Advanced settings', backTo: '/settings', large: false }, [
     h(Section, { title: 'Defaults for new exercises' }, [
       h(Row, { title: 'Rest time', right: h(Stepper, { value: s.defaultRest, step: REST_STEP, min: REST_MIN, max: REST_MAX, format: fmtClock, onChange: (v) => set({ defaultRest: v }) }) }),
-      h(Row, { title: 'Weight step (− / +)', right: select([0.5, 1, 1.25, 2, 2.5, 5, 10].map((x) => ({ value: x, label: `${x} ${unit}` })), s.defaultWeightStep, (v) => set({ defaultWeightStep: Number(v) })) }),
+      h(Row, { title: '− / + buttons change weight by', right: select([0.5, 1, 1.25, 2, 2.5, 5, 10].map((x) => ({ value: x, label: `${x} ${unit}` })), s.defaultWeightStep, (v) => set({ defaultWeightStep: Number(v) })) }),
       h(Row, { title: 'Warm-up sets', right: h(Stepper, { value: s.defaultWarmupSets || 0, min: 0, max: 5, onChange: (v) => set({ defaultWarmupSets: v }) }) }),
       h(Row, { title: 'Drop sets', right: h(Stepper, { value: s.defaultDropSets || 0, min: 0, max: 4, onChange: (v) => set({ defaultDropSets: v }) }) }),
       h(Row, { title: 'Target RIR', right: select([{ value: '', label: 'None' }, ...[0, 1, 2, 3, 4].map((x) => ({ value: String(x), label: String(x) }))], s.defaultRirTarget === null ? '' : String(s.defaultRirTarget), (v) => set({ defaultRirTarget: v === '' ? null : Number(v) })) }),
