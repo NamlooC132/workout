@@ -613,6 +613,17 @@ const LOCAL_PHOTOS = {
   'rope straight-arm pulldown': 'rope-straight-arm-pulldown',
   'reverse-grip barbell row': 'reverse-grip-barbell-row',
   'two-dumbbell bent-over row': 'two-dumbbell-bent-over-row',
+  'smith machine row': 'smith-machine-row',
+  'meadows row': 'meadows-row',
+  'kettlebell row': 'kettlebell-row',
+  'cable high row': 'cable-high-row',
+  'machine high row': 'machine-high-row',
+  'cable shrug': 'cable-shrug',
+  'smith machine shrug': 'smith-machine-shrug',
+  'superman': 'superman',
+  'dumbbell wrist curl': 'wrist-curl',
+  'reverse wrist curl': 'wrist-extension',
+  'behind-the-back wrist curl': 'wrist-curl',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
