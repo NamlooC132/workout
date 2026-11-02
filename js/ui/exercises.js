@@ -8,6 +8,7 @@ import { allMuscles, muscleName, contributions, EXERCISE_TYPES, EQUIPMENT, CATEG
 import { fmtClock, deepClone, fmtNum } from '../logic/util.js';
 import { REST_STEP, REST_MIN, REST_MAX } from '../logic/restTimer.js';
 import { defaultProgressionStep } from '../logic/units.js';
+import { parseSetGoals, setGoals } from '../logic/progression.js';
 import { CATALOG, guideFor } from '../logic/catalog.js';
 import { heName, tr } from '../i18n.js';
 
@@ -243,6 +244,13 @@ export function ExerciseEditorSheet(sheet) {
     set({ muscles: mus });
   };
   const adv = !!sheet.advanced;
+  // "Goal for each set": the list decides the number of sets and the rep range.
+  const applyGoals = (text) => {
+    const goals = parseSetGoals(text);
+    d.progression = { ...d.progression, setGoals: goals };
+    if (goals.length) Object.assign(d, { sets: goals.length, repMin: Math.min(...goals), repMax: Math.max(...goals) });
+    update();
+  };
 
   return h(Sheet, {
     title: sheet.isNew ? 'New exercise' : 'Edit exercise', full: true,
@@ -300,7 +308,7 @@ export function ExerciseEditorSheet(sheet) {
       h(Section, { title: 'Extra sets' }, [
         h(Row, { title: 'Warm-up sets', right: h(Stepper, { value: d.warmupSets || 0, min: 0, max: 6, onChange: (v) => set({ warmupSets: v }) }) }),
         h(Row, { title: 'Drop sets', subtitle: 'After the last working set', right: h(Stepper, { value: d.dropSets || 0, min: 0, max: 4, onChange: (v) => set({ dropSets: v }) }) }),
-        hasWeight && h(Row, { title: 'Weight step (− / +)', right: select(stepOptions.map((x) => ({ value: x, label: `${x} ${unit}` })), d.weightStep, (v) => set({ weightStep: Number(v) })) }),
+        hasWeight && h(Row, { title: '− / + buttons change weight by', subtitle: 'Only for the buttons next to the weight. Automatic increases use “Increase by” below.', right: select(stepOptions.map((x) => ({ value: x, label: `${x} ${unit}` })), d.weightStep, (v) => set({ weightStep: Number(v) })) }),
         h(Row, { title: 'Target RIR', subtitle: 'Reps in reserve you aim for', right: select([{ value: '', label: 'None' }, ...[0, 1, 2, 3, 4].map((x) => ({ value: String(x), label: `${x}` })), { value: '5', label: '5+' }], d.rirTarget === null || d.rirTarget === undefined ? '' : String(d.rirTarget), (v) => set({ rirTarget: v === '' ? null : Number(v) })) }),
       ]),
       h(Section, { title: 'Progressive overload', footer: progressionFooter(d, s) }, [
@@ -311,8 +319,14 @@ export function ExerciseEditorSheet(sheet) {
             { value: 'all_max', label: 'Max reps on all sets' },
             { value: 'avg', label: 'Average reps' },
             { value: 'custom', label: 'Custom' },
-          ], d.progression.rule, (v) => setProg({ rule: v })),
+            { value: 'per_set', label: 'Goal for each set' },
+          ], d.progression.rule, (v) => { setProg({ rule: v }); if (v === 'per_set' && !(d.progression.setGoals || []).length) applyGoals(setGoals({ ...d, progression: { ...d.progression, rule: 'descending' } }, d.sets).join(', ')); }),
         }),
+        d.progression.rule === 'per_set' && h('div.pad', [
+          h('div.small.muted', { style: { marginBottom: '6px' } }, 'Reps for each working set, in order. The number of sets follows this list.'),
+          h('div.field-card', h(TextField, { value: sheet.goalsText ?? (d.progression.setGoals || []).join(', '), placeholder: '12, 12, 11, 11, 10, 10, 9', single: true, onChange: (v) => { sheet.goalsText = v; applyGoals(v); } })),
+          (d.progression.setGoals || []).length > 0 && h('div.small', { style: { marginTop: '6px' } }, `${d.progression.setGoals.length} sets: ${d.progression.setGoals.join(' · ')}`),
+        ]),
         d.progression.rule === 'avg' && h(Row, { title: 'Average reps needed', right: h(Stepper, { value: d.progression.avgTarget || d.repMax, min: 1, max: 100, onChange: (v) => setProg({ avgTarget: v }) }) }),
         d.progression.rule === 'custom' && h(Row, { title: 'Reps on every set', right: h(Stepper, { value: d.progression.customReps || d.repMax, min: 1, max: 100, onChange: (v) => setProg({ customReps: v }) }) }),
         d.progression.rule === 'custom' && h(Row, { title: 'With at least RIR', right: select([{ value: '', label: 'Any' }, ...[0, 1, 2, 3, 4, 5].map((x) => ({ value: String(x), label: String(x) }))], d.progression.customMinRir === null || d.progression.customMinRir === undefined ? '' : String(d.progression.customMinRir), (v) => setProg({ customMinRir: v === '' ? null : Number(v) })) }),
@@ -358,6 +372,7 @@ function progressionFooter(d, s) {
     const t = [...Array(Math.max(1, d.sets))].map((_, i) => Math.max(d.repMin, d.repMax - i)).join(', ');
     return `Set 1 must reach ${d.repMax} reps and each next set may drop by one (${t}) at the same weight – then the app suggests you ${verb}. Warm-ups and drop sets don’t count.`;
   }
+  if (d.progression.rule === 'per_set') return `When every set reaches its own goal above at one weight, the app suggests you ${verb}. Warm-ups and drop sets don’t count.`;
   if (d.progression.rule === 'avg') return `When your average reps reach the target at one weight, the app suggests you ${verb}.`;
   if (d.progression.rule === 'custom') return `When every set reaches the reps (and RIR) above at one weight, the app suggests you ${verb}.`;
   return `When you hit ${d.repMax} reps on every working set at the same weight, the app suggests you ${verb}.`;

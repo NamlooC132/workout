@@ -380,7 +380,7 @@ export function ItemEditorSheet(sheet) {
       h(Row, { title: 'Min reps', subtitle: lib('repMin'), right: h(Stepper, { value: cfg.repMin, min: 1, max: cfg.repMax, onChange: (v) => setOverride('repMin', v) }) }),
       h(Row, { title: 'Max reps', subtitle: lib('repMax'), right: h(Stepper, { value: cfg.repMax, min: cfg.repMin, max: 100, onChange: (v) => setOverride('repMax', v) }) }),
       h(Row, { title: 'Rest', subtitle: lib('rest', fmtClock), right: h(Stepper, { value: cfg.rest, step: REST_STEP, min: REST_MIN, max: REST_MAX, format: fmtClock, onChange: (v) => setOverride('rest', v) }) }),
-      ex.type !== 'bodyweight' && h(Row, { title: 'Weight step', subtitle: lib('weightStep', (x) => `${x} ${s.unit}`), right: select([0.5, 1, 1.25, 2, 2.5, 5, 10].map((x) => ({ value: x, label: `${x} ${s.unit}` })), cfg.weightStep, (v) => setOverride('weightStep', Number(v))) }),
+      ex.type !== 'bodyweight' && h(Row, { title: '− / + buttons change weight by', subtitle: lib('weightStep', (x) => `${x} ${s.unit}`), right: select([0.5, 1, 1.25, 2, 2.5, 5, 10].map((x) => ({ value: x, label: `${x} ${s.unit}` })), cfg.weightStep, (v) => setOverride('weightStep', Number(v))) }),
       h(Row, { title: 'Target RIR', right: select([{ value: '', label: 'None' }, ...[0, 1, 2, 3, 4, 5].map((x) => ({ value: String(x), label: x === 5 ? '5+' : String(x) }))], cfg.rirTarget === null || cfg.rirTarget === undefined ? '' : String(cfg.rirTarget), (v) => setOverride('rirTarget', v === '' ? null : Number(v))) }),
     ]),
     h(Section, { title: 'Routine notes' }, h('div.field-card', h(TextField, {

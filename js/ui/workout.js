@@ -18,6 +18,17 @@ import * as WS from '../workoutService.js';
 import { startRest, adjustRest, skipRest, restRemaining, syncWakeLock } from '../timer.js';
 import { guideFor, photoFor } from '../logic/catalog.js';
 import { HealthBox } from './health.js';
+import { setGoals } from '../logic/progression.js';
+
+/** Volume (weight × reps) of completed sets, warm-ups excluded. Sets without a `done` flag count (last-time summaries). */
+function volumeOf(sets, snap, bw) {
+  return (sets || []).filter((s) => s.done !== false && s.type !== 'warmup').reduce((a, s) => a + tonnage(s, snap, bw), 0);
+}
+function workoutVolumeKg(w) {
+  const bw = bodyweightAt(data.measurements, w.startedAt);
+  return w.entries.reduce((t, e) => t + (e.skipped ? 0 : volumeOf(e.sets.filter((s) => s.done), e.snapshot, bw)), 0);
+}
+const fmtVol = (kg) => `${Math.round(displayWeight(kg, data.settings.unit)).toLocaleString('en-US')} ${data.settings.unit}`;
 
 // ---------- "Last time" text ----------
 export function setsSummary(sets, snap) {
@@ -75,6 +86,7 @@ export function WorkoutView({ w }) {
       h('div.wk-status', [
         h('span', [icon('timer', 16), fmtClockLong(Date.now() - w.startedAt)]),
         h('span', [icon('check', 16), `${done} of ${total} sets`]),
+        workoutVolumeKg(w) > 0 && h('span', [icon('volume', 16), fmtVol(workoutVolumeKg(w))]),
       ]),
       w.deload && !w.deloadApplied && h('div.deload-banner', [
         h('div', { style: { fontWeight: 700 } }, 'Deload week'),
@@ -117,6 +129,12 @@ function ExerciseCard({ w, entry, index, st }) {
   const currentSet = entry.sets.find((s) => !s.done);
   const notes = [ex?.notes, entry.routineNotes, entry.notes].filter(Boolean).join(' · ');
   const openHistory = () => openSheet({ type: 'exHistory', exerciseId: entry.exerciseId, name: snap.name });
+  const workCount = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length;
+  const goals = setGoals(snap, workCount);
+  const perSetRule = snap.progression?.rule === 'per_set' && (snap.progression.setGoals || []).length > 0;
+  const bw = bodyweightAt(data.measurements, w.startedAt);
+  const volNow = showWeight ? volumeOf(entry.sets.filter((s) => s.done), snap, bw) : 0;
+  const volLast = showWeight && entry.lastSummary ? volumeOf(entry.lastSummary.sets, snap, bw) : 0;
   let workNo = 0;
 
   return h('div', { key: entry.id, class: cx('ex-card', entry.skipped && 'skipped', inSS && 'in-ss') }, [
@@ -126,6 +144,7 @@ function ExerciseCard({ w, entry, index, st }) {
       h('div.grow', [
         h('button.ex-name', { onclick: openHistory }, [snap.name, entry.skipped && h('span.tag', { style: { marginLeft: '6px' } }, 'Skipped')]),
         h('div.last-time', entry.lastSummary ? `Last: ${setsSummary(entry.lastSummary.sets, snap)}` : `First time · aim for ${snap.repMin}–${snap.repMax} reps`),
+        perSetRule && h('div.last-time.goal-line', `Goal: ${goals.join(', ')} reps`),
       ]),
       h(IconButton, { name: 'info', label: `How to do ${snap.name}`, class: 'howto-btn', onClick: () => openSheet({ type: 'howTo', name: snap.name, exerciseId: entry.exerciseId }) }),
       h(IconButton, { name: 'more', label: 'Exercise options', onClick: () => entryMenu(w, entry) }),
@@ -162,7 +181,7 @@ function ExerciseCard({ w, entry, index, st }) {
                 h('div.pill', h(NumberField, { value: s.repsL, decimals: false, placeholder: 'L', class: 'pill-input', ariaLabel: 'Reps left', onChange: (v) => { s.repsL = v; s.reps = minReps(s); WS.save(w); } })),
                 h('div.pill', h(NumberField, { value: s.repsR, decimals: false, placeholder: 'R', class: 'pill-input', ariaLabel: 'Reps right', onChange: (v) => { s.repsR = v; s.reps = minReps(s); WS.save(w); } })),
               ]
-              : h('div.pill', h(NumberField, { value: s.reps, decimals: false, placeholder: isWarm ? '–' : `${snap.repMax}`, class: 'pill-input', ariaLabel: 'Reps', onChange: (v) => { s.reps = v; WS.save(w); } })),
+              : h('div.pill', h(NumberField, { value: s.reps, decimals: false, placeholder: isWarm ? '–' : String((s.type !== 'drop' && goals[workNo - 1]) || snap.repMax), class: 'pill-input', ariaLabel: 'Reps', onChange: (v) => { s.reps = v; WS.save(w); } })),
             h('button', { class: cx('done-btn', s.done && 'on'), onclick: () => complete(w, entry, s), 'aria-label': s.done ? 'Mark set not done' : 'Set done' }, icon('check', 24, { weight: 3 })),
           ]),
           // Quiet extras: only on the set you're about to do
@@ -181,6 +200,12 @@ function ExerciseCard({ w, entry, index, st }) {
           ]),
         ]);
       }),
+      (volNow > 0 || volLast > 0) && h('div.ex-volume', [
+        icon('volume', 15),
+        h('span', `Volume ${fmtVol(volNow)}`),
+        volLast > 0 && h('span.muted', `· last time ${fmtVol(volLast)}`),
+        volLast > 0 && volNow > 0 && h('span', { class: volNow >= volLast ? 'up' : 'down' }, `${volNow >= volLast ? '+' : '−'}${fmtNum(Math.abs(volNow - volLast) / volLast * 100, 0)} %`),
+      ]),
       h('button.add-set', { onclick: () => WS.addSet(w, entry) }, [icon('plus', 18), 'Add set']),
     ],
   ]);
@@ -306,6 +331,7 @@ function askFinish(w) {
 }
 
 // ---------- Rest timer (compact bar) ----------
+const restStep = () => data.settings.restAdjustStep || 15;
 export function RestPanel({ inWorkout }) {
   const t = data.timer;
   if (!t) return null;
@@ -318,7 +344,8 @@ export function RestPanel({ inWorkout }) {
         h('div.rest-clock', { 'aria-live': 'polite' }, fmtClock(Math.ceil(left / 1000))),
         h('div.rest-next', t.next ? `Next: ${t.next}` : 'Rest timer'),
       ]),
-      h('button.btn.btn-secondary.btn-sm.rest-btn', { onclick: () => adjustRest(15), 'aria-label': 'Add 15 seconds' }, '+15s'),
+      h('button.btn.btn-secondary.btn-sm.rest-btn', { onclick: () => adjustRest(-restStep()), 'aria-label': `Remove ${restStep()} seconds` }, `−${restStep()}s`),
+      h('button.btn.btn-secondary.btn-sm.rest-btn', { onclick: () => adjustRest(restStep()), 'aria-label': `Add ${restStep()} seconds` }, `+${restStep()}s`),
       h('button.btn.btn-primary.btn-sm.rest-btn', { onclick: skipRest }, 'Skip'),
     ]),
   ]);
@@ -366,9 +393,10 @@ export function FinishSummarySheet(sheet) {
   return h(Sheet, { title: 'Workout complete' }, [
     h('div.center', { style: { fontSize: '42px', margin: '6px 0 2px' } }, prs.length ? '🏆' : '💪'),
     h('div.center', { style: { fontSize: '21px', fontWeight: 800, marginBottom: '14px' } }, w.routineName),
-    h('div.summary-strip', { style: { gridTemplateColumns: 'repeat(3, 1fr)' } }, [
+    h('div.summary-strip', { style: { gridTemplateColumns: 'repeat(2, 1fr)' } }, [
       h('div.stat', [h('div.v', fmtDuration(w.endedAt - w.startedAt)), h('div.k', 'Duration')]),
       h('div.stat', [h('div.v', String(sets)), h('div.k', 'Sets done')]),
+      h('div.stat', [h('div.v', fmtVol(workoutVolumeKg(w))), h('div.k', 'Volume')]),
       h('div.stat', { style: prs.length ? { background: 'var(--yellow-soft)' } : null }, [h('div.v', String(prs.length)), h('div.k', 'New records')]),
     ]),
     h(Section, { title: 'Heart rate & calories' }, h('div.pad', HealthBox({ health: (w.health = w.health || { hr: null, kcal: null }), from: w.startedAt, to: w.endedAt, onChange: () => saveWorkout(w) }))),

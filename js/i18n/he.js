@@ -296,7 +296,11 @@ export const DICT = {
   'AI-generated image': 'תמונה שנוצרה ב-AI',
   'AI-generated picture – it can get the machine or the movement wrong, so don’t rely on it.': 'התמונה נוצרה ב-AI ויכולה להראות מכונה או תנועה לא נכונה – אל תסתמכו עליה.',
   'Not sure how it looks? Watch a video ↗': 'לא בטוחים איך זה נראה? צפו בסרטון ↗',
-  'Watch a video on YouTube ↗': 'צפו בסרטון ביוטיוב ↗', 'Step-by-step guide with pictures ↗': 'מדריך מצולם שלב אחר שלב ↗', 'kg': 'ק״ג', 'lbs': 'ליברות', 'Thigh pad: 3': 'ריפוד ירכיים: 3', 'Seat position 4': 'מיקום כיסא 4',
+  'Watch a video on YouTube ↗': 'צפו בסרטון ביוטיוב ↗',
+  'Goal for each set': 'יעד לכל סט', 'Reps for each working set, in order. The number of sets follows this list.': 'חזרות לכל סט עבודה, לפי הסדר. מספר הסטים נקבע לפי הרשימה.',
+  '− / + buttons change weight by': 'כפתורי − / + משנים את המשקל ב-',
+  'Only for the buttons next to the weight. Automatic increases use “Increase by” below.': 'רק לכפתורים שליד המשקל. העלאות אוטומטיות משתמשות ב"הוסף" למטה.',
+  '− / + buttons change rest by': 'כפתורי − / + משנים את המנוחה ב-', 'Step-by-step guide with pictures ↗': 'מדריך מצולם שלב אחר שלב ↗', 'kg': 'ק״ג', 'lbs': 'ליברות', 'Thigh pad: 3': 'ריפוד ירכיים: 3', 'Seat position 4': 'מיקום כיסא 4',
 };
 
 const n = (x) => x; // numbers stay as they are
@@ -327,6 +331,15 @@ export const PATTERNS = [
   [/^When every set reaches the reps \(and RIR\) above at one weight, the app suggests you (.+)\.$/, 'כשכל סט מגיע לחזרות (ול-RIR) שלמעלה באותו משקל, האפליקציה תציע $1.'],
   [/^When you hit (\d+) reps on every working set at the same weight, the app suggests you (.+)\.$/, 'כשתגיע ל-$1 חזרות בכל סטי העבודה באותו משקל, האפליקציה תציע $2.'],
   [/^(\d+) bpm$/, '$1 פעימות/דקה'],
+  [/^Volume (.+)$/, 'נפח $1'],
+  [/^· last time (.+)$/, '· בפעם הקודמת $1'],
+  [/^Goal: (.+) reps$/, 'יעד: $1 חזרות'],
+  [/^(\d+) sets: (.+)$/, '$1 סטים: $2'],
+  [/^Remove (\d+) seconds$/, 'הורד $1 שניות'],
+  [/^Add (\d+) seconds$/, 'הוסף $1 שניות'],
+  [/^([−+])(\d+)s$/, '$1$2 שנ׳'],
+  [/^(\d+)s$/, '$1 שנ׳'],
+  [/^When every set reaches its own goal above at one weight, the app suggests you (.+)\. Warm-ups and drop sets don’t count\.$/, 'כשכל סט מגיע ליעד שלו באותו משקל, האפליקציה תציע $1. סטי חימום ודרופ סטים לא נחשבים.'],
   [/^(\d+) kcal$/, '$1 קלוריות'],
   [/^Found your run: (.+) 🏃$/, 'נמצאה הריצה: $1 🏃'],
   [/^Your run: (.+) 🏃$/, 'הריצה שלך: $1 🏃'],

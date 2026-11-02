@@ -432,3 +432,14 @@ test('runs are found automatically in the distance readings', async () => {
   assert.equal(r2.length, 1); assert.equal(r2[0].km, 4.8);
   assert.equal(H.detectRuns('nothing'), null);
 });
+
+test('per-set goals: each set has its own rep target', async () => {
+  const { evaluateProgression, setGoals, parseSetGoals } = await import('../js/logic/progression.js');
+  assert.deepEqual(parseSetGoals('12, 12,11 11'), [12, 12, 11, 11]);
+  const ex = { type: 'weighted', repMin: 9, repMax: 12, sets: 7, progression: { rule: 'per_set', setGoals: [12, 12, 11, 11, 10, 10, 9] } };
+  assert.deepEqual(setGoals(ex, 8), [12, 12, 11, 11, 10, 10, 9, 9]);
+  const last = (reps) => ({ workout: {}, entry: { sets: reps.map((r) => ({ done: true, type: 'working', kg: 40, reps: r })) } });
+  const cfg = { sets: 7, repMin: 9, repMax: 12 };
+  assert.equal(evaluateProgression(ex, last([12, 12, 11, 11, 10, 10, 9]), cfg, { unit: 'kg' }).status, 'increase');
+  assert.equal(evaluateProgression(ex, last([12, 12, 11, 10, 10, 10, 9]), cfg, { unit: 'kg' }).status, 'keep');
+});

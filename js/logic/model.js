@@ -39,6 +39,7 @@ export function defaultSettings() {
     volumeTargets: targets,
     customMuscles: [],
     autoRest: true,
+    restAdjustStep: 15,              // seconds for the − / + buttons on the rest timer
     restSound: true,
     restVibrate: true,
     keepAwake: true,

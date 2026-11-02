@@ -6,6 +6,7 @@
 //   all_max – every working set reached the TOP of the rep range
 //   avg     – the average reps of the working sets reached a target
 //   custom  – every working set reached N reps (optionally with ≥ X RIR left)
+//   per_set – each working set has its own goal, e.g. 12, 12, 11, 11, 10, 10, 9
 //
 // Extra conditions for ANY rule (decisions documented in the README):
 //   • Only completed "straight" working sets count (warm-ups, drop and rest-pause sets are ignored).
@@ -23,6 +24,28 @@ import { setReps } from './model.js';
 import { addInDisplayUnit, defaultProgressionStep } from './units.js';
 
 const EPS = 0.001;
+
+/** Parse "12, 12, 11 10" → [12, 12, 11, 10]. */
+export function parseSetGoals(text) {
+  return (String(text || '').match(/\d+/g) || []).map(Number).filter((n) => n > 0 && n <= 200).slice(0, 20);
+}
+
+/**
+ * Rep goal for each working set (array, one per set), or null when the rule has no per-set goal.
+ * `ex` can be a library exercise or a workout snapshot (both carry repMin/repMax/progression).
+ */
+export function setGoals(ex, count) {
+  const n = Math.max(1, count || ex?.sets || 1);
+  const pr = ex?.progression || {};
+  const rule = pr.rule || 'descending';
+  const top = ex?.repMax || 10;
+  if (rule === 'per_set' && pr.setGoals && pr.setGoals.length) {
+    return Array.from({ length: n }, (_, i) => pr.setGoals[Math.min(i, pr.setGoals.length - 1)]);
+  }
+  if (rule === 'descending') return Array.from({ length: n }, (_, i) => Math.max(ex?.repMin || 1, top - i));
+  if (rule === 'custom') return Array.from({ length: n }, () => pr.customReps || top);
+  return Array.from({ length: n }, () => top);
+}
 
 export function progressionStep(exercise, settings) {
   const own = exercise?.progression?.step;
@@ -70,6 +93,12 @@ export function evaluateProgression(exercise, last, cfg, settings) {
     reason = hit
       ? `You hit ${reps.join(', ')} last time`
       : `Keep this weight – aim for ${want}.`;
+  } else if (rule === 'per_set') {
+    const targets = setGoals({ ...exercise, repMax }, reps.length);
+    hit = reps.every((r, i) => r >= targets[i]);
+    reason = hit
+      ? `You hit ${reps.join(', ')} last time`
+      : `Keep this weight – aim for ${targets.join(', ')}.`;
   } else if (rule === 'avg') {
     const target = exercise.progression?.avgTarget || repMax;
     const avg = reps.reduce((a, b) => a + b, 0) / reps.length;
