@@ -601,3 +601,9 @@ input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
 .ex-volume .up { color: var(--green); }
 .ex-volume .down { color: var(--muted); }
 .goal-line { color: var(--accent); font-weight: 600; }
+
+.goal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
+.goal-box { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px; border-radius: 12px; background: var(--fill); }
+.goal-lbl { font-size: 12px; font-weight: 650; color: var(--muted); }
+.goal-input.num-field { width: 100%; text-align: center; font-size: 22px; font-weight: 800; border: 0; background: var(--card); border-radius: 10px; padding: 6px 0; color: var(--text); }
+.goal-x { position: absolute; top: 2px; inset-inline-end: 4px; width: 22px; height: 22px; min-height: 0; padding: 0; font-size: 16px; line-height: 1; color: var(--muted); }

@@ -8,7 +8,7 @@ import { allMuscles, muscleName, contributions, EXERCISE_TYPES, EQUIPMENT, CATEG
 import { fmtClock, deepClone, fmtNum } from '../logic/util.js';
 import { REST_STEP, REST_MIN, REST_MAX } from '../logic/restTimer.js';
 import { defaultProgressionStep } from '../logic/units.js';
-import { parseSetGoals, setGoals } from '../logic/progression.js';
+import { setGoals } from '../logic/progression.js';
 import { CATALOG, guideFor } from '../logic/catalog.js';
 import { heName, tr } from '../i18n.js';
 
@@ -244,12 +244,21 @@ export function ExerciseEditorSheet(sheet) {
     set({ muscles: mus });
   };
   const adv = !!sheet.advanced;
-  // "Goal for each set": the list decides the number of sets and the rep range.
-  const applyGoals = (text) => {
-    const goals = parseSetGoals(text);
+  // "Goal for each set": one goal per working set; the boxes decide the number of sets and the rep range.
+  const applyGoals = (goals) => {
+    goals = goals.map((g) => Math.max(1, Math.min(200, Math.round(g || 1))));
     d.progression = { ...d.progression, setGoals: goals };
     if (goals.length) Object.assign(d, { sets: goals.length, repMin: Math.min(...goals), repMax: Math.max(...goals) });
     update();
+  };
+  const perSet = d.progression.rule === 'per_set';
+  const goalList = perSet ? setGoals(d, d.sets) : [];
+  // Changing the number of sets adds a box (copying the last goal) or removes the last one.
+  const setSets = (v) => {
+    if (!perSet) return set({ sets: v });
+    const g = goalList.slice(0, v);
+    while (g.length < v) g.push(g[g.length - 1] || d.repMax || 10);
+    applyGoals(g);
   };
 
   return h(Sheet, {
@@ -277,7 +286,7 @@ export function ExerciseEditorSheet(sheet) {
     })))),
 
     h(Section, { title: 'Sets, reps and rest' }, [
-      h(Row, { title: 'Working sets', right: h(Stepper, { value: d.sets, min: 1, max: 12, onChange: (v) => set({ sets: v }) }) }),
+      h(Row, { title: 'Working sets', right: h(Stepper, { value: d.sets, min: 1, max: 20, onChange: (v) => setSets(v) }) }),
       h(Row, { title: 'Rep range', right: h('div.hstack', { style: { gap: '6px' } }, [
         h(NumberField, { value: d.repMin, decimals: false, class: 'w-64 center', ariaLabel: 'Min reps', onChange: (v) => { if (v) d.repMin = v; } }),
         h('span.muted', '–'),
@@ -320,12 +329,16 @@ export function ExerciseEditorSheet(sheet) {
             { value: 'avg', label: 'Average reps' },
             { value: 'custom', label: 'Custom' },
             { value: 'per_set', label: 'Goal for each set' },
-          ], d.progression.rule, (v) => { setProg({ rule: v }); if (v === 'per_set' && !(d.progression.setGoals || []).length) applyGoals(setGoals({ ...d, progression: { ...d.progression, rule: 'descending' } }, d.sets).join(', ')); }),
+          ], d.progression.rule, (v) => { setProg({ rule: v }); if (v === 'per_set' && !(d.progression.setGoals || []).length) applyGoals(setGoals({ ...d, progression: { ...d.progression, rule: 'descending' } }, d.sets)); }),
         }),
-        d.progression.rule === 'per_set' && h('div.pad', [
-          h('div.small.muted', { style: { marginBottom: '6px' } }, 'Reps for each working set, in order. The number of sets follows this list.'),
-          h('div.field-card', h(TextField, { value: sheet.goalsText ?? (d.progression.setGoals || []).join(', '), placeholder: '12, 12, 11, 11, 10, 10, 9', single: true, onChange: (v) => { sheet.goalsText = v; applyGoals(v); } })),
-          (d.progression.setGoals || []).length > 0 && h('div.small', { style: { marginTop: '6px' } }, `${d.progression.setGoals.length} sets: ${d.progression.setGoals.join(' · ')}`),
+        perSet && h('div.pad', [
+          h('div.small.muted', { style: { marginBottom: '8px' } }, 'Rep goal for each working set. Adding a set adds a box.'),
+          h('div.goal-grid', goalList.map((g, i) => h('label.goal-box', { key: i }, [
+            h('span.goal-lbl', `Set ${i + 1}`),
+            h(NumberField, { value: g, decimals: false, class: 'goal-input', ariaLabel: `Set ${i + 1} goal`, onChange: (v) => { const next = goalList.slice(); next[i] = v || 1; applyGoals(next); } }),
+            goalList.length > 1 && h('button.goal-x', { onclick: (e) => { e.preventDefault(); applyGoals(goalList.filter((_, k) => k !== i)); }, 'aria-label': `Remove set ${i + 1}` }, '×'),
+          ]))),
+          goalList.length < 20 && h('button.btn.btn-secondary.btn-sm', { style: { marginTop: '10px' }, onclick: () => setSets(goalList.length + 1) }, [icon('plus', 16), 'Add set']),
         ]),
         d.progression.rule === 'avg' && h(Row, { title: 'Average reps needed', right: h(Stepper, { value: d.progression.avgTarget || d.repMax, min: 1, max: 100, onChange: (v) => setProg({ avgTarget: v }) }) }),
         d.progression.rule === 'custom' && h(Row, { title: 'Reps on every set', right: h(Stepper, { value: d.progression.customReps || d.repMax, min: 1, max: 100, onChange: (v) => setProg({ customReps: v }) }) }),
