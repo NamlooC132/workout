@@ -100,6 +100,10 @@ export function newRoutineItem(exerciseId, fields = {}) {
     rest: null,
     weightStep: null,
     rirTarget: null,
+    type: null,                // e.g. 'dumbbell' only in this routine
+    loadMode: null,
+    unilateral: null,
+    progression: null,         // partial override of the exercise's overload rule
     notes: '',                 // routine-specific notes
     supersetId: null,          // items sharing an id are a superset
     ...fields,
@@ -162,8 +166,17 @@ export function effectiveConfig(exercise, item) {
     rest: pick('rest'),
     weightStep: pick('weightStep'),
     rirTarget: pick('rirTarget'),
+    type: pick('type'),
+    loadMode: pick('loadMode'),
+    unilateral: !!pick('unilateral'),
+    progression: { ...(exercise.progression || {}), ...(item?.progression || {}) },
     routineNotes: item?.notes || '',
   };
+}
+
+/** The exercise as it behaves inside a routine (routine overrides applied). */
+export function withConfig(exercise, cfg) {
+  return { ...exercise, type: cfg.type, loadMode: cfg.loadMode, unilateral: cfg.unilateral, progression: cfg.progression };
 }
 
 /** Frozen copy of the exercise stored with each workout entry. */
@@ -171,16 +184,16 @@ export function exerciseSnapshot(exercise, cfg) {
   return {
     name: exercise.name,
     muscles: { ...(exercise.muscles || {}) },
-    type: exercise.type,
-    loadMode: exercise.loadMode,
-    unilateral: !!exercise.unilateral,
+    type: cfg.type ?? exercise.type,
+    loadMode: cfg.loadMode ?? exercise.loadMode,
+    unilateral: cfg.unilateral ?? !!exercise.unilateral,
     repMin: cfg.repMin,
     repMax: cfg.repMax,
     sets: cfg.sets,
     rest: cfg.rest,
     weightStep: cfg.weightStep,
     rirTarget: cfg.rirTarget,
-    progression: { ...(exercise.progression || {}) },
+    progression: { ...(cfg.progression || exercise.progression || {}) },
   };
 }
 

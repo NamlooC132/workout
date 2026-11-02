@@ -298,7 +298,7 @@ export const DICT = {
   'Not sure how it looks? Watch a video ↗': 'לא בטוחים איך זה נראה? צפו בסרטון ↗',
   'Watch a video on YouTube ↗': 'צפו בסרטון ביוטיוב ↗',
   'Goal for each set': 'יעד לכל סט',
-  'This workout’s settings': 'הגדרות לאימון הזה',
+  'This workout’s settings': 'הגדרות לאימון הזה', 'Progressive overload · this routine': 'עומס פרוגרסיבי · בתוכנית הזו',
   'Changes here only apply to this workout. Your routine and the exercise library stay the same.': 'השינויים כאן חלים רק על האימון הזה. התוכנית וספריית התרגילים נשארות כמו שהן.',
   'Finished sets can’t be removed here': 'אי אפשר להסיר כאן סטים שכבר בוצעו',
   'Also save these to the exercise': 'שמור את זה גם בתרגיל',

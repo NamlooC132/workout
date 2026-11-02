@@ -3,7 +3,7 @@
 
 import { data, saveWorkout, saveRoutine, deleteWorkout, history, exercisesById, toast } from './store.js';
 import { uid, deepClone } from './logic/util.js';
-import { newSet, effectiveConfig, exerciseSnapshot, newRoutineItem } from './logic/model.js';
+import { newSet, effectiveConfig, withConfig, exerciseSnapshot, newRoutineItem } from './logic/model.js';
 import { lastSession } from './logic/history.js';
 import { evaluateProgression } from './logic/progression.js';
 import { activeBlock, blockWeek, isDeloadWeek } from './logic/blocks.js';
@@ -51,7 +51,7 @@ export function makeEntry(exercise, item, workout) {
     const base = mainWork[mainWork.length - 1];
     sets.push(newSet({ type: 'drop', kg: src ? src.kg : dropWeight(base?.kg, cfg.weightStep), reps: src ? src.reps : null }));
   }
-  const evalResult = evaluateProgression(exercise, last, cfg, data.settings);
+  const evalResult = evaluateProgression(withConfig(exercise, cfg), last, cfg, data.settings);
   return {
     id: uid(),
     exerciseId: exercise.id,
