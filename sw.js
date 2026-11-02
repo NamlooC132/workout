@@ -1,6 +1,6 @@
 // Service worker: caches the whole app so it opens and works with no internet (e.g. in the gym basement).
 // Bump VERSION whenever you upload changed files so phones pick up the new version.
-const VERSION = 'workoutlog-v1.11.1';
+const VERSION = 'workoutlog-v1.11.2';
 const FILES = [
   './',
   './index.html',
