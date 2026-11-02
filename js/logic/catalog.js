@@ -590,6 +590,21 @@ const LOCAL_PHOTOS = {
   'sissy squat': 'sissy-squat',
   'bodyweight squat': 'bodyweight-squat',
   'pistol squat': 'pistol-squat',
+  'single-leg romanian deadlift': 'single-leg-romanian-deadlift',
+  'smith machine romanian deadlift': 'smith-machine-romanian-deadlift',
+  'standing leg curl': 'standing-leg-curl',
+  'deficit deadlift': 'deficit-deadlift',
+  'pause deadlift': 'pause-deadlift',
+  'dumbbell hip thrust': 'dumbbell-hip-thrust',
+  'single-leg hip thrust': 'single-leg-hip-thrust',
+  'single-leg glute bridge': 'single-leg-glute-bridge',
+  'frog pump': 'frog-pump',
+  'cable hip abduction': 'cable-hip-abduction',
+  'cable hip adduction': 'cable-hip-adduction',
+  'machine glute kickback': 'machine-glute-kickback',
+  'smith machine calf raise': 'standing-calf-raise',
+  'single-leg calf raise': 'single-leg-calf-raise',
+  'donkey calf raise': 'donkey-calf-raise',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
