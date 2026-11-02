@@ -3,7 +3,7 @@ import { h } from '../vdom.js';
 import { icon } from './icons.js';
 import { exercisesById } from '../store.js';
 import { Sheet, ExercisePhoto } from './components.js';
-import { guideFor, photoFor, catalogEntry } from '../logic/catalog.js';
+import { guideFor, photoFor, catalogEntry, videoFor } from '../logic/catalog.js';
 import { howToFor, genericTips, BEGINNER_NOTE } from '../logic/howto.js';
 
 function List({ title, items, kind }) {
@@ -37,6 +37,7 @@ export function HowToSheet(sheet) {
         h(List, { title: 'Basics', items: genericTips(equipment), kind: 'tips' }),
       ],
     h('div.callout.blue', { style: { margin: '14px 0 10px' } }, [icon('sparkle', 18), BEGINNER_NOTE]),
-    h('a.btn.btn-secondary.btn-block', { href: guideFor(ex || { name }), target: '_blank', rel: 'noopener', style: { textDecoration: 'none' } }, [icon('play', 18), 'Watch a video ↗']),
+    h('a.btn.btn-secondary.btn-block', { href: videoFor(name), target: '_blank', rel: 'noopener', style: { textDecoration: 'none' } }, [icon('play', 18), 'Watch a video on YouTube ↗']),
+    guideFor(ex || { name }) !== videoFor(name) && h('a.btn.btn-plain.btn-block', { href: guideFor(ex || { name }), target: '_blank', rel: 'noopener', style: { textDecoration: 'none', marginTop: '6px' } }, 'Step-by-step guide with pictures ↗'),
   ]);
 }

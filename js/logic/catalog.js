@@ -360,6 +360,11 @@ export function guideFor(exercise) {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${exercise.name} exercise how to`)}`;
 }
 
+/** A YouTube search for the exercise – always real videos of the movement. */
+export function videoFor(name) {
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} exercise how to`)}`;
+}
+
 export const CATALOG_CODES = CODES;
 
 // ---------- Example photos (Pexels – free to use, no attribution required; we credit anyway) ----------
@@ -601,7 +606,6 @@ const LOCAL_PHOTOS = {
   'frog pump': 'frog-pump',
   'cable hip abduction': 'cable-hip-abduction',
   'cable hip adduction': 'cable-hip-adduction',
-  'machine glute kickback': 'machine-glute-kickback',
   'smith machine calf raise': 'standing-calf-raise',
   'single-leg calf raise': 'single-leg-calf-raise',
   'donkey calf raise': 'donkey-calf-raise',

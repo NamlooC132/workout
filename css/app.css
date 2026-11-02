@@ -590,3 +590,6 @@ input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
 [dir="rtl"] .chev svg, [dir="rtl"] .icon-btn.back svg { transform: scaleX(-1); }
 [dir="rtl"] .toggle { direction: ltr; }
 [dir="rtl"] .tbar, [dir="rtl"] .rest-bar .rest-fill { direction: ltr; }
+
+.ex-photo figcaption.ai-note { text-align: start; font-size: 12.5px; font-weight: 500; line-height: 1.4; padding: 8px 10px; margin-top: 6px; border-radius: 12px; background: var(--yellow-soft); color: var(--text); }
+.ex-photo figcaption.ai-note a { color: var(--accent); font-weight: 650; }

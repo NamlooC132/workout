@@ -5,6 +5,7 @@ import { MuscleMap } from './musclemap.js';
 import { data, ui, update, closeSheet, openSheet } from '../store.js';
 import { parseNum, fmtNum } from '../logic/util.js';
 import { displayWeight, fromDisplayWeight } from '../logic/units.js';
+import { videoFor } from '../logic/catalog.js';
 
 // ---------- Navigation ----------
 export function nav(path) {
@@ -157,7 +158,12 @@ export function ExercisePhoto({ name, photo }) {
   if (!photo) return null;
   return h('figure.ex-photo', [
     h('img', { src: photo.src, alt: `${name} – example`, loading: 'lazy', onerror: (e) => { e.target.closest('figure').style.display = 'none'; } }),
-    h('figcaption', photo.page ? h('a', { href: photo.page, target: '_blank', rel: 'noopener' }, photo.credit || 'Photo') : (photo.credit || '')),
+    photo.page
+      ? h('figcaption', h('a', { href: photo.page, target: '_blank', rel: 'noopener' }, photo.credit || 'Photo'))
+      : h('figcaption.ai-note', [
+        h('span', 'AI-generated picture – it can get the machine or the movement wrong, so don’t rely on it.'), ' ',
+        h('a', { href: videoFor(name), target: '_blank', rel: 'noopener' }, 'Not sure how it looks? Watch a video ↗'),
+      ]),
   ]);
 }
 
