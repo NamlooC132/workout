@@ -552,6 +552,20 @@ const LOCAL_PHOTOS = {
   'incline hammer curl': 'incline-hammer-curl',
   'preacher hammer curl': 'preacher-hammer-curl',
   'seated dumbbell curl': 'seated-dumbbell-curl',
+  'dumbbell external rotation': 'dumbbell-external-rotation',
+  'drag curl': 'drag-curl',
+  'close-grip ez bar curl': 'close-grip-ez-bar-curl',
+  'wide-grip barbell curl': 'wide-grip-barbell-curl',
+  'cable preacher curl': 'cable-preacher-curl',
+  'single-arm cable curl': 'single-arm-cable-curl',
+  'lying cable curl': 'lying-cable-curl',
+  'reverse dumbbell curl': 'reverse-dumbbell-curl',
+  'reverse cable curl': 'reverse-cable-curl',
+  'jm press': 'jm-press',
+  'close-grip dumbbell press': 'close-grip-dumbbell-press',
+  'smith machine close-grip bench press': 'smith-machine-close-grip-bench-press',
+  'overhead barbell triceps extension': 'overhead-barbell-triceps-extension',
+  'incline skull crusher': 'incline-skull-crusher',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
