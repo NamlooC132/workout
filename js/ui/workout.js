@@ -271,6 +271,7 @@ function entryMenu(w, entry) {
   const ex = exercisesById().get(entry.exerciseId);
   openSheet({
     type: 'actions', title: entry.snapshot.name, actions: [
+      { text: 'This workout’s settings', icon: 'gear', onClick: () => openSheet({ type: 'entrySettings', workoutId: w.id, entryId: entry.id }) },
       entry.exerciseId && { text: 'History', icon: 'history', onClick: () => openSheet({ type: 'exHistory', exerciseId: entry.exerciseId, name: entry.snapshot.name }) },
       { text: 'How to do it', icon: 'info', onClick: () => openSheet({ type: 'howTo', name: entry.snapshot.name, exerciseId: entry.exerciseId }) },
       { text: 'Add warm-up set', icon: 'flame', onClick: () => WS.addSet(w, entry, 'warmup') },
