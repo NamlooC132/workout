@@ -323,7 +323,59 @@ const ROWS = [
   ['Wrist Roller', 'weighted', 'Other', 'Isolation', 'fa:1', 2, 5, 60, null],
   ['Dead Hang', 'bodyweight', 'Bodyweight', 'Isolation', 'fa:1 la:.5', 20, 60, 60, null, { notes: 'Log seconds in the reps field' }],
   ['Plate Pinch', 'weighted', 'Other', 'Isolation', 'fa:1', 20, 45, 60, null, { notes: 'Log seconds in the reps field' }],
+
+  // ---------- Machines (added Nov 2026) ----------
+  ['Incline Machine Press', 'weighted', 'Machine', 'Compound', 'c:1 fd:.5 tri:.5', 8, 12, 90, null],
+  ['Decline Machine Chest Press', 'weighted', 'Machine', 'Compound', 'c:1 tri:.5', 8, 12, 90, null],
+  ['Converging Chest Press', 'weighted', 'Machine', 'Compound', 'c:1 tri:.5 fd:.5', 8, 12, 90, null],
+  ['Wide-Grip Lat Pulldown', 'weighted', 'Cable', 'Compound', 'la:1 ub:.5 bi:.5', 8, 12, 90, null],
+  ['Chest-Supported T-Bar Row', 'weighted', 'Machine', 'Compound', 'ub:1 la:1 rd:.5 bi:.5', 8, 12, 90, null],
+  ['Iso-Lateral Row', 'weighted', 'Machine', 'Compound', 'la:1 ub:1 bi:.5', 8, 12, 90, null, UNI],
+  ['Machine Shrug', 'weighted', 'Machine', 'Isolation', 'tr:1', 10, 15, 60, null],
+  ['Machine Low Row', 'weighted', 'Machine', 'Compound', 'la:1 ub:1 bi:.5', 8, 12, 90, null],
+  ['Lumbar Extension Machine', 'weighted', 'Machine', 'Isolation', 'lb:1 g:.5', 10, 15, 60, null],
+  ['Iso-Lateral Shoulder Press', 'weighted', 'Machine', 'Compound', 'fd:1 tri:.5 sd:.5', 8, 12, 90, null],
+  ['Machine Overhead Triceps Extension', 'weighted', 'Machine', 'Isolation', 'tri:1', 10, 15, 60, null],
+  ['Cable Triceps Kickback', 'weighted', 'Cable', 'Isolation', 'tri:1', 12, 15, 60, null, UNI],
+  ['Dual-Axis Machine Curl', 'weighted', 'Machine', 'Isolation', 'bi:1', 10, 12, 60, null],
+  ['Seated Dip Machine', 'weighted', 'Machine', 'Compound', 'tri:1 c:.5 fd:.5', 8, 12, 90, null],
 ];
+
+// Other names people use for the same exercise (searchable).
+const AKA = {
+  'Machine Chest Press': 'seated machine chest press',
+  'Pec Deck': 'chest fly machine',
+  'Cable Fly': 'cable crossover crossovers',
+  'Smith Machine Bench Press': 'smith machine flat bench press',
+  'Smith Machine Incline Press': 'smith machine incline bench press',
+  'Assisted Dip': 'assisted chest dip machine assisted tricep dip',
+  'Assisted Pull-Up': 'assisted pull-up machine',
+  'Straight-Arm Pulldown': 'cable straight-arm pulldown',
+  'Machine Shoulder Press': 'seated machine shoulder press',
+  'Machine Lateral Raise': 'lateral raise machine',
+  'Reverse Pec Deck': 'rear delt fly machine',
+  'Face Pull': 'cable face pull',
+  'Smith Machine Shoulder Press': 'smith machine overhead press',
+  'Leg Press': 'linear leg press',
+  'Hack Squat': 'hack squat machine',
+  'Leg Extension': 'seated leg extension',
+  'Machine Glute Kickback': 'glute kickback machine',
+  'Hip Abduction Machine': 'hip abductor machine',
+  'Hip Adduction Machine': 'hip adductor machine',
+  'Machine Preacher Curl': 'preacher curl machine',
+  'Triceps Pushdown': 'cable tricep pushdown',
+  'Cable Curl': 'cable bicep curl',
+  'Rope Cable Curl': 'cable hammer curl',
+  'Bayesian Curl': 'cable behind-the-back curl',
+  'Converging Chest Press': 'iso-lateral chest press',
+  'Iso-Lateral Row': 'single-arm iso-lateral row',
+  'Machine Low Row': 'low-row machine',
+  'Lumbar Extension Machine': 'machine lumbar extension',
+  'Machine Overhead Triceps Extension': 'seated overhead tricep extension machine',
+  'Cable Triceps Kickback': 'cable single-arm kickback',
+  'Dual-Axis Machine Curl': 'bicep dual axis machine',
+  'Seated Dip Machine': 'tricep pushdown machine',
+};
 
 function parseMuscles(s) {
   const out = {};
@@ -342,6 +394,7 @@ export const CATALOG = ROWS.map(([name, type, equipment, category, muscles, repM
   unilateral: !!extra.unilateral,
   warmupSets: extra.warmupSets || 0,
   notes: extra.notes || '',
+  aka: AKA[name] || '',
   guide: slug ? `https://www.simplyfitness.com/pages/${slug}` : null,
 }));
 

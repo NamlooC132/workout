@@ -5,11 +5,13 @@ import p2 from './howto/part2.js';
 import p3 from './howto/part3.js';
 import p4 from './howto/part4.js';
 import p5 from './howto/part5.js';
+import p6 from './howto/part6.js';
 import h1 from './howto/he-part1.js';
 import h2 from './howto/he-part2.js';
 import h3 from './howto/he-part3.js';
 import h4 from './howto/he-part4.js';
 import h5 from './howto/he-part5.js';
+import h6 from './howto/he-part6.js';
 import { isHe } from '../i18n.js';
 
 const norm = (s) => String(s || '').trim().toLowerCase().replace(/[’‘]/g, "'");
@@ -34,7 +36,7 @@ function parse(texts) {
   return map;
 }
 function guides(lang = 'en') {
-  if (!LOADED[lang]) LOADED[lang] = parse(lang === 'he' ? [h1, h2, h3, h4, h5] : [p1, p2, p3, p4, p5]);
+  if (!LOADED[lang]) LOADED[lang] = parse(lang === 'he' ? [h1, h2, h3, h4, h5, h6] : [p1, p2, p3, p4, p5, p6]);
   return LOADED[lang];
 }
 

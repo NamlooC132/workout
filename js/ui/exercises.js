@@ -9,7 +9,7 @@ import { fmtClock, deepClone, fmtNum } from '../logic/util.js';
 import { REST_STEP, REST_MIN, REST_MAX } from '../logic/restTimer.js';
 import { defaultProgressionStep } from '../logic/units.js';
 import { setGoals } from '../logic/progression.js';
-import { CATALOG, guideFor } from '../logic/catalog.js';
+import { CATALOG, guideFor, catalogEntry } from '../logic/catalog.js';
 import { heName, tr } from '../i18n.js';
 
 export function exerciseSubtitle(ex) {
@@ -22,7 +22,7 @@ const ALIASES = { db: 'dumbbell', dbs: 'dumbbell', bb: 'barbell', kb: 'kettlebel
 function haystack(ex) {
   const mus = Object.entries(ex.muscles || {}).filter(([, v]) => v > 0).map(([k]) => `${muscleName(k, data.settings)} ${tr(muscleName(k, data.settings))} ${k.replace('_', ' ')}`);
   const type = EXERCISE_TYPES.find((t) => t.key === ex.type)?.name || '';
-  return `${ex.name} ${heName(ex.name) || ''} ${ex.equipment || ''} ${tr(ex.equipment || '')} ${ex.category || ''} ${type} ${mus.join(' ')}`.toLowerCase();
+  return `${ex.name} ${heName(ex.name) || ''} ${ex.aka || catalogEntry(ex.name)?.aka || ''} ${ex.equipment || ''} ${tr(ex.equipment || '')} ${ex.category || ''} ${type} ${mus.join(' ')}`.toLowerCase();
 }
 export function matches(ex, q, muscle) {
   if (muscle && !(ex.muscles && ex.muscles[muscle] > 0)) return false;
