@@ -19,15 +19,6 @@ D Slowly bring them back until you feel a stretch in your chest.
 X Letting the weight slam back between reps.
 X Shrugging your shoulders up toward your ears.
 
-# Converging Chest Press
-S Adjust the seat so the handles are at mid-chest height. Load the same weight on both sides.
-S Sit with your back flat against the pad, feet on the floor.
-S Grab the handles with your wrists straight.
-D Press forward. The handles move toward each other as you push.
-D Squeeze your chest when your arms are almost straight.
-D Return slowly until you feel a stretch in your chest.
-X Uneven plates on each side.
-X Bouncing out of the bottom of each rep.
 
 # Wide-Grip Lat Pulldown
 S Adjust the knee pad so your thighs are locked in snugly.
@@ -75,14 +66,6 @@ D Return slowly until your arms are straight.
 X Rocking your body back and forth.
 X Rounding your back as the handles go forward.
 
-# Lumbar Extension Machine
-S Sit in the machine and adjust it so the back pad sits across your upper back.
-S Fasten the thigh strap or pad and put your feet on the footrest. Start light.
-D Push back against the pad by straightening your lower back.
-D Stop when your body is upright or slightly behind upright.
-D Return slowly to the start.
-X Using heavy weight. This is for control, not maximum weight.
-X Jerking back fast.
 
 # Iso-Lateral Shoulder Press
 S Adjust the seat so the handles are just above shoulder height. Load the same weight on both sides.
@@ -93,33 +76,8 @@ D You can press both arms together or one at a time.
 X Arching your back off the pad.
 X Uneven plates on each side.
 
-# Machine Overhead Triceps Extension
-S Adjust the seat so your elbows line up with the machine's pivot point.
-S Sit with your back against the pad, upper arms pointing up, and grab the handles behind your head.
-D Straighten your arms to push the handles up and forward.
-D Keep your upper arms still.
-D Bend your arms slowly to return.
-X Seat set wrong, so your elbows don't line up with the pivot.
-X Letting your elbows flare out wide.
 
-# Cable Triceps Kickback
-S Set a pulley low with a single handle (or just grab the cable ball).
-S Hold it in one hand and hinge forward so your back is flat. Raise your upper arm so it is parallel to the floor, arm bent.
-D Straighten your arm backward until it is fully straight.
-D Squeeze your triceps.
-D Bend it back slowly.
-D Finish your reps, then switch arms.
-X Letting your upper arm drop down.
-X Swinging your body.
 
-# Dual-Axis Machine Curl
-S Adjust the seat so the backs of your arms rest flat on the pad and your elbows line up with the pivot.
-S Grab the handles with an underhand grip. They can turn a little as you curl.
-D Curl the handles up toward your shoulders.
-D Squeeze at the top.
-D Lower slowly until your arms are almost straight.
-X Lifting your arms off the pad.
-X Letting the weight drop fast at the bottom.
 
 # Seated Dip Machine
 S Adjust the seat so the handles are at your sides, about at the height of your lower chest.

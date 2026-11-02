@@ -327,17 +327,12 @@ const ROWS = [
   // ---------- Machines (added Nov 2026) ----------
   ['Incline Machine Press', 'weighted', 'Machine', 'Compound', 'c:1 fd:.5 tri:.5', 8, 12, 90, null],
   ['Decline Machine Chest Press', 'weighted', 'Machine', 'Compound', 'c:1 tri:.5', 8, 12, 90, null],
-  ['Converging Chest Press', 'weighted', 'Machine', 'Compound', 'c:1 tri:.5 fd:.5', 8, 12, 90, null],
   ['Wide-Grip Lat Pulldown', 'weighted', 'Cable', 'Compound', 'la:1 ub:.5 bi:.5', 8, 12, 90, null],
   ['Chest-Supported T-Bar Row', 'weighted', 'Machine', 'Compound', 'ub:1 la:1 rd:.5 bi:.5', 8, 12, 90, null],
   ['Iso-Lateral Row', 'weighted', 'Machine', 'Compound', 'la:1 ub:1 bi:.5', 8, 12, 90, null, UNI],
   ['Machine Shrug', 'weighted', 'Machine', 'Isolation', 'tr:1', 10, 15, 60, null],
   ['Machine Low Row', 'weighted', 'Machine', 'Compound', 'la:1 ub:1 bi:.5', 8, 12, 90, null],
-  ['Lumbar Extension Machine', 'weighted', 'Machine', 'Isolation', 'lb:1 g:.5', 10, 15, 60, null],
   ['Iso-Lateral Shoulder Press', 'weighted', 'Machine', 'Compound', 'fd:1 tri:.5 sd:.5', 8, 12, 90, null],
-  ['Machine Overhead Triceps Extension', 'weighted', 'Machine', 'Isolation', 'tri:1', 10, 15, 60, null],
-  ['Cable Triceps Kickback', 'weighted', 'Cable', 'Isolation', 'tri:1', 12, 15, 60, null, UNI],
-  ['Dual-Axis Machine Curl', 'weighted', 'Machine', 'Isolation', 'bi:1', 10, 12, 60, null],
   ['Seated Dip Machine', 'weighted', 'Machine', 'Compound', 'tri:1 c:.5 fd:.5', 8, 12, 90, null],
 ];
 
@@ -367,13 +362,8 @@ const AKA = {
   'Cable Curl': 'cable bicep curl',
   'Rope Cable Curl': 'cable hammer curl',
   'Bayesian Curl': 'cable behind-the-back curl',
-  'Converging Chest Press': 'iso-lateral chest press',
   'Iso-Lateral Row': 'single-arm iso-lateral row',
   'Machine Low Row': 'low-row machine',
-  'Lumbar Extension Machine': 'machine lumbar extension',
-  'Machine Overhead Triceps Extension': 'seated overhead tricep extension machine',
-  'Cable Triceps Kickback': 'cable single-arm kickback',
-  'Dual-Axis Machine Curl': 'bicep dual axis machine',
   'Seated Dip Machine': 'tricep pushdown machine',
 };
 
@@ -699,6 +689,15 @@ const LOCAL_PHOTOS = {
   'dead hang': 'dead-hang',
   'plate pinch': 'plate-pinch',
   'machine glute kickback': 'machine-glute-kickback-2',
+  'incline machine press': 'incline-machine-press',
+  'decline machine chest press': 'decline-machine-chest-press',
+  'wide-grip lat pulldown': 'wide-grip-lat-pulldown',
+  'chest-supported t-bar row': 'chest-supported-t-bar-row',
+  'iso-lateral row': 'iso-lateral-row',
+  'machine shrug': 'machine-shrug',
+  'machine low row': 'machine-low-row',
+  'iso-lateral shoulder press': 'iso-lateral-shoulder-press',
+  'seated dip machine': 'seated-dip-machine',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
