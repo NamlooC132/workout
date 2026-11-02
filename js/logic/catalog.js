@@ -566,6 +566,13 @@ const LOCAL_PHOTOS = {
   'smith machine close-grip bench press': 'smith-machine-close-grip-bench-press',
   'overhead barbell triceps extension': 'overhead-barbell-triceps-extension',
   'incline skull crusher': 'incline-skull-crusher',
+  'zottman curl': 'zottman-curl',
+  'cable lying triceps extension': 'cable-lying-triceps-extension',
+  'v-bar pushdown': 'v-bar-pushdown',
+  'reverse-grip pushdown': 'reverse-grip-pushdown',
+  'single-arm overhead dumbbell extension': 'single-arm-overhead-dumbbell-extension',
+  'triceps dip': 'dips',
+  'box squat': 'box-squat',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
