@@ -500,6 +500,20 @@ const LOCAL_PHOTOS = {
   'cable crunch': 'cable-crunch',
   'crunch': 'crunch',
   'hanging leg raise': 'hanging-leg-raise',
+  'inverted row': 'inverted-row',
+  'hanging knee raise': 'hanging-knee-raise',
+  'captain’s chair leg raise': 'captains-chair-leg-raise',
+  'lying leg raise': 'lying-leg-raise',
+  'reverse crunch': 'reverse-crunch',
+  'ab wheel rollout': 'ab-wheel-rollout',
+  'sit-up': 'sit-up',
+  'bicycle crunch': 'bicycle-crunch',
+  'oblique crunch': 'oblique-crunch',
+  'dumbbell side bend': 'dumbbell-side-bend',
+  'pallof press': 'pallof-press',
+  'cable woodchop': 'cable-woodchop',
+  'plank': 'plank',
+  'dead bug': 'dead-bug',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
