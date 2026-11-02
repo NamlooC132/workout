@@ -573,6 +573,23 @@ const LOCAL_PHOTOS = {
   'single-arm overhead dumbbell extension': 'single-arm-overhead-dumbbell-extension',
   'triceps dip': 'dips',
   'box squat': 'box-squat',
+  'calf raise': 'standing-calf-raise',
+  'kneeling cable triceps extension': 'overhead-triceps-extension',
+  'pause squat': 'pause-squat',
+  'safety bar squat': 'safety-bar-squat',
+  'zercher squat': 'zercher-squat',
+  'dumbbell squat': 'dumbbell-squat',
+  'sumo squat': 'sumo-squat',
+  'narrow-stance leg press': 'narrow-stance-leg-press',
+  'single-leg leg press': 'single-leg-leg-press',
+  'smith machine split squat': 'smith-machine-split-squat',
+  'barbell lunge': 'barbell-lunge',
+  'dumbbell lunge': 'dumbbell-lunge',
+  'lateral lunge': 'lateral-lunge',
+  'barbell step-up': 'barbell-step-up',
+  'sissy squat': 'sissy-squat',
+  'bodyweight squat': 'bodyweight-squat',
+  'pistol squat': 'pistol-squat',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
