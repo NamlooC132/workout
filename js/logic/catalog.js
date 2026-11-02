@@ -476,6 +476,17 @@ const LOCAL_PHOTOS = {
   'seated calf raise': 'seated-calf-raise',
   'leg press calf raise': 'leg-press-calf-raise',
   'sumo deadlift': 'sumo-deadlift',
+  'reverse hyperextension': 'reverse-hyperextension',
+  'trap bar deadlift': 'trap-bar-deadlift',
+  'rack pull': 'rack-pull',
+  'pull-up': 'pull-up',
+  'assisted pull-up': 'assisted-pull-up',
+  'lat pulldown': 'lat-pulldown',
+  'close-grip lat pulldown': 'close-grip-lat-pulldown',
+  'reverse-grip lat pulldown': 'reverse-grip-lat-pulldown',
+  'single-arm lat pulldown': 'single-arm-lat-pulldown',
+  'machine lat pulldown': 'machine-lat-pulldown',
+  'pendlay row': 'pendlay-row',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
