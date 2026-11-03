@@ -616,3 +616,7 @@ input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
 .filter-chips::-webkit-scrollbar { display: none; }
 .filter-chips .chip { flex: none; }
 .filter-clear { min-height: auto; padding: 2px 0; font-size: 14px; justify-self: start; }
+
+/* Exercise card flashes briefly after its settings were changed during a workout */
+.ex-card.just-changed { animation: justchanged 1.6s ease-out; }
+@keyframes justchanged { 0%, 30% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }

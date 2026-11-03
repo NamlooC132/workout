@@ -137,14 +137,15 @@ function ExerciseCard({ w, entry, index, st }) {
   const volLast = showWeight && entry.lastSummary ? volumeOf(entry.lastSummary.sets, snap, bw) : 0;
   let workNo = 0;
 
-  return h('div', { key: entry.id, class: cx('ex-card', entry.skipped && 'skipped', inSS && 'in-ss') }, [
+  return h('div', { key: entry.id, class: cx('ex-card', entry.skipped && 'skipped', inSS && 'in-ss', entry.changedAt && Date.now() - entry.changedAt < 2500 && 'just-changed') }, [
     ssStart && h('div.ss-label', 'Superset · alternate sets'),
     h('div.ex-head', [
       h(Thumb, { image: ex?.image, name: snap.name, muscles: ex?.muscles || snap.muscles, size: 52 }),
       h('div.grow', [
         h('button.ex-name', { onclick: openHistory }, [snap.name, entry.skipped && h('span.tag', { style: { marginLeft: '6px' } }, 'Skipped')]),
         h('div.last-time', entry.lastSummary ? `Last: ${setsSummary(entry.lastSummary.sets, snap)}` : `First time · aim for ${snap.repMin}–${snap.repMax} reps`),
-        perSetRule && h('div.last-time.goal-line', `Goal: ${goals.join(', ')} reps`),
+        entry.lastSummary && h('div.last-time.goal-line', perSetRule ? `Goal: ${goals.join(', ')} reps` : `Goal: ${snap.repMin}–${snap.repMax} reps`),
+        !entry.lastSummary && perSetRule && h('div.last-time.goal-line', `Goal: ${goals.join(', ')} reps`),
       ]),
       h(IconButton, { name: 'info', label: `How to do ${snap.name}`, class: 'howto-btn', onClick: () => openSheet({ type: 'howTo', name: snap.name, exerciseId: entry.exerciseId }) }),
       h(IconButton, { name: 'more', label: 'Exercise options', onClick: () => entryMenu(w, entry) }),
@@ -282,7 +283,12 @@ function entryMenu(w, entry) {
       entry.supersetId && next && next.supersetId !== entry.supersetId && { text: `Add ${next.snapshot.name} to superset`, icon: 'link', onClick: () => WS.linkSuperset(w, entry) },
       entry.supersetId && { text: 'Remove from superset', icon: 'link', onClick: () => WS.unlinkSuperset(w, entry) },
       { text: entry.skipped ? 'Un-skip exercise' : 'Skip exercise', icon: 'skip', onClick: () => WS.undoable(w, entry.skipped ? 'Exercise back in' : 'Exercise skipped', () => WS.toggleSkip(w, entry)) },
-      entry.exerciseId && { text: 'Edit exercise', icon: 'edit', onClick: () => openSheet({ type: 'exerciseEditor', exerciseId: entry.exerciseId }) },
+      entry.exerciseId && { text: 'Edit exercise', icon: 'edit', onClick: () => {
+        // From a routine: edit it for that routine (like the Routines screen); otherwise the library.
+        const r = w.routineId ? data.routines.find((x) => x.id === w.routineId) : null;
+        const it = r ? r.items.find((i) => i.exerciseId === entry.exerciseId) : null;
+        openSheet(it ? { type: 'exerciseEditor', exerciseId: entry.exerciseId, routineId: r.id, itemId: it.id, advanced: false } : { type: 'exerciseEditor', exerciseId: entry.exerciseId });
+      } },
       { text: 'Remove exercise', icon: 'trash', destructive: true, onClick: () => WS.undoable(w, `${entry.snapshot.name} removed`, () => WS.removeEntry(w, entry.id)) },
     ].filter(Boolean),
   });

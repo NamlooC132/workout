@@ -103,6 +103,56 @@ export function startWorkout(routine) {
 
 export const save = (w) => saveWorkout(w);
 
+/**
+ * After an exercise (or its routine settings) is edited, apply the new settings to the
+ * active workout right away: rep range, rest, weight step, goals, type … and the number
+ * of working sets (only empty, unfinished sets are ever removed).
+ * Returns the number of updated entries.
+ */
+export function refreshExercise(exerciseId) {
+  const w = data.workouts.find((x) => x.status === 'active');
+  const ex = exercisesById().get(exerciseId);
+  if (!w || !ex) return 0;
+  const routine = w.routineId ? data.routines.find((r) => r.id === w.routineId) : null;
+  const item = routine ? routine.items.find((i) => i.exerciseId === exerciseId) : null;
+  let n = 0;
+  for (const entry of w.entries) {
+    if (entry.exerciseId !== exerciseId) continue;
+    const cfg = effectiveConfig(ex, item);
+    const old = entry.snapshot || {};
+    entry.snapshot = exerciseSnapshot(ex, cfg);
+    entry.routineNotes = cfg.routineNotes;
+    // Number of working sets – only when that setting itself changed.
+    if (cfg.sets && cfg.sets !== old.sets) {
+      const isWork = (s) => s.type !== 'warmup' && s.type !== 'drop';
+      let work = entry.sets.filter(isWork).length;
+      while (work < cfg.sets) { addSetNoSave(entry); work++; }
+      for (let i = entry.sets.length - 1; i >= 0 && work > cfg.sets; i--) {
+        const s = entry.sets[i];
+        if (isWork(s) && !s.done) { entry.sets.splice(i, 1); work--; }
+      }
+    }
+    // New suggestion for the new rep range, unless it was already used or dismissed.
+    const p = entry.progression || {};
+    if (!p.applied && !p.dismissed) {
+      const last = lastSession(history(), exerciseId, { excludeWorkoutId: w.id });
+      entry.progression = { ...evaluateProgression(withConfig(ex, cfg), last, cfg, data.settings), applied: false, dismissed: false };
+    }
+    entry.changedAt = Date.now();
+    n++;
+  }
+  if (n) saveWorkout(w);
+  return n;
+}
+
+function addSetNoSave(entry) {
+  const last = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').slice(-1)[0];
+  const set = newSet({ type: last ? last.type : data.settings.defaultSetType || 'working', kg: last ? last.kg : null, reps: null });
+  let idx = entry.sets.length;
+  while (idx > 0 && entry.sets[idx - 1].type === 'drop') idx--;
+  entry.sets.splice(idx, 0, set);
+}
+
 // ---------- Sets ----------
 export function addSet(w, entry, type) {
   const last = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').slice(-1)[0] || entry.sets.slice(-1)[0];

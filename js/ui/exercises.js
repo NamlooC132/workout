@@ -12,6 +12,7 @@ import { setGoals } from '../logic/progression.js';
 import { routineItemActions } from './routines.js';
 import { CATALOG, guideFor, catalogEntry } from '../logic/catalog.js';
 import { heName, tr } from '../i18n.js';
+import { refreshExercise } from '../workoutService.js';
 
 export function exerciseSubtitle(ex) {
   const mus = contributions(ex).filter((c) => c.value >= 1).map((c) => muscleName(c.key, data.settings));
@@ -277,14 +278,15 @@ export function ExerciseEditorSheet(sheet) {
       if (d.repMin > d.repMax) [d.repMin, d.repMax] = [d.repMax, d.repMin];
       saveRoutine({ ...routine, items: routine.items.map((i) => (i.id === item.id ? { ...i, ...routineOverrides(libEx, d) } : i)) });
       closeSheet();
-      toast(`Saved for ${routine.name} only`);
+      toast(refreshExercise(d.id) ? `Saved for ${routine.name} only · updated in this workout` : `Saved for ${routine.name} only`);
       return;
     }
     d.name = d.name.trim();
     if (d.repMin > d.repMax) [d.repMin, d.repMax] = [d.repMax, d.repMin];
     saveExercise(deepClone(d));
     closeSheet();
-    toast(sheet.isNew ? 'Exercise created' : 'Exercise saved');
+    const live = !sheet.isNew && refreshExercise(d.id);
+    toast(sheet.isNew ? 'Exercise created' : live ? 'Exercise saved · updated in this workout' : 'Exercise saved');
     sheet.onSaved && sheet.onSaved(d);
   };
   const unit = s.unit;
@@ -334,7 +336,7 @@ export function ExerciseEditorSheet(sheet) {
       ]),
       h('div.hstack.wrap', { style: { marginTop: '8px', gap: '8px' } }, [
         h('button.btn.btn-secondary.btn-sm', { onclick: () => openSheet({ type: 'exerciseEditor', exerciseId: d.id }) }, [icon('edit', 15), 'Edit in library (all routines)']),
-        overridden && h('button.btn.btn-plain.btn-sm', { onclick: () => { saveRoutine({ ...routine, items: routine.items.map((i) => (i.id === item.id ? { ...i, ...Object.fromEntries(ROUTINE_KEYS.map((k) => [k, null])) } : i)) }); sheet.draft = null; update(); toast('Reset to library'); } }, 'Reset to library'),
+        overridden && h('button.btn.btn-plain.btn-sm', { onclick: () => { saveRoutine({ ...routine, items: routine.items.map((i) => (i.id === item.id ? { ...i, ...Object.fromEntries(ROUTINE_KEYS.map((k) => [k, null])) } : i)) }); sheet.draft = null; refreshExercise(d.id); update(); toast('Reset to library'); } }, 'Reset to library'),
       ]),
     ])]),
     !inRoutine && h('div.ed-top', [
