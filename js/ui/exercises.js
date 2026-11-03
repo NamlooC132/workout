@@ -25,8 +25,34 @@ function haystack(ex) {
   const type = EXERCISE_TYPES.find((t) => t.key === ex.type)?.name || '';
   return `${ex.name} ${heName(ex.name) || ''} ${ex.aka || catalogEntry(ex.name)?.aka || ''} ${ex.equipment || ''} ${tr(ex.equipment || '')} ${ex.category || ''} ${type} ${mus.join(' ')}`.toLowerCase();
 }
-export function matches(ex, q, muscle) {
-  if (muscle && !(ex.muscles && ex.muscles[muscle] > 0)) return false;
+// Body-part filter: simple groups of the detailed muscles. An exercise belongs to a group when
+// one of the group's muscles is a MAIN muscle (helpers don't count), so "Chest" shows chest exercises.
+export const BODY_PARTS = [
+  { key: 'chest', name: 'Chest', m: ['chest'] },
+  { key: 'back', name: 'Back\u200b', m: // zero-width space keeps it apart from the 'Back' button in translations
+     ['lats', 'upper_back', 'lower_back', 'traps'] },
+  { key: 'shoulders', name: 'Shoulders', m: ['front_delts', 'side_delts', 'rear_delts'] },
+  { key: 'biceps', name: 'Biceps', m: ['biceps'] },
+  { key: 'triceps', name: 'Triceps', m: ['triceps'] },
+  { key: 'forearms', name: 'Forearms', m: ['forearms'] },
+  { key: 'abs', name: 'Abs', m: ['abs'] },
+  { key: 'quads', name: 'Quadriceps', m: ['quads'] },
+  { key: 'hamstrings', name: 'Hamstrings', m: ['hamstrings'] },
+  { key: 'glutes', name: 'Glutes', m: ['glutes'] },
+  { key: 'calves', name: 'Calves', m: ['calves'] },
+  { key: 'adductors', name: 'Adductors', m: ['adductors'] },
+];
+const EQUIPMENT_FILTERS = ['Machine', 'Cable', 'Dumbbell', 'Barbell', 'Smith machine', 'Bodyweight', 'Kettlebell', 'Band', 'Other'];
+const equipmentOf = (ex) => ex.equipment || catalogEntry(ex.name)?.equipment || 'Other';
+function inBodyPart(ex, part) {
+  const g = BODY_PARTS.find((b) => b.key === part);
+  const keys = g ? g.m : [part]; // custom muscle groups use their own key
+  return keys.some((k) => (ex.muscles?.[k] || 0) >= (g ? 1 : 0.01));
+}
+
+export function matches(ex, q, muscle, equip) {
+  if (muscle && !inBodyPart(ex, muscle)) return false;
+  if (equip && equipmentOf(ex) !== equip) return false;
   if (!q || !q.trim()) return true;
   const hay = haystack(ex);
   return q.toLowerCase().split(/\s+/).filter(Boolean).every((tok) => {
@@ -56,10 +82,20 @@ function recentExerciseIds(limit = 8) {
   return out;
 }
 
-function MuscleFilter({ value, onChange }) {
-  return h('div.chips', { style: { margin: '8px 0 4px', overflowX: 'auto', flexWrap: 'nowrap', paddingBottom: '4px' } }, [
-    h(Chip, { active: !value, onClick: () => onChange(null) }, 'All'),
-    ...allMuscles(data.settings).map((m) => h(Chip, { active: value === m.key, onClick: () => onChange(value === m.key ? null : m.key) }, m.name)),
+/** Two rows of filters: body part, then equipment. `st` holds { muscle, equip }. */
+function Filters({ st }) {
+  const custom = (data.settings.customMuscles || []).map((m) => ({ key: m.key, name: m.name }));
+  const row = (label, all, items, value, set) => h('div.filter-row', [
+    h('span.filter-lbl', label),
+    h('div.chips.filter-chips', [
+      h(Chip, { active: !value, onClick: () => { set(null); update(); } }, all),
+      ...items.map((it) => h(Chip, { key: it.key, active: value === it.key, onClick: () => { set(value === it.key ? null : it.key); update(); } }, it.name)),
+    ]),
+  ]);
+  return h('div.filters', [
+    row('Body part', 'All', [...BODY_PARTS, ...custom], st.muscle, (v) => { st.muscle = v; }),
+    row('Equipment', 'Any', EQUIPMENT_FILTERS.map((e) => ({ key: e, name: e })), st.equip, (v) => { st.equip = v; }),
+    (st.muscle || st.equip) && h('button.link-btn.filter-clear', { onclick: () => { st.muscle = null; st.equip = null; update(); } }, 'Clear filters'),
   ]);
 }
 
@@ -72,9 +108,9 @@ function SearchBox({ value, onChange, placeholder = 'Search name, muscle or equi
 
 // ---------- Catalog helpers ----------
 /** Catalog exercises not yet in your library that match the search / muscle filter. */
-function catalogMatches(q, muscle) {
+function catalogMatches(q, muscle, equip) {
   const have = new Set(data.exercises.map((e) => e.name.toLowerCase()));
-  return CATALOG.filter((c) => !have.has(c.name.toLowerCase()) && matches(c, q, muscle)).sort(byRelevance(q));
+  return CATALOG.filter((c) => !have.has(c.name.toLowerCase()) && matches(c, q, muscle, equip)).sort(byRelevance(q));
 }
 
 /** Adds a catalog exercise to your library (with your default rest/step settings) and returns it. */
@@ -95,16 +131,16 @@ function catSubtitle(c) {
 
 // ---------- Library screen ----------
 export function LibraryScreen() {
-  const st = (ui.tabState.library = ui.tabState.library || { q: '', muscle: null });
-  const list = data.exercises.filter((e) => matches(e, st.q, st.muscle)).sort(byRelevance(st.q));
-  const cat = catalogMatches(st.q, st.muscle);
+  const st = (ui.tabState.library = ui.tabState.library || { q: '', muscle: null, equip: null });
+  const list = data.exercises.filter((e) => matches(e, st.q, st.muscle, st.equip)).sort(byRelevance(st.q));
+  const cat = catalogMatches(st.q, st.muscle, st.equip);
   const hist = history();
   return h(Page, {
     title: 'Exercises', backTo: '/routines',
     actions: [h(IconButton, { name: 'plus', label: 'New exercise', onClick: () => openSheet({ type: 'exerciseEditor', exerciseId: null }) })],
   }, [
     h(SearchBox, { value: st.q, onChange: (v) => { st.q = v; update(); } }),
-    h(MuscleFilter, { value: st.muscle, onChange: (v) => { st.muscle = v; update(); } }),
+    h(Filters, { st }),
     h(Section, { title: `My exercises (${list.length})` }, list.length === 0
       ? h('div.pad.muted', data.exercises.length ? 'No matches.' : 'None yet – add some from the list below or tap +.')
       : list.map((ex) => h(Row, {
@@ -133,7 +169,7 @@ export function LibraryScreen() {
 export function PickerSheet(sheet) {
   sheet.q = sheet.q || '';
   sheet.selected = sheet.selected || [];
-  const list = data.exercises.filter((e) => matches(e, sheet.q, sheet.muscle)).sort(byRelevance(sheet.q));
+  const list = data.exercises.filter((e) => matches(e, sheet.q, sheet.muscle, sheet.equip)).sort(byRelevance(sheet.q));
   const byId = new Map(list.map((e) => [e.id, e]));
   const recent = recentExerciseIds().map((id) => byId.get(id)).filter(Boolean);
   const shown = new Set(recent.map((e) => e.id));
@@ -141,7 +177,7 @@ export function PickerSheet(sheet) {
   const inRoutines = list.filter((e) => routineIds.has(e.id) && !shown.has(e.id));
   inRoutines.forEach((e) => shown.add(e.id));
   const others = list.filter((e) => !shown.has(e.id));
-  const cat = catalogMatches(sheet.q, sheet.muscle);
+  const cat = catalogMatches(sheet.q, sheet.muscle, sheet.equip);
   const resolve = (key) => {
     if (key.startsWith('cat:')) {
       const name = key.slice(4);
@@ -179,7 +215,7 @@ export function PickerSheet(sheet) {
     actions: sheet.multi ? [h('button.link-btn.strong', { onclick: confirmPick, disabled: !sheet.selected.length }, sheet.selected.length ? `Add (${sheet.selected.length})` : 'Add')] : null,
   }, [
     h(SearchBox, { value: sheet.q, onChange: (v) => { sheet.q = v; update(); } }),
-    h(MuscleFilter, { value: sheet.muscle, onChange: (v) => { sheet.muscle = v; update(); } }),
+    h(Filters, { st: sheet }),
     h(Section, {}, [
       h(Row, {
         left: h('span', { style: { color: 'var(--accent)' } }, icon('plus', 24)),

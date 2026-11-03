@@ -607,3 +607,12 @@ input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
 .goal-lbl { font-size: 12px; font-weight: 650; color: var(--muted); }
 .goal-input.num-field { width: 100%; text-align: center; font-size: 22px; font-weight: 800; border: 0; background: var(--card); border-radius: 10px; padding: 6px 0; color: var(--text); }
 .goal-x { position: absolute; top: 2px; inset-inline-end: 4px; width: 22px; height: 22px; min-height: 0; padding: 0; font-size: 16px; line-height: 1; color: var(--muted); }
+
+/* ---------- Exercise filters (body part + equipment) ---------- */
+.filters { margin: 8px 0 2px; display: grid; gap: 6px; }
+.filter-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.filter-lbl { flex: none; width: 74px; font-size: 12px; font-weight: 650; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; line-height: 1.2; }
+.filter-chips { flex: 1; min-width: 0; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; scrollbar-width: none; }
+.filter-chips::-webkit-scrollbar { display: none; }
+.filter-chips .chip { flex: none; }
+.filter-clear { min-height: auto; padding: 2px 0; font-size: 14px; justify-self: start; }
