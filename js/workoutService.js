@@ -132,11 +132,14 @@ export function refreshExercise(exerciseId) {
         if (isWork(s) && !s.done) { entry.sets.splice(i, 1); work--; }
       }
     }
-    // New suggestion for the new rep range, unless it was already used or dismissed.
+    // New suggestion for the new rep range (e.g. a lower goal you already hit → add weight),
+    // unless it was already applied. A dismissed banner comes back only if the advice changed.
     const p = entry.progression || {};
-    if (!p.applied && !p.dismissed) {
+    if (!p.applied) {
       const last = lastSession(history(), exerciseId, { excludeWorkoutId: w.id });
-      entry.progression = { ...evaluateProgression(withConfig(ex, cfg), last, cfg, data.settings), applied: false, dismissed: false };
+      const np = evaluateProgression(withConfig(ex, cfg), last, cfg, data.settings);
+      const same = np.status === p.status && np.suggestedKg === p.suggestedKg;
+      entry.progression = { ...np, applied: false, dismissed: same ? !!p.dismissed : false };
     }
     entry.changedAt = Date.now();
     n++;
