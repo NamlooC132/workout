@@ -12,7 +12,7 @@ import { setGoals } from '../logic/progression.js';
 import { routineItemActions } from './routines.js';
 import { CATALOG, guideFor, catalogEntry } from '../logic/catalog.js';
 import { heName, tr } from '../i18n.js';
-import { refreshExercise } from '../workoutService.js';
+import { refreshExercise, liveDraft, applyLiveEdit } from '../workoutService.js';
 
 export function exerciseSubtitle(ex) {
   const mus = contributions(ex).filter((c) => c.value >= 1).map((c) => muscleName(c.key, data.settings));
@@ -256,10 +256,17 @@ export function ExerciseEditorSheet(sheet) {
   const item = routine ? routine.items.find((i) => i.id === sheet.itemId) : null;
   const inRoutine = !!item;
   const libEx = sheet.exerciseId ? data.exercises.find((e) => e.id === sheet.exerciseId) : null;
+  // Workout mode: { workoutId, entryId } – edits change this workout only; finishing asks to keep them.
+  const lw = sheet.workoutId ? data.workouts.find((x) => x.id === sheet.workoutId && x.status === 'active') : null;
+  const liveEntry = lw && libEx ? lw.entries.find((e) => e.id === sheet.entryId) : null;
+  const live = !!liveEntry;
+  const limited = inRoutine || live;
   if (!sheet.draft) {
     const existing = libEx;
     sheet.draft = existing ? deepClone(existing) : newExercise(s, { name: sheet.presetName || '' });
-    if (inRoutine && existing) {
+    if (live) {
+      sheet.draft = liveDraft(liveEntry, existing);
+    } else if (inRoutine && existing) {
       const cfg = effectiveConfig(existing, item);
       Object.assign(sheet.draft, deepClone(withConfig(existing, cfg)), {
         sets: cfg.sets, warmupSets: cfg.warmupSets, dropSets: cfg.dropSets, repMin: cfg.repMin, repMax: cfg.repMax,
@@ -281,6 +288,13 @@ export function ExerciseEditorSheet(sheet) {
   const canSave = d.name.trim().length > 0;
   const routinesUsing = data.routines.filter((r) => r.items.some((i) => i.exerciseId === d.id));
   const save = () => {
+    if (live) {
+      if (d.repMin > d.repMax) [d.repMin, d.repMax] = [d.repMax, d.repMin];
+      applyLiveEdit(lw, liveEntry, d);
+      closeSheet();
+      toast('Updated for this workout');
+      return;
+    }
     if (inRoutine) {
       if (d.repMin > d.repMax) [d.repMin, d.repMax] = [d.repMax, d.repMin];
       saveRoutine({ ...routine, items: routine.items.map((i) => (i.id === item.id ? { ...i, ...routineOverrides(libEx, d) } : i)) });
@@ -292,8 +306,8 @@ export function ExerciseEditorSheet(sheet) {
     if (d.repMin > d.repMax) [d.repMin, d.repMax] = [d.repMax, d.repMin];
     saveExercise(deepClone(d));
     closeSheet();
-    const live = !sheet.isNew && refreshExercise(d.id, countChanges());
-    toast(sheet.isNew ? 'Exercise created' : live ? 'Exercise saved · updated in this workout' : 'Exercise saved');
+    const updatedLive = !sheet.isNew && refreshExercise(d.id, countChanges());
+    toast(sheet.isNew ? 'Exercise created' : updatedLive ? 'Exercise saved · updated in this workout' : 'Exercise saved');
     sheet.onSaved && sheet.onSaved(d);
   };
   const unit = s.unit;
@@ -329,10 +343,14 @@ export function ExerciseEditorSheet(sheet) {
   const otherRoutines = inRoutine ? data.routines.filter((x) => x.id !== routine.id && x.items.some((i) => i.exerciseId === d.id)) : [];
   const overridden = inRoutine && ROUTINE_KEYS.some((k) => item[k] !== null && item[k] !== undefined);
   return h(Sheet, {
-    title: inRoutine ? d.name : sheet.isNew ? 'New exercise' : 'Edit exercise', full: true,
+    title: limited ? d.name : sheet.isNew ? 'New exercise' : 'Edit exercise', full: true,
     left: h('button.link-btn', { onclick: closeSheet }, 'Cancel'),
     actions: [h('button.link-btn.strong', { onclick: save, disabled: !canSave }, 'Save')],
   }, [
+    live && h('div.callout.blue', { style: { marginBottom: '6px' } }, [icon('info', 18), h('div', [
+      h('div', { style: { fontWeight: 700, marginBottom: '4px' } }, 'Changes are for this workout.'),
+      h('div', 'When you finish the workout, you can save them for next time.'),
+    ])]),
     inRoutine && h('div.callout.blue', { style: { marginBottom: '6px' } }, [icon('info', 18), h('div', [
       h('div', [
         h('div', { style: { fontWeight: 700, marginBottom: '4px' } }, `You are editing ${d.name} for the ${routine.name} routine only.`),
@@ -346,7 +364,7 @@ export function ExerciseEditorSheet(sheet) {
         overridden && h('button.btn.btn-plain.btn-sm', { onclick: () => { saveRoutine({ ...routine, items: routine.items.map((i) => (i.id === item.id ? { ...i, ...Object.fromEntries(ROUTINE_KEYS.map((k) => [k, null])) } : i)) }); sheet.draft = null; refreshExercise(d.id); update(); toast('Reset to library'); } }, 'Reset to library'),
       ]),
     ])]),
-    !inRoutine && h('div.ed-top', [
+    !limited && h('div.ed-top', [
       h('label.ed-photo', { 'aria-label': d.image ? 'Change photo' : 'Add photo' }, [
         h(Thumb, { image: d.image, name: d.name, muscles: d.muscles, size: 72, zoom: false }),
         h('span.ed-photo-badge', icon('camera', 14)),
@@ -360,7 +378,7 @@ export function ExerciseEditorSheet(sheet) {
 
     h(Section, { title: 'Type' }, h('div.pad', h('div.chips', EXERCISE_TYPES.map((t) => h(Chip, { key: t.key, active: d.type === t.key, onClick: () => set({ type: t.key }) }, t.name))))),
 
-    !inRoutine && h(Section, { title: 'Muscles', footer: 'Tap once for a main muscle, twice for a helper, again to remove.' }, h('div.pad', h('div.chips', allMuscles(s).map((m) => {
+    !limited && h(Section, { title: 'Muscles', footer: 'Tap once for a main muscle, twice for a helper, again to remove.' }, h('div.pad', h('div.chips', allMuscles(s).map((m) => {
       const v = d.muscles[m.key] || 0;
       return h('button', { key: m.key, class: cx('chip', v >= 1 && 'active', v > 0 && v < 1 && 'chip-helper'), onclick: () => cycleMuscle(m.key) }, [m.name, v > 0 && v < 1 && h('small', 'helper')]);
     })))),
@@ -375,7 +393,7 @@ export function ExerciseEditorSheet(sheet) {
       h(Row, { title: 'Rest timer', right: h(Stepper, { value: d.rest, step: REST_STEP, min: REST_MIN, max: REST_MAX, format: fmtClock, onChange: (v) => set({ rest: v }) }) }),
     ]),
 
-    h(Section, { title: inRoutine ? 'Routine notes' : 'Notes' }, h('div.field-card', h(TextField, { value: d.notes, onChange: (v) => { d.notes = v; update(); }, placeholder: inRoutine ? 'Only shown in this routine' : 'Shown during workouts, e.g. seat height 4', multiline: true }))),
+    h(Section, { title: live ? 'Note for this workout' : inRoutine ? 'Routine notes' : 'Notes' }, h('div.field-card', h(TextField, { value: d.notes, onChange: (v) => { d.notes = v; update(); }, placeholder: live ? 'Only for this workout' : inRoutine ? 'Only shown in this routine' : 'Shown during workouts, e.g. seat height 4', multiline: true }))),
 
     h('button.adv-toggle', { onclick: () => { sheet.advanced = !adv; update(); } }, [h('span', 'Advanced'), h('span.muted.small', adv ? 'Hide' : 'Equipment, exact %, warm-ups, overload…'), icon(adv ? 'chevronUp' : 'chevronDown', 18)]),
 
@@ -383,10 +401,10 @@ export function ExerciseEditorSheet(sheet) {
       h(Section, { title: 'Details' }, [
         d.type === 'dumbbell' && h(Row, { title: 'Weight is entered', right: h(Segmented, { small: true, value: d.loadMode, onChange: (v) => set({ loadMode: v }), options: [{ value: 'per_hand', label: 'Per hand' }, { value: 'total', label: 'Total' }] }) }),
         h(Row, { title: 'One side at a time', subtitle: 'Log left and right reps separately', right: h(Toggle, { checked: d.unilateral, onChange: (v) => set({ unilateral: v }) }) }),
-        !inRoutine && h(Row, { title: 'Equipment', right: select(EQUIPMENT, d.equipment, (v) => set({ equipment: v })) }),
-        !inRoutine && h(Row, { title: 'Category', right: select(CATEGORIES, d.category, (v) => set({ category: v })) }),
+        !limited && h(Row, { title: 'Equipment', right: select(EQUIPMENT, d.equipment, (v) => set({ equipment: v })) }),
+        !limited && h(Row, { title: 'Category', right: select(CATEGORIES, d.category, (v) => set({ category: v })) }),
       ]),
-      !inRoutine && h(Section, { title: 'Exact muscle %', footer: 'How much one working set counts for each muscle.' }, allMuscles(s).filter((m) => d.muscles[m.key] > 0).map((m) => {
+      !limited && h(Section, { title: 'Exact muscle %', footer: 'How much one working set counts for each muscle.' }, allMuscles(s).filter((m) => d.muscles[m.key] > 0).map((m) => {
         const v = d.muscles[m.key] || 0;
         return h(Row, {
           key: m.key, title: m.name,
@@ -431,7 +449,7 @@ export function ExerciseEditorSheet(sheet) {
           ]),
         }),
       ]),
-      !inRoutine && h(Section, { title: 'How-to link', footer: 'Optional. Leave empty to use the built-in guide (or a video search).' }, [
+      !limited && h(Section, { title: 'How-to link', footer: 'Optional. Leave empty to use the built-in guide (or a video search).' }, [
         h('div.field-card', h(TextField, { value: d.guide || '', onChange: (v) => { d.guide = v.trim() || null; }, placeholder: 'https://…' })),
         d.name && h(Row, { title: h('a', { href: guideFor(d), target: '_blank', rel: 'noopener', style: { color: 'var(--accent)', textDecoration: 'none' } }, 'Open the how-to guide ↗') }),
       ]),
@@ -439,9 +457,9 @@ export function ExerciseEditorSheet(sheet) {
 
     inRoutine && routineItemActions(routine, item, libEx),
 
-    !inRoutine && !sheet.isNew && routinesUsing.length > 1 && h('div.callout.blue', [icon('info', 18), `Used in ${routinesUsing.length} routines – changes here apply to all of them.`]),
+    !limited && !sheet.isNew && routinesUsing.length > 1 && h('div.callout.blue', [icon('info', 18), `Used in ${routinesUsing.length} routines – changes here apply to all of them.`]),
 
-    !inRoutine && !sheet.isNew && h('div.mt', h(Button, {
+    !limited && !sheet.isNew && h('div.mt', h(Button, {
       kind: 'danger', block: true,
       onClick: () => confirm({
         title: `Delete “${d.name}”?`,

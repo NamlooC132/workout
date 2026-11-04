@@ -303,12 +303,7 @@ function entryMenu(w, entry) {
       entry.supersetId && next && next.supersetId !== entry.supersetId && { text: `Add ${next.snapshot.name} to superset`, icon: 'link', onClick: () => WS.linkSuperset(w, entry) },
       entry.supersetId && { text: 'Remove from superset', icon: 'link', onClick: () => WS.unlinkSuperset(w, entry) },
       { text: entry.skipped ? 'Un-skip exercise' : 'Skip exercise', icon: 'skip', onClick: () => WS.undoable(w, entry.skipped ? 'Exercise back in' : 'Exercise skipped', () => WS.toggleSkip(w, entry)) },
-      entry.exerciseId && { text: 'Edit exercise', icon: 'edit', onClick: () => {
-        // From a routine: edit it for that routine (like the Routines screen); otherwise the library.
-        const r = w.routineId ? data.routines.find((x) => x.id === w.routineId) : null;
-        const it = r ? r.items.find((i) => i.exerciseId === entry.exerciseId) : null;
-        openSheet(it ? { type: 'exerciseEditor', exerciseId: entry.exerciseId, routineId: r.id, itemId: it.id, advanced: false } : { type: 'exerciseEditor', exerciseId: entry.exerciseId });
-      } },
+      entry.exerciseId && { text: 'Edit exercise', icon: 'edit', onClick: () => openSheet({ type: 'exerciseEditor', exerciseId: entry.exerciseId, workoutId: w.id, entryId: entry.id }) },
       { text: 'Remove exercise', icon: 'trash', destructive: true, onClick: () => WS.undoable(w, `${entry.snapshot.name} removed`, () => WS.removeEntry(w, entry.id)) },
     ].filter(Boolean),
   });
@@ -336,10 +331,12 @@ function askFinish(w) {
   const unchecked = WS.uncheckedCount(w);
   const done = WS.doneCount(w);
   const finish = (mode) => {
+    const changes = WS.liveChanges(w); // before unfinished sets are dropped
     const prs = WS.finishWorkout(w, mode);
     ui.workoutOpen = false;
     ui.tabState.workout = { reorder: false, rirOpen: {} };
-    openSheet({ type: 'finishSummary', workoutId: w.id, prs });
+    if (changes.length) openSheet({ type: 'saveWorkoutChanges', workoutId: w.id, changes, prs });
+    else openSheet({ type: 'finishSummary', workoutId: w.id, prs });
   };
   if (done === 0) {
     const withReps = w.entries.some((e) => e.sets.some((s) => s.reps > 0 || s.repsL > 0 || s.repsR > 0));
@@ -479,6 +476,23 @@ export function ExHistorySheet(sheet) {
     h('div.hstack', { style: { marginTop: '8px' } }, [
       h('button.btn.btn-secondary.btn-sm', { onclick: () => openSheet({ type: 'howTo', name: sheet.name, exerciseId: sheet.exerciseId }) }, [icon('info', 16), 'How to do it']),
       ex && h('button.btn.btn-plain.btn-sm', { onclick: () => { ui.sheets = []; ui.workoutOpen = false; nav('/exercise/' + ex.id); update(); } }, 'Full progress ›'),
+    ]),
+  ]);
+}
+
+// sheet: { type: 'saveWorkoutChanges', workoutId, changes, prs } – asked when finishing a workout
+export function SaveWorkoutChangesSheet(sheet) {
+  const w = data.workouts.find((x) => x.id === sheet.workoutId);
+  const routine = w?.routineId ? data.routines.find((r) => r.id === w.routineId) : null;
+  const next = () => openSheet({ type: 'finishSummary', workoutId: sheet.workoutId, prs: sheet.prs });
+  return h(Sheet, { title: 'Save changes?' }, [
+    h('div.pad.small.muted', routine ? `You changed these exercises during the workout. Save them in ${routine.name}?` : 'You changed these exercises during the workout. Save them for next time?'),
+    ...sheet.changes.map((c) => h(Section, { key: c.entryId, title: c.name }, c.lines.map((l, i) => h(Row, {
+      key: i, title: l.label, right: l.from === '' && l.to === '' ? h('span.muted', 'changed') : h('span', [h('span.muted', String(l.from)), '  →  ', h('b', String(l.to))]),
+    })))),
+    h('div.pad.vstack', { style: { gap: '10px' } }, [
+      h(Button, { block: true, onClick: () => { if (w) WS.saveLiveChanges(w, sheet.changes); toast(routine ? `Saved in ${routine.name}` : 'Changes saved'); next(); } }, 'Save changes'),
+      h(Button, { kind: 'secondary', block: true, onClick: next }, 'Don’t save'),
     ]),
   ]);
 }

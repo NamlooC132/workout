@@ -55,6 +55,13 @@ export const DICT = {
   'Warm-up weight = % of your heaviest working set, rounded to the − / + step. It follows the working weight live. Change a warm-up set by hand in a workout and it stays as you typed it.': 'משקל החימום = אחוז מסט העבודה הכבד ביותר, מעוגל לקפיצת ה-− / +. הוא משתנה בזמן אמת לפי משקל העבודה. אם תשנה סט חימום ידנית באימון, הוא יישאר כמו שהקלדת.',
   'reps': 'חזרות', '%  ×': '%  ×', 'Reset to 50 / 70 / 85 %': 'איפוס ל-50 / 70 / 85 %',
   'Better than last time': 'יותר טוב מהפעם הקודמת', 'Less than last time': 'פחות מהפעם הקודמת', 'Same as last time': 'כמו בפעם הקודמת',
+  'Changes are for this workout.': 'השינויים הם לאימון הזה.', 'When you finish the workout, you can save them for next time.': 'כשתסיים את האימון, תוכל לשמור אותם לפעם הבאה.',
+  'Updated for this workout': 'עודכן לאימון הזה', 'Save changes?': 'לשמור שינויים?',
+  'You changed these exercises during the workout. Save them for next time?': 'שינית את התרגילים האלה במהלך האימון. לשמור אותם לפעם הבאה?',
+  'Save changes': 'שמור שינויים', 'Don’t save': 'אל תשמור', 'Changes saved': 'השינויים נשמרו', 'changed': 'שונה',
+  'Working sets': 'סטים', 'Drop sets': 'סטי דרופ', 'Rep range': 'טווח חזרות', 'Rest': 'מנוחה', '− / + step': 'קפיצת − / +',
+  'Overload rule': 'כלל העומס', 'One side at a time': 'צד אחד בכל פעם', 'Note for this workout': 'הערה לאימון הזה', 'Only for this workout': 'רק לאימון הזה',
+  'On': 'פועל',
   'Exercise created': 'התרגיל נוצר', 'Exercise saved': 'התרגיל נשמר', 'Exercise saved · updated in this workout': 'התרגיל נשמר · עודכן באימון הזה', 'Edit exercise': 'עריכת תרגיל',
   'Change photo': 'החלף תמונה', 'Add photo': 'הוסף תמונה', 'Remove photo': 'הסר תמונה', 'Exercise name': 'שם התרגיל',
   'Muscles': 'שרירים', 'Tap once for a main muscle, twice for a helper, again to remove.': 'הקשה אחת – שריר עיקרי, שתיים – שריר עוזר, שוב – הסרה.',
@@ -323,6 +330,8 @@ const PL = (num, one, many) => (String(num) === '1' ? one : many.replace('#', nu
 
 // [regex on the whole English text, Hebrew replacement]. $1… are translated too.
 export const PATTERNS = [
+  [/^You changed these exercises during the workout\. Save them in (.+)\?$/, 'שינית את התרגילים האלה במהלך האימון. לשמור אותם ב-$1?'],
+  [/^Saved in (.+)$/, 'נשמר ב-$1'],
   [/^Warm-up (\d+)$/, 'חימום $1'],
   [/^Warm-up (\d+) percent$/, 'אחוז חימום $1'],
   [/^Warm-up (\d+) reps$/, 'חזרות חימום $1'],

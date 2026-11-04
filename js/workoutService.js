@@ -1,7 +1,7 @@
 // Live-workout operations. Every function saves immediately (saveWorkout), so an
 // unfinished workout is always restorable after the app is closed or the phone restarts.
 
-import { data, saveWorkout, saveRoutine, deleteWorkout, history, exercisesById, toast } from './store.js';
+import { data, saveWorkout, saveRoutine, saveExercise, deleteWorkout, history, exercisesById, toast } from './store.js';
 import { uid, deepClone } from './logic/util.js';
 import { newSet, effectiveConfig, withConfig, exerciseSnapshot, newRoutineItem } from './logic/model.js';
 import { lastSession } from './logic/history.js';
@@ -507,4 +507,142 @@ export function setType(w, entry, set, type) {
     set.auto = false;
   }
   save(w);
+}
+
+// ---------- Edit exercise during a workout ----------
+// Changes go to this workout only; when it is finished the app asks whether to keep them.
+const LIVE_KEYS = ['repMin', 'repMax', 'rest', 'weightStep', 'rirTarget', 'type', 'loadMode', 'unilateral'];
+const isWarmSet = (s) => s.type === 'warmup';
+const isDropSet = (s) => s.type === 'drop';
+const isWorkSet = (s) => !isWarmSet(s) && !isDropSet(s);
+
+/** What the editor shows for an exercise in the open workout: the workout's current state. */
+export function liveDraft(entry, exercise) {
+  const snap = entry.snapshot || {};
+  return {
+    ...deepClone(exercise),
+    ...Object.fromEntries(LIVE_KEYS.map((k) => [k, snap[k] ?? exercise[k]])),
+    unilateral: !!(snap.unilateral ?? exercise.unilateral),
+    progression: deepClone(snap.progression || exercise.progression || {}),
+    sets: entry.sets.filter(isWorkSet).length,
+    warmupSets: entry.sets.filter(isWarmSet).length,
+    dropSets: entry.sets.filter(isDropSet).length,
+    notes: entry.notes || '',
+  };
+}
+
+/** Sets the number of sets of one kind: adds new ones or removes unfinished ones from the end. */
+function setCount(entry, match, target, add, min = 0) {
+  target = Math.max(min, target || 0);
+  let have = entry.sets.filter(match).length;
+  while (have < target) { add(); have++; }
+  for (let i = entry.sets.length - 1; i >= 0 && have > target; i--) {
+    if (match(entry.sets[i]) && !entry.sets[i].done) { entry.sets.splice(i, 1); have--; }
+  }
+}
+
+/** Applies the editor's values to this workout's entry (not to the routine or library). */
+export function applyLiveEdit(w, entry, d) {
+  const ex = exercisesById().get(entry.exerciseId) || d;
+  entry.snapshot = {
+    ...entry.snapshot,
+    ...Object.fromEntries(LIVE_KEYS.map((k) => [k, d[k]])),
+    unilateral: !!d.unilateral,
+    sets: d.sets,
+    warmupSets: d.warmupSets || 0,
+    progression: deepClone(d.progression || {}),
+  };
+  entry.notes = d.notes || '';
+  setCount(entry, isWarmSet, d.warmupSets, () => {
+    const idx = entry.sets.findIndex((s) => !isWarmSet(s));
+    entry.sets.splice(idx < 0 ? entry.sets.length : idx, 0, newSet({ type: 'warmup', auto: true }));
+  });
+  setCount(entry, isWorkSet, d.sets, () => addSetNoSave(entry), 1);
+  setCount(entry, isDropSet, d.dropSets, () => {
+    const base = entry.sets.filter(isWorkSet).slice(-1)[0];
+    entry.sets.push(newSet({ type: 'drop', kg: dropWeight(base?.kg, d.weightStep) }));
+  });
+  const p = entry.progression || {};
+  if (!p.applied) {
+    const cfg = { ...entry.snapshot, dropSets: d.dropSets || 0 };
+    const last = lastSession(history(), entry.exerciseId, { excludeWorkoutId: w.id });
+    const np = evaluateProgression(withConfig(ex, cfg), last, cfg, data.settings);
+    const same = np.status === p.status && np.suggestedKg === p.suggestedKg;
+    entry.progression = { ...np, applied: false, dismissed: same ? !!p.dismissed : false };
+  }
+  entry.changedAt = Date.now();
+  save(w);
+}
+
+/**
+ * Differences between this workout and the exercise's saved settings (routine or library),
+ * e.g. [{ entryId, exerciseId, name, values: {...}, lines: ['Warm-up sets 0 → 2'] }].
+ * Call before finishing, while unfinished sets are still there.
+ */
+export function liveChanges(w) {
+  const routine = w.routineId ? data.routines.find((r) => r.id === w.routineId) : null;
+  const out = [];
+  for (const e of w.entries) {
+    const ex = e.exerciseId && exercisesById().get(e.exerciseId);
+    if (!ex || e.skipped) continue;
+    const item = routine ? routine.items.find((i) => i.exerciseId === e.exerciseId) : null;
+    if (routine && !item) continue; // exercises added to the workout are handled by "Save them to the routine"
+    const cfg = effectiveConfig(ex, item);
+    const snap = e.snapshot || {};
+    const now = {
+      sets: e.sets.filter(isWorkSet).length,
+      warmupSets: e.sets.filter(isWarmSet).length,
+      dropSets: e.sets.filter(isDropSet).length,
+      ...Object.fromEntries(LIVE_KEYS.map((k) => [k, k === 'unilateral' ? !!snap[k] : snap[k]])),
+      progression: snap.progression || {},
+    };
+    const was = {
+      sets: cfg.sets, warmupSets: warmupCount(cfg, data.settings), dropSets: cfg.dropSets || 0,
+      ...Object.fromEntries(LIVE_KEYS.map((k) => [k, k === 'unilateral' ? !!cfg[k] : cfg[k]])),
+      progression: cfg.progression || {},
+    };
+    const lines = [];
+    const add = (label, a, b) => lines.push({ label, from: a, to: b });
+    if (now.warmupSets !== was.warmupSets) add('Warm-up sets', was.warmupSets, now.warmupSets);
+    if (now.sets !== was.sets) add('Working sets', was.sets, now.sets);
+    if (now.dropSets !== was.dropSets) add('Drop sets', was.dropSets, now.dropSets);
+    if (now.repMin !== was.repMin || now.repMax !== was.repMax) add('Rep range', `${was.repMin}–${was.repMax}`, `${now.repMin}–${now.repMax}`);
+    if (now.rest !== was.rest) add('Rest', fmtSec(was.rest), fmtSec(now.rest));
+    if (now.weightStep !== was.weightStep) add('− / + step', was.weightStep, now.weightStep);
+    if ((now.rirTarget ?? null) !== (was.rirTarget ?? null)) add('Target RIR', was.rirTarget ?? '–', now.rirTarget ?? '–');
+    if (now.type !== was.type || (now.type === 'dumbbell' && now.loadMode !== was.loadMode)) add('Type', was.type, now.type);
+    if (now.unilateral !== was.unilateral) add('One side at a time', was.unilateral ? 'On' : 'Off', now.unilateral ? 'On' : 'Off');
+    if (JSON.stringify(normProg(now.progression)) !== JSON.stringify(normProg(was.progression))) add('Overload rule', '', '');
+    if (lines.length) out.push({ entryId: e.id, exerciseId: e.exerciseId, name: ex.name, values: now, lines });
+  }
+  return out;
+}
+
+const fmtSec = (s) => (s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : `${s}s`);
+const normProg = (p) => Object.fromEntries(Object.entries(p || {}).filter(([, v]) => v !== null && v !== undefined).sort(([a], [b]) => a.localeCompare(b)));
+
+/** Saves workout changes for next time: into the routine (this routine only) or the library exercise. */
+export function saveLiveChanges(w, changes) {
+  const routine = w.routineId ? data.routines.find((r) => r.id === w.routineId) : null;
+  const keys = ['sets', 'warmupSets', 'dropSets', ...LIVE_KEYS, 'progression'];
+  if (routine) {
+    const items = routine.items.map((it) => {
+      const c = changes.find((x) => x.exerciseId === it.exerciseId);
+      if (!c) return it;
+      const ex = exercisesById().get(it.exerciseId) || {};
+      const next = { ...it };
+      for (const k of keys) {
+        const v = c.values[k];
+        const lib = k === 'warmupSets' || k === 'dropSets' ? ex[k] || 0 : k === 'unilateral' ? !!ex[k] : ex[k];
+        next[k] = JSON.stringify(k === 'progression' ? normProg(v) : v) === JSON.stringify(k === 'progression' ? normProg(lib) : lib) ? null : deepClone(v);
+      }
+      return next;
+    });
+    saveRoutine({ ...routine, items });
+  } else {
+    for (const c of changes) {
+      const ex = data.exercises.find((x) => x.id === c.exerciseId);
+      if (ex) saveExercise({ ...ex, ...deepClone(Object.fromEntries(keys.map((k) => [k, c.values[k]]))) });
+    }
+  }
 }
