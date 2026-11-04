@@ -120,6 +120,7 @@ export function RoutinesScreen() {
         routines.length > 1 && h('button', { onclick: () => document.getElementById('routine-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, 'Choose another routine'),
         h('button', { onclick: () => beginRoutine(null) }, 'Start empty workout'),
         h('button', { onclick: () => openSheet({ type: 'logRun' }) }, 'Log a run'),
+        data.settings.showYoga && h('button', { onclick: () => nav('/yoga/log') }, 'Log yoga'),
       ]),
     ]),
 

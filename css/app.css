@@ -636,3 +636,23 @@ input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
 .wu-step { gap: 5px; }
 .wu-step .w-64 { width: 52px; }
 .wu-step .goal-x { position: static; }
+
+/* ---------- Yoga ---------- */
+.vstack { display: flex; flex-direction: column; }
+.rating { display: flex; gap: 5px; }
+.rating .rate { width: 36px; height: 36px; min-height: 0; border-radius: 10px; background: var(--fill); font-weight: 700; font-size: 16px; color: var(--text); font-variant-numeric: tabular-nums; }
+.rating .rate.on { background: var(--accent); color: var(--on-accent); }
+.yoga-dot { width: 34px; height: 34px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent); }
+.yoga-dot.achieve { background: var(--yellow-soft); color: var(--yellow); }
+.yoga-highlight { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px; margin-bottom: 14px; background: var(--yellow-soft); animation: yogapop 0.5s ease-out; }
+.yoga-highlight.first { background: var(--green-soft); }
+.yoga-highlight .yh-icon { font-size: 32px; line-height: 1; }
+.yoga-highlight .yh-t { font-weight: 750; font-size: 17px; }
+.yoga-highlight .yh-s { font-size: 14px; color: var(--muted); margin-top: 2px; }
+.row.yoga-new { background: var(--yellow-soft); }
+.btn.danger-text { color: var(--red); }
+@keyframes yogapop { 0% { transform: scale(0.94); opacity: 0; } 60% { transform: scale(1.02); opacity: 1; } 100% { transform: none; } }
+@media (max-width: 380px) { .rating { gap: 3px; } .rating .rate { width: 32px; height: 32px; font-size: 15px; } }
+.row-main .rating { margin-top: 8px; }
+.row-main .rating .rate { flex: 1; max-width: 56px; height: 40px; }
+.yoga-stats .stat .v { font-size: 21px; white-space: nowrap; }

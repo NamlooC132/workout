@@ -512,3 +512,64 @@ test('warm-up for weighted bodyweight (+kg) and assisted exercises', () => {
   syncWarmups(body, settings);
   assert.equal(body.sets[0].reps, 10);
 });
+
+// ---------- Yoga ----------
+import { yogaStreaks, yogaTotals, styleBreakdown, feelByWeek, poseSummary, entryHighlight, poseSeries, dayToMs, fmtMinutes, fmtHold } from '../js/logic/yoga.js';
+
+test('yoga streaks: days in a row, current counts until the day after', () => {
+  const now = dayToMs('2026-11-05');
+  const s = (k) => ({ id: k, date: dayToMs(k), minutes: 30 });
+  const list = ['2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-11-03', '2026-11-04', '2026-11-04'].map(s);
+  assert.deepEqual(yogaStreaks(list, now), { current: 2, longest: 4 });
+  assert.deepEqual(yogaStreaks(list, dayToMs('2026-11-07')), { current: 0, longest: 4 });
+  assert.deepEqual(yogaStreaks([], now), { current: 0, longest: 0 });
+});
+
+test('yoga totals, styles and feel by week', () => {
+  const now = dayToMs('2026-11-05'); // Thursday
+  const list = [
+    { date: dayToMs('2026-11-02'), minutes: 30, style: 'vinyasa', feel: 4 },
+    { date: dayToMs('2026-11-05'), minutes: 45, style: 'yin', feel: 5 },
+    { date: dayToMs('2026-10-30'), minutes: 60, style: 'vinyasa', feel: 3 },
+    { date: dayToMs('2026-10-01'), minutes: 20, style: 'mystery', feel: null },
+  ];
+  const t = yogaTotals(list, now, 1);
+  assert.equal(t.week, 75); assert.equal(t.month, 75); assert.equal(t.total, 155);
+  assert.deepEqual(styleBreakdown(list).map((x) => [x.style, x.count, x.minutes]), [['vinyasa', 2, 90], ['yin', 1, 45], ['other', 1, 20]]);
+  assert.deepEqual(feelByWeek(list, 1).map((p) => p.y), [3, 4.5]);
+  assert.equal(fmtMinutes(75), '1 h 15 min'); assert.equal(fmtHold(95), '1:35 min'); assert.equal(fmtHold(40), '40 s');
+});
+
+test('pose journal: records, first achievement and chart', () => {
+  const hold = { id: 'p1', kind: 'hold' }, head = { id: 'p2', kind: 'achieve' };
+  const e = (id, poseId, day, f) => ({ id, poseId, date: dayToMs(day), createdAt: 0, ...f });
+  const entries = [
+    e('a', 'p1', '2026-10-01', { seconds: 30 }), e('b', 'p1', '2026-10-05', { seconds: 45 }), e('c', 'p1', '2026-10-09', { seconds: 40 }),
+    e('d', 'p2', '2026-10-02', { achieved: false }), e('f', 'p2', '2026-10-06', { achieved: true }), e('g', 'p2', '2026-10-08', { achieved: true }),
+  ];
+  assert.equal(entryHighlight(hold, entries[0], entries), null);
+  assert.equal(entryHighlight(hold, entries[1], entries), 'record');
+  assert.equal(entryHighlight(hold, entries[2], entries), null);
+  assert.equal(entryHighlight(head, entries[4], entries), 'first');
+  assert.equal(entryHighlight(head, entries[5], entries), null);
+  assert.equal(poseSummary(hold, entries).best, 45);
+  assert.equal(poseSummary(head, entries).firstAchieved, dayToMs('2026-10-06'));
+  assert.deepEqual(poseSeries(hold, entries).map((p) => p.y), [30, 45, 40]);
+  assert.deepEqual(poseSeries(head, entries).map((p) => p.y), [0, 1, 2]);
+});
+
+test('backup carries yoga data; import merges poses by name', async () => {
+  const { makeBackup, validateBackup, planImport } = await import('../js/logic/backup.js');
+  const db = { settings: defaultSettings(), exercises: [], routines: [], workouts: [], measurements: [], blocks: [],
+    yogaSessions: [{ id: 's1', date: dayToMs('2026-11-01'), style: 'yin', minutes: 40, difficulty: 2, feel: 5, notes: '' }],
+    yogaPoses: [{ id: 'p1', name: 'Headstand', kind: 'achieve' }],
+    yogaEntries: [{ id: 'e1', poseId: 'p1', date: dayToMs('2026-11-01'), achieved: true, seconds: null }] };
+  const v = validateBackup(JSON.parse(JSON.stringify(makeBackup(db))));
+  assert.equal(v.ok, true);
+  assert.equal(v.data.yogaSessions.length, 1); assert.equal(v.data.yogaEntries.length, 1);
+  const other = { exercises: [], routines: [], workouts: [], measurements: [], blocks: [], yogaSessions: [], yogaPoses: [{ id: 'x9', name: 'headstand', kind: 'achieve' }], yogaEntries: [] };
+  const plan = planImport(v.data, other);
+  assert.equal(plan.yogaPoses.length, 0);
+  assert.equal(plan.yogaEntries[0].poseId, 'x9');
+  assert.equal(plan.yogaSessions.length, 1);
+});

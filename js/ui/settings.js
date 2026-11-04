@@ -14,7 +14,7 @@ import { warmupSteps, DEFAULT_WARMUP_STEPS } from '../logic/warmup.js';
 import { activeWorkout } from '../store.js';
 import * as WS from '../workoutService.js';
 
-export const APP_VERSION = '1.23.4';
+export const APP_VERSION = '1.24.0';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -40,6 +40,10 @@ export function SettingsScreen() {
 
     WarmupSection(s),
 
+    h(Section, { title: 'Sections', footer: 'Turn on only what you use. Your data stays saved when a section is hidden.' }, [
+      h(Row, { left: icon('yoga', 22), title: 'Show Yoga', subtitle: 'Log sessions, a pose journal and stats', right: h(Toggle, { checked: !!s.showYoga, onChange: (v) => { set({ showYoga: v }); if (v) toast('Yoga is now in the bottom bar'); } }) }),
+    ]),
+
     h(Section, { title: 'Language · שפה' }, h(Row, { title: 'App language', right: h(Segmented, { small: true, value: s.language || 'en', onChange: (v) => set({ language: v }), options: [{ value: 'en', label: 'English' }, { value: 'he', label: 'עברית' }] }) })),
 
     h(Section, { title: 'Appearance' }, h(Row, { title: 'Theme', right: h(Segmented, { small: true, value: s.theme, onChange: (v) => set({ theme: v }), options: [{ value: 'system', label: 'Auto' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }] }) })),
@@ -50,7 +54,7 @@ export function SettingsScreen() {
     }, [
       h(Row, { left: icon('info', 22), title: 'Where is my data saved?', chevron: true, onClick: () => openSheet({ type: 'dataInfo' }) }),
       h(Row, { title: 'Backup reminder', right: h(Toggle, { checked: s.backupReminder !== false, onChange: (v) => set({ backupReminder: v }) }) }),
-      h(Row, { left: icon('download', 22), title: 'Export all data', subtitle: 'Routines, exercises, photos, history, measurements, settings', onClick: () => exportFile('full') }),
+      h(Row, { left: icon('download', 22), title: 'Export all data', subtitle: data.yogaSessions.length || data.yogaEntries.length ? 'Routines, exercises, photos, history, measurements, yoga, settings' : 'Routines, exercises, photos, history, measurements, settings', onClick: () => exportFile('full') }),
       h(Row, { left: icon('copy', 22), title: 'Share routines', subtitle: 'Pick routines to send to friends – no history', onClick: () => openSheet({ type: 'exportRoutines' }) }),
       h(Row, { left: icon('upload', 22), title: 'Import data', subtitle: 'From a backup or a friend’s routines (also iPhone-app backups)', onClick: () => document.getElementById('import-input').click() }),
       h('input#import-input.hidden-input', { type: 'file', accept: '.json,application/json', onchange: onImportFile }),
@@ -196,6 +200,8 @@ export function ImportPreviewSheet(sheet) {
       h(Row, { title: 'Workouts', right: h('b', p.workouts.length) }),
       h(Row, { title: 'Measurements', right: h('b', p.measurements.length) }),
       h(Row, { title: 'Training blocks', right: h('b', p.blocks.length) }),
+      (p.yogaSessions?.length || p.yogaPoses?.length || p.yogaEntries?.length) > 0 && h(Row, { title: 'Yoga sessions', right: h('b', p.yogaSessions.length) }),
+      (p.yogaPoses?.length || p.yogaEntries?.length) > 0 && h(Row, { title: 'Pose results', right: h('b', p.yogaEntries.length) }),
     ]),
     (p.skipped || p.reused || p.renamed) > 0 && h(Section, { title: 'Duplicates' }, [
       p.skipped > 0 && h(Row, { title: 'Already on this phone (skipped)', right: h('b', p.skipped) }),

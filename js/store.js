@@ -19,6 +19,9 @@ export const data = {
   workouts: [],
   measurements: [],
   blocks: [],
+  yogaSessions: [],
+  yogaPoses: [],
+  yogaEntries: [],
   timer: null,
 };
 
@@ -109,6 +112,16 @@ export const deleteRoutine = (id) => remove('routines', id);
 export const deleteWorkout = (id) => remove('workouts', id);
 export const deleteMeasurement = (id) => remove('measurements', id);
 export const deleteBlock = (id) => remove('blocks', id);
+export const saveYogaSession = (r) => upsert('yogaSessions', r);
+export const deleteYogaSession = (id) => remove('yogaSessions', id);
+export const saveYogaPose = (r) => upsert('yogaPoses', r);
+export const saveYogaEntry = (r) => upsert('yogaEntries', r);
+export const deleteYogaEntry = (id) => remove('yogaEntries', id);
+/** Removing a pose from the journal also removes its measurements. */
+export function deleteYogaPose(id) {
+  for (const e of data.yogaEntries.filter((x) => x.poseId === id)) remove('yogaEntries', e.id);
+  remove('yogaPoses', id);
+}
 
 /** Deleting an exercise removes it from routines; past workouts keep their snapshot. */
 export function deleteExercise(id) {
@@ -135,6 +148,7 @@ export async function applyImport(plan, { includeSettings = false } = {}) {
   const records = {
     exercises: plan.exercises, routines: plan.routines, workouts: plan.workouts,
     measurements: plan.measurements, blocks: plan.blocks,
+    yogaSessions: plan.yogaSessions || [], yogaPoses: plan.yogaPoses || [], yogaEntries: plan.yogaEntries || [],
   };
   const meta = includeSettings && plan.settings ? { settings: plan.settings } : {};
   await idb.putMany(records, meta);
@@ -146,6 +160,7 @@ export async function applyImport(plan, { includeSettings = false } = {}) {
 export async function eraseAll() {
   await idb.clearAll();
   data.exercises = []; data.routines = []; data.workouts = []; data.measurements = []; data.blocks = [];
+  data.yogaSessions = []; data.yogaPoses = []; data.yogaEntries = [];
   data.settings = defaultSettings();
   data.timer = null;
   await idb.putMeta('seeded', true);
@@ -186,8 +201,8 @@ export function confirm(opts) {
 // ---------- Start-up ----------
 export async function load() {
   try {
-    const [exercises, routines, workouts, measurements, blocks] = await Promise.all(idb.STORES.map((s) => idb.getAll(s)));
-    Object.assign(data, { exercises, routines, workouts, measurements, blocks });
+    const lists = await Promise.all(idb.STORES.map((s) => idb.getAll(s)));
+    idb.STORES.forEach((s, i) => { data[s] = lists[i]; });
     const settings = await idb.getMeta('settings');
     data.settings = { ...defaultSettings(), ...(settings || {}) };
     data.timer = (await idb.getMeta('timer')) || null;

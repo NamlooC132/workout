@@ -14,6 +14,7 @@ import { MuscleViewSheet } from './ui/muscleview.js';
 import { HowToSheet } from './ui/howto.js';
 import { DataInfoSheet } from './ui/datainfo.js';
 import { LogRunSheet } from './ui/health.js';
+import { YogaScreen, YogaPoseScreen, YogaAddPoseSheet } from './ui/yoga.js';
 import { SettingsScreen, AdvancedSettingsScreen, ExportRoutinesSheet, ImportPreviewSheet, TargetsSheet, MusclesSheet, ActionsSheet } from './ui/settings.js';
 import { resumeTimer, unlockAudio, syncWakeLock } from './timer.js';
 import { fmtDuration } from './logic/util.js';
@@ -40,6 +41,7 @@ const SHEETS = {
   targets: TargetsSheet,
   muscles: MusclesSheet,
   actions: ActionsSheet,
+  yogaAddPose: YogaAddPoseSheet,
 };
 
 // ---------- Routing ----------
@@ -54,12 +56,15 @@ const ROUTES = [
   [/^\/progress$/, () => h(ProgressScreen), 'progress'],
   [/^\/settings$/, () => h(SettingsScreen), 'settings'],
   [/^\/settings\/advanced$/, () => h(AdvancedSettingsScreen), 'settings'],
+  [/^\/yoga(?:\/(log|poses|stats))?$/, (m) => h(YogaScreen, { seg: m[1] || null }), 'yoga'],
+  [/^\/yoga\/pose\/(.+)$/, (m) => h(YogaPoseScreen, { id: m[1] }), 'yoga'],
 ];
 
 let lastTab = 'routines';
 function currentRoute() {
   const path = location.hash.replace(/^#/, '') || '/routines';
   for (const [re, view, tab] of ROUTES) {
+    if (tab === 'yoga' && !data.settings.showYoga) continue; // section switched off in Settings
     const m = path.match(re);
     if (m) {
       if (tab) lastTab = tab;
@@ -71,13 +76,14 @@ function currentRoute() {
 
 const TABS = [
   { key: 'routines', path: '/routines', label: 'Workout', icon: 'dumbbell' },
+  { key: 'yoga', path: '/yoga', label: 'Yoga', icon: 'yoga', when: () => data.settings.showYoga },
   { key: 'history', path: '/history', label: 'History', icon: 'history' },
   { key: 'progress', path: '/progress', label: 'Progress', icon: 'chart' },
   { key: 'settings', path: '/settings', label: 'Settings', icon: 'gear' },
 ];
 
 function TabBar({ tab }) {
-  return h('nav.tabbar', TABS.map((t) => h('button', {
+  return h('nav.tabbar', TABS.filter((t) => !t.when || t.when()).map((t) => h('button', {
     key: t.key, class: cx('tab', tab === t.key && 'active'),
     onclick: () => { if (tab === t.key) window.scrollTo({ top: 0, behavior: 'smooth' }); nav(t.path); },
     'aria-current': tab === t.key ? 'page' : null,

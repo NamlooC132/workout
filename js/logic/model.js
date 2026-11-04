@@ -33,6 +33,7 @@ export function defaultSettings() {
     defaultSetType: 'working',
     defaultWarmupSets: 0,
     defaultDropSets: 0,
+    showYoga: false,                 // Yoga section (tab + home link) – off until switched on in Settings
     warmupScope: 'chosen',           // 'chosen' = exercises with warm-up sets | 'all' = every weighted exercise
     warmupSteps: [{ pct: 50, reps: 10 }, { pct: 70, reps: 5 }, { pct: 85, reps: 2 }],
     weekStart: 1,                    // 0 = Sunday, 1 = Monday
