@@ -702,14 +702,17 @@ const LOCAL_PHOTOS = {
   'plate pinch': 'plate-pinch',
   'machine glute kickback': 'machine-glute-kickback-2',
   'incline machine press': 'incline-machine-press',
-  'decline machine chest press': 'decline-machine-chest-press',
+  'decline machine chest press': 'decline-machine-chest-press-2',
   'wide-grip lat pulldown': 'wide-grip-lat-pulldown',
   'chest-supported t-bar row': 'chest-supported-t-bar-row',
   'iso-lateral row': 'iso-lateral-row',
   'machine shrug': 'machine-shrug',
   'machine low row': 'machine-low-row',
   'iso-lateral shoulder press': 'iso-lateral-shoulder-press',
-  'seated dip machine': 'seated-dip-machine',
+  'seated dip machine': 'seated-dip-machine-2',
+  'spider curl': 'spider-curl',
+  'smith machine hip thrust': 'smith-machine-hip-thrust',
+  'lying rear delt raise': 'lying-rear-delt-raise',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
