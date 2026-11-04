@@ -125,11 +125,12 @@ export function addWarmups(w, entry) {
 
 /**
  * After an exercise (or its routine settings) is edited, apply the new settings to the
- * active workout right away: rep range, rest, weight step, goals, type … and the number
- * of working sets (only empty, unfinished sets are ever removed).
+ * active workout right away: rep range, rest, weight step, goals, type, one side …
+ * `counts` = how much the editor changed { warmupSets, sets, dropSets } (e.g. +1): that many
+ * sets are added to (or unfinished ones removed from) what the workout has now.
  * Returns the number of updated entries.
  */
-export function refreshExercise(exerciseId) {
+export function refreshExercise(exerciseId, counts = null) {
   const w = data.workouts.find((x) => x.status === 'active');
   const ex = exercisesById().get(exerciseId);
   if (!w || !ex) return 0;
@@ -142,31 +143,23 @@ export function refreshExercise(exerciseId) {
     const old = entry.snapshot || {};
     entry.snapshot = exerciseSnapshot(ex, cfg);
     entry.routineNotes = cfg.routineNotes;
-    // Warm-up sets – only when that setting itself changed: add or remove (never done ones).
-    const newWarm = warmupCount(cfg, data.settings);
-    const oldWarm = old.warmupSets !== undefined ? warmupCount({ ...cfg, warmupSets: old.warmupSets }, data.settings) : entry.sets.filter((s) => s.type === 'warmup').length;
-    if (newWarm !== oldWarm) {
-      let have = entry.sets.filter((s) => s.type === 'warmup').length;
-      while (have < newWarm) {
-        const idx = entry.sets.findIndex((s) => s.type !== 'warmup');
-        entry.sets.splice(idx < 0 ? entry.sets.length : idx, 0, newSet({ type: 'warmup', auto: true }));
-        have++;
-      }
-      for (let i = entry.sets.length - 1; i >= 0 && have > newWarm; i--) {
-        const s = entry.sets[i];
-        if (s.type === 'warmup' && !s.done) { entry.sets.splice(i, 1); have--; }
-      }
-    }
-    // Number of working sets – only when that setting itself changed.
-    if (cfg.sets && cfg.sets !== old.sets) {
-      const isWork = (s) => s.type !== 'warmup' && s.type !== 'drop';
-      let work = entry.sets.filter(isWork).length;
-      while (work < cfg.sets) { addSetNoSave(entry); work++; }
-      for (let i = entry.sets.length - 1; i >= 0 && work > cfg.sets; i--) {
-        const s = entry.sets[i];
-        if (isWork(s) && !s.done) { entry.sets.splice(i, 1); work--; }
-      }
-    }
+    const isWarm = (s) => s.type === 'warmup';
+    const isDrop = (s) => s.type === 'drop';
+    const isWork = (s) => !isWarm(s) && !isDrop(s);
+    const delta = counts || {
+      warmupSets: (cfg.warmupSets ?? 0) - (old.warmupSets ?? cfg.warmupSets ?? 0),
+      sets: old.sets ? (cfg.sets || 0) - old.sets : 0,
+      dropSets: 0,
+    };
+    changeCount(entry, isWarm, delta.warmupSets || 0, () => {
+      const idx = entry.sets.findIndex((s) => !isWarm(s));
+      entry.sets.splice(idx < 0 ? entry.sets.length : idx, 0, newSet({ type: 'warmup', auto: true }));
+    });
+    changeCount(entry, isWork, delta.sets || 0, () => addSetNoSave(entry), 1);
+    changeCount(entry, isDrop, delta.dropSets || 0, () => {
+      const base = entry.sets.filter(isWork).slice(-1)[0];
+      entry.sets.push(newSet({ type: 'drop', kg: dropWeight(base?.kg, entry.snapshot.weightStep) }));
+    });
     // New suggestion for the new rep range (e.g. a lower goal you already hit → add weight),
     // unless it was already applied. A dismissed banner comes back only if the advice changed.
     const p = entry.progression || {};
@@ -181,6 +174,17 @@ export function refreshExercise(exerciseId) {
   }
   if (n) save(w);
   return n;
+}
+
+/** Adds `delta` sets of a kind, or removes −delta unfinished ones from the end (keeps at least `min`). */
+function changeCount(entry, match, delta, add, min = 0) {
+  for (let i = 0; i < delta; i++) add();
+  let remove = -delta;
+  let have = entry.sets.filter(match).length;
+  for (let i = entry.sets.length - 1; i >= 0 && remove > 0 && have > min; i--) {
+    const s = entry.sets[i];
+    if (match(s) && !s.done) { entry.sets.splice(i, 1); remove--; have--; }
+  }
 }
 
 function addSetNoSave(entry) {

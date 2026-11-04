@@ -267,7 +267,14 @@ export function ExerciseEditorSheet(sheet) {
       });
     }
     sheet.isNew = !existing;
+    // Remember the set counts, so a live workout can add / remove exactly what changed.
+    sheet.orig = { sets: sheet.draft.sets || 0, warmupSets: sheet.draft.warmupSets || 0, dropSets: sheet.draft.dropSets || 0 };
   }
+  const countChanges = () => sheet.orig && {
+    sets: (sheet.draft.sets || 0) - sheet.orig.sets,
+    warmupSets: (sheet.draft.warmupSets || 0) - sheet.orig.warmupSets,
+    dropSets: (sheet.draft.dropSets || 0) - sheet.orig.dropSets,
+  };
   const d = sheet.draft;
   const set = (patch) => { Object.assign(d, patch); update(); };
   const setProg = (patch) => { d.progression = { ...d.progression, ...patch }; update(); };
@@ -278,14 +285,14 @@ export function ExerciseEditorSheet(sheet) {
       if (d.repMin > d.repMax) [d.repMin, d.repMax] = [d.repMax, d.repMin];
       saveRoutine({ ...routine, items: routine.items.map((i) => (i.id === item.id ? { ...i, ...routineOverrides(libEx, d) } : i)) });
       closeSheet();
-      toast(refreshExercise(d.id) ? `Saved for ${routine.name} only · updated in this workout` : `Saved for ${routine.name} only`);
+      toast(refreshExercise(d.id, countChanges()) ? `Saved for ${routine.name} only · updated in this workout` : `Saved for ${routine.name} only`);
       return;
     }
     d.name = d.name.trim();
     if (d.repMin > d.repMax) [d.repMin, d.repMax] = [d.repMax, d.repMin];
     saveExercise(deepClone(d));
     closeSheet();
-    const live = !sheet.isNew && refreshExercise(d.id);
+    const live = !sheet.isNew && refreshExercise(d.id, countChanges());
     toast(sheet.isNew ? 'Exercise created' : live ? 'Exercise saved · updated in this workout' : 'Exercise saved');
     sheet.onSaved && sheet.onSaved(d);
   };
