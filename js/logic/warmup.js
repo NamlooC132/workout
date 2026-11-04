@@ -51,17 +51,18 @@ export function warmupPct(index, settings) {
 export function syncWarmups(entry, settings) {
   if (entry.skipped) return false;
   const snap = entry.snapshot || {};
-  if (!canAutoWarmup(snap.type)) return false;
+  const withWeight = canAutoWarmup(snap.type); // bodyweight-type exercises: reps only
   const steps = warmupSteps(settings);
   // Based on the heaviest working set, so changing any working weight moves the warm-up.
-  const workKg = baseWorkKg(entry);
+  const workKg = withWeight ? baseWorkKg(entry) : null;
   let k = -1, changed = false;
   for (const s of entry.sets) {
     if (s.type !== 'warmup') continue;
     k++;
-    if (!s.auto || s.done) continue;
+    // Ticked warm-ups keep their values – unless they were ticked while still empty.
+    if (!s.auto || (s.done && (s.kg !== null || !withWeight))) continue;
     const st = steps[Math.min(k, steps.length - 1)];
-    const kg = warmupKg(workKg, st.pct, snap.weightStep, settings.unit);
+    const kg = withWeight ? warmupKg(workKg, st.pct, snap.weightStep, settings.unit) : s.kg;
     const reps = st.reps;
     if (s.kg !== kg || s.reps !== reps) {
       s.kg = kg; s.reps = reps;
