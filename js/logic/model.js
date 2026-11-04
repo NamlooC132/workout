@@ -33,7 +33,6 @@ export function defaultSettings() {
     defaultSetType: 'working',
     defaultWarmupSets: 0,
     defaultDropSets: 0,
-    warmupAuto: true,                // fill warm-up sets from warmupSteps (% of the first working set)
     warmupScope: 'chosen',           // 'chosen' = exercises with warm-up sets | 'all' = every weighted exercise
     warmupSteps: [{ pct: 50, reps: 10 }, { pct: 70, reps: 5 }, { pct: 85, reps: 2 }],
     weekStart: 1,                    // 0 = Sunday, 1 = Monday
@@ -196,6 +195,7 @@ export function exerciseSnapshot(exercise, cfg) {
     rest: cfg.rest,
     weightStep: cfg.weightStep,
     rirTarget: cfg.rirTarget,
+    warmupSets: cfg.warmupSets ?? 0,
     progression: { ...(cfg.progression || exercise.progression || {}) },
   };
 }

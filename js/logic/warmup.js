@@ -12,7 +12,7 @@ export const canAutoWarmup = (type) => !NO_WARMUP_TYPES.includes(type);
 /** Number of warm-up sets a new workout entry gets. */
 export function warmupCount(cfg, settings) {
   if (cfg.warmupSets) return cfg.warmupSets;
-  if (settings?.warmupAuto && settings.warmupScope === 'all' && canAutoWarmup(cfg.type)) return warmupSteps(settings).length;
+  if (settings?.warmupScope === 'all' && canAutoWarmup(cfg.type)) return warmupSteps(settings).length;
   return 0;
 }
 
@@ -29,7 +29,7 @@ export function warmupKg(workKg, pct, step, unit) {
  * from the first working set. Returns true when something changed.
  */
 export function syncWarmups(entry, settings) {
-  if (!settings?.warmupAuto || entry.skipped) return false;
+  if (entry.skipped) return false;
   const snap = entry.snapshot || {};
   if (!canAutoWarmup(snap.type)) return false;
   const steps = warmupSteps(settings);

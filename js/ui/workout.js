@@ -19,7 +19,6 @@ import { startRest, adjustRest, skipRest, restRemaining, syncWakeLock } from '..
 import { guideFor, photoFor } from '../logic/catalog.js';
 import { HealthBox } from './health.js';
 import { setGoals } from '../logic/progression.js';
-import { canAutoWarmup, warmupSteps, nextWarmupStep } from '../logic/warmup.js';
 import { e1rm } from '../logic/records.js';
 import { setReps } from '../logic/model.js';
 
@@ -295,12 +294,7 @@ function entryMenu(w, entry) {
     type: 'actions', title: entry.snapshot.name, actions: [
       entry.exerciseId && { text: 'History', icon: 'history', onClick: () => openSheet({ type: 'exHistory', exerciseId: entry.exerciseId, name: entry.snapshot.name }) },
       { text: 'How to do it', icon: 'info', onClick: () => openSheet({ type: 'howTo', name: entry.snapshot.name, exerciseId: entry.exerciseId }) },
-      data.settings.warmupAuto && canAutoWarmup(entry.snapshot.type) && entry.sets.filter((x) => x.type === 'warmup').length < warmupSteps(data.settings).length
-        && { text: `Add automatic warm-up (${warmupSteps(data.settings).map((x) => x.pct + '%').join(', ')})`, icon: 'flame', onClick: () => WS.addWarmups(w, entry) },
-      (() => {
-        const st = data.settings.warmupAuto && canAutoWarmup(entry.snapshot.type) ? nextWarmupStep(entry, data.settings) : null;
-        return { text: st ? `Add warm-up set (${st.pct}% × ${st.reps})` : 'Add warm-up set', icon: 'flame', onClick: () => WS.addSet(w, entry, 'warmup') };
-      })(),
+      { text: 'Add warm-up set', icon: 'flame', onClick: () => WS.addSet(w, entry, 'warmup') },
       { text: 'Add drop set', icon: 'chevronDown', onClick: () => WS.addSet(w, entry, 'drop') },
       { text: entry.notes ? 'Edit note' : 'Add note', icon: 'note', onClick: () => openSheet({ type: 'textInput', title: 'Note for this workout', value: entry.notes, placeholder: 'Only for this workout', onSave: (v) => { entry.notes = v; WS.save(w); } }) },
       { text: 'Replace exercise', icon: 'swap', onClick: () => openSheet({ type: 'picker', multi: false, title: `Replace ${entry.snapshot.name}`, context: { workoutId: w.id }, onPick: ([nx]) => WS.undoable(w, `Replaced with ${nx.name}`, () => WS.replaceEntry(w, entry, nx)) }) },

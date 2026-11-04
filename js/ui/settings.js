@@ -14,7 +14,7 @@ import { warmupSteps, DEFAULT_WARMUP_STEPS } from '../logic/warmup.js';
 import { activeWorkout } from '../store.js';
 import * as WS from '../workoutService.js';
 
-export const APP_VERSION = '1.22.3';
+export const APP_VERSION = '1.22.4';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -268,14 +268,13 @@ function WarmupSection(s) {
     if (w) WS.save(w); // an open workout picks up the new warm-up right away
   };
   const setStep = (i, patch) => { steps[i] = { ...steps[i], ...patch }; save({ warmupSteps: steps }); };
-  const on = s.warmupAuto !== false;
+  const on = true;
   return h(Section, {
     title: 'Warm-up',
     footer: 'Warm-up weight = % of your heaviest working set, rounded to the − / + step. It follows the working weight live. Change a warm-up set by hand in a workout and it stays as you typed it.',
   }, [
-    h(Row, { title: 'Automatic warm-up', subtitle: 'Fill warm-up sets with weight and reps', right: h(Toggle, { checked: on, onChange: (v) => save({ warmupAuto: v }) }) }),
     on && h(Row, { title: 'Add warm-up to', right: h(Segmented, { small: true, value: s.warmupScope || 'chosen', onChange: (v) => save({ warmupScope: v }), options: [{ value: 'all', label: 'Every exercise' }, { value: 'chosen', label: 'Chosen ones' }] }) }),
-    on && (s.warmupScope || 'chosen') === 'chosen' && h('div.pad.small.muted', 'Chosen ones = exercises where you set Warm-up sets (exercise → Advanced). In a workout you can also tap ⋯ → Add automatic warm-up.'),
+    on && (s.warmupScope || 'chosen') === 'chosen' && h('div.pad.small.muted', 'Chosen ones = exercises where you set Warm-up sets (exercise → Advanced). In a workout you can also tap ⋯ → Add warm-up set.'),
     on && steps.map((st, i) => h(Row, {
       key: 'wu' + i, title: `Warm-up ${i + 1}`,
       right: h('div.wu-step', [

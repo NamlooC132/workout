@@ -30,7 +30,7 @@ export function makeEntry(exercise, item, workout) {
   const lastWork = lastSets.filter((s) => s.type !== 'warmup');
   const lastMain = lastWork.filter((s) => s.type !== 'drop');
   const sets = [];
-  const auto = !!data.settings.warmupAuto && canAutoWarmup(cfg.type);
+  const auto = canAutoWarmup(cfg.type);
   for (let i = 0; i < warmupCount(cfg, data.settings); i++) {
     const src = auto ? null : lastWarm[i] || null;
     sets.push(newSet({ type: 'warmup', kg: src ? src.kg : null, reps: src ? src.reps : null, auto }));
@@ -142,6 +142,21 @@ export function refreshExercise(exerciseId) {
     const old = entry.snapshot || {};
     entry.snapshot = exerciseSnapshot(ex, cfg);
     entry.routineNotes = cfg.routineNotes;
+    // Warm-up sets – only when that setting itself changed: add or remove (never done ones).
+    const newWarm = warmupCount(cfg, data.settings);
+    const oldWarm = old.warmupSets !== undefined ? warmupCount({ ...cfg, warmupSets: old.warmupSets }, data.settings) : entry.sets.filter((s) => s.type === 'warmup').length;
+    if (newWarm !== oldWarm) {
+      let have = entry.sets.filter((s) => s.type === 'warmup').length;
+      while (have < newWarm) {
+        const idx = entry.sets.findIndex((s) => s.type !== 'warmup');
+        entry.sets.splice(idx < 0 ? entry.sets.length : idx, 0, newSet({ type: 'warmup', auto: true }));
+        have++;
+      }
+      for (let i = entry.sets.length - 1; i >= 0 && have > newWarm; i--) {
+        const s = entry.sets[i];
+        if (s.type === 'warmup' && !s.done) { entry.sets.splice(i, 1); have--; }
+      }
+    }
     // Number of working sets – only when that setting itself changed.
     if (cfg.sets && cfg.sets !== old.sets) {
       const isWork = (s) => s.type !== 'warmup' && s.type !== 'drop';
@@ -182,7 +197,7 @@ export function addSet(w, entry, type) {
   const set = newSet({ type: type || (last && last.type !== 'warmup' ? 'working' : data.settings.defaultSetType || 'working'), kg: last ? last.kg : null, reps: last ? last.reps : null, repsL: last?.repsL ?? null, repsR: last?.repsR ?? null });
   if (type === 'warmup') {
     const idx = entry.sets.findIndex((s) => s.type !== 'warmup');
-    entry.sets.splice(idx < 0 ? entry.sets.length : idx, 0, { ...set, kg: null, reps: null, repsL: null, repsR: null, auto: !!data.settings.warmupAuto });
+    entry.sets.splice(idx < 0 ? entry.sets.length : idx, 0, { ...set, kg: null, reps: null, repsL: null, repsR: null, auto: true });
   } else if (type === 'drop') {
     // Drop set: ~20 % lighter than the set before it, rounded to the weight step.
     const prev = entry.sets[entry.sets.length - 1];
@@ -480,7 +495,7 @@ export function setType(w, entry, set, type) {
   const wasWarm = set.type === 'warmup';
   set.type = type;
   if (type === 'warmup' && !wasWarm) {
-    set.auto = !!data.settings.warmupAuto;
+    set.auto = true;
     entry.sets = entry.sets.filter((s) => s !== set);
     const idx = entry.sets.findIndex((s) => s.type !== 'warmup');
     entry.sets.splice(idx < 0 ? entry.sets.length : idx, 0, set);

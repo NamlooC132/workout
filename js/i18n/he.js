@@ -51,7 +51,7 @@ export const DICT = {
   // ---------- Automatic warm-up & set arrows ----------
   'Automatic warm-up': 'חימום אוטומטי', 'Fill warm-up sets with weight and reps': 'ממלא את סטי החימום במשקל ובחזרות',
   'Add warm-up to': 'הוסף חימום ל', 'Every exercise': 'כל תרגיל', 'Chosen ones': 'תרגילים שבחרתי',
-  'Chosen ones = exercises where you set Warm-up sets (exercise → Advanced). In a workout you can also tap ⋯ → Add automatic warm-up.': 'תרגילים שבחרתי = תרגילים שהגדרת להם סטי חימום (תרגיל ← מתקדם). באימון אפשר גם ללחוץ ⋯ ← הוסף חימום אוטומטי.',
+  'Chosen ones = exercises where you set Warm-up sets (exercise → Advanced). In a workout you can also tap ⋯ → Add warm-up set.': 'תרגילים שבחרתי = תרגילים שהגדרת להם סטי חימום (תרגיל ← מתקדם). באימון אפשר גם ללחוץ ⋯ ← הוסף סט חימום.',
   'Warm-up weight = % of your heaviest working set, rounded to the − / + step. It follows the working weight live. Change a warm-up set by hand in a workout and it stays as you typed it.': 'משקל החימום = אחוז מסט העבודה הכבד ביותר, מעוגל לקפיצת ה-− / +. הוא משתנה בזמן אמת לפי משקל העבודה. אם תשנה סט חימום ידנית באימון, הוא יישאר כמו שהקלדת.',
   'reps': 'חזרות', '%  ×': '%  ×', 'Reset to 50 / 70 / 85 %': 'איפוס ל-50 / 70 / 85 %',
   'Better than last time': 'יותר טוב מהפעם הקודמת', 'Less than last time': 'פחות מהפעם הקודמת', 'Same as last time': 'כמו בפעם הקודמת',
