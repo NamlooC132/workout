@@ -103,13 +103,13 @@ const BACK = build([
 
 const defs = (glow) => h('defs', [
   h('linearGradient', { id: 'mmStrong', x1: 0, y1: 0, x2: 0.4, y2: 1 }, [
-    h('stop', { offset: '0%', style: { stopColor: 'color-mix(in srgb, var(--accent) 62%, #ffcf9e)' } }),
+    h('stop', { offset: '0%', style: { stopColor: 'color-mix(in srgb, var(--accent) 70%, #e9fff2)' } }),
     h('stop', { offset: '55%', style: { stopColor: 'var(--accent)' } }),
-    h('stop', { offset: '100%', style: { stopColor: 'color-mix(in srgb, var(--accent) 78%, #7a1400)' } }),
+    h('stop', { offset: '100%', style: { stopColor: 'color-mix(in srgb, var(--accent) 78%, #053b1d)' } }),
   ]),
   h('linearGradient', { id: 'mmLight', x1: 0, y1: 0, x2: 0.4, y2: 1 }, [
-    h('stop', { offset: '0%', style: { stopColor: 'color-mix(in srgb, var(--accent) 28%, #fff4ea)' } }),
-    h('stop', { offset: '100%', style: { stopColor: 'color-mix(in srgb, var(--accent) 52%, #ffe2c8)' } }),
+    h('stop', { offset: '0%', style: { stopColor: 'color-mix(in srgb, var(--accent) 30%, #f1fff7)' } }),
+    h('stop', { offset: '100%', style: { stopColor: 'color-mix(in srgb, var(--accent) 50%, #d7f5e4)' } }),
   ]),
   h('linearGradient', { id: 'mmIdle', x1: 0, y1: 0, x2: 0.3, y2: 1 }, [
     h('stop', { offset: '0%', style: { stopColor: 'color-mix(in srgb, var(--muted) 22%, var(--card))' } }),

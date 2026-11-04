@@ -127,7 +127,7 @@ function applyTheme() {
   if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
   else document.documentElement.removeAttribute('data-theme');
   const dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#000000' : '#f2f2f7');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0d0e10' : '#f2f3f5');
 }
 
 const root = document.getElementById('app');
