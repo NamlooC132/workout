@@ -14,7 +14,7 @@ import { warmupSteps, DEFAULT_WARMUP_STEPS } from '../logic/warmup.js';
 import { activeWorkout } from '../store.js';
 import * as WS from '../workoutService.js';
 
-export const APP_VERSION = '1.22.2';
+export const APP_VERSION = '1.22.3';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -271,7 +271,7 @@ function WarmupSection(s) {
   const on = s.warmupAuto !== false;
   return h(Section, {
     title: 'Warm-up',
-    footer: 'Warm-up weight = % of your first working set, rounded to the − / + step. It follows the working weight live. Change a warm-up set by hand in a workout and it stays as you typed it.',
+    footer: 'Warm-up weight = % of your heaviest working set, rounded to the − / + step. It follows the working weight live. Change a warm-up set by hand in a workout and it stays as you typed it.',
   }, [
     h(Row, { title: 'Automatic warm-up', subtitle: 'Fill warm-up sets with weight and reps', right: h(Toggle, { checked: on, onChange: (v) => save({ warmupAuto: v }) }) }),
     on && h(Row, { title: 'Add warm-up to', right: h(Segmented, { small: true, value: s.warmupScope || 'chosen', onChange: (v) => save({ warmupScope: v }), options: [{ value: 'all', label: 'Every exercise' }, { value: 'chosen', label: 'Chosen ones' }] }) }),

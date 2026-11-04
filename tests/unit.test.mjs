@@ -470,3 +470,16 @@ test('warm-up count: own setting, else every weighted exercise only when chosen'
   assert.equal(warmupCount({ warmupSets: 0, type: 'bodyweight' }, s), 0);
   assert.equal(warmupCount({ warmupSets: 0, type: 'weighted' }, { ...s, warmupScope: 'chosen' }), 0);
 });
+
+test('warm-up follows the heaviest working set; next step matches the warm-up number', async () => {
+  const { nextWarmupStep } = await import('../js/logic/warmup.js');
+  const settings = { warmupAuto: true, unit: 'kg', warmupSteps: [{ pct: 50, reps: 10 }, { pct: 70, reps: 5 }, { pct: 85, reps: 2 }] };
+  const entry = { snapshot: { type: 'weighted', weightStep: 2.5 }, sets: [
+    { type: 'warmup', auto: true, kg: null, reps: null, done: false },
+    { type: 'working', kg: 80, reps: 8, done: false },
+    { type: 'working', kg: 100, reps: 6, done: false },
+  ] };
+  syncWarmups(entry, settings);
+  assert.deepEqual([entry.sets[0].kg, entry.sets[0].reps], [50, 10]);
+  assert.deepEqual(nextWarmupStep(entry, settings), { pct: 70, reps: 5 });
+});

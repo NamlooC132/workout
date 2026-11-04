@@ -473,3 +473,19 @@ export function copyPrevious(w, entry, set) {
   save(w);
   return true;
 }
+
+/** Changing a set's type: a new warm-up set gets automatic weight/reps and moves to the warm-up block. */
+export function setType(w, entry, set, type) {
+  if (set.type === type) return;
+  const wasWarm = set.type === 'warmup';
+  set.type = type;
+  if (type === 'warmup' && !wasWarm) {
+    set.auto = !!data.settings.warmupAuto;
+    entry.sets = entry.sets.filter((s) => s !== set);
+    const idx = entry.sets.findIndex((s) => s.type !== 'warmup');
+    entry.sets.splice(idx < 0 ? entry.sets.length : idx, 0, set);
+  } else if (wasWarm) {
+    set.auto = false;
+  }
+  save(w);
+}

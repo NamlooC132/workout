@@ -19,7 +19,7 @@ import { startRest, adjustRest, skipRest, restRemaining, syncWakeLock } from '..
 import { guideFor, photoFor } from '../logic/catalog.js';
 import { HealthBox } from './health.js';
 import { setGoals } from '../logic/progression.js';
-import { canAutoWarmup, warmupSteps } from '../logic/warmup.js';
+import { canAutoWarmup, warmupSteps, nextWarmupStep } from '../logic/warmup.js';
 import { e1rm } from '../logic/records.js';
 import { setReps } from '../logic/model.js';
 
@@ -297,7 +297,10 @@ function entryMenu(w, entry) {
       { text: 'How to do it', icon: 'info', onClick: () => openSheet({ type: 'howTo', name: entry.snapshot.name, exerciseId: entry.exerciseId }) },
       data.settings.warmupAuto && canAutoWarmup(entry.snapshot.type) && entry.sets.filter((x) => x.type === 'warmup').length < warmupSteps(data.settings).length
         && { text: `Add automatic warm-up (${warmupSteps(data.settings).map((x) => x.pct + '%').join(', ')})`, icon: 'flame', onClick: () => WS.addWarmups(w, entry) },
-      { text: 'Add warm-up set', icon: 'flame', onClick: () => WS.addSet(w, entry, 'warmup') },
+      (() => {
+        const st = data.settings.warmupAuto && canAutoWarmup(entry.snapshot.type) ? nextWarmupStep(entry, data.settings) : null;
+        return { text: st ? `Add warm-up set (${st.pct}% × ${st.reps})` : 'Add warm-up set', icon: 'flame', onClick: () => WS.addSet(w, entry, 'warmup') };
+      })(),
       { text: 'Add drop set', icon: 'chevronDown', onClick: () => WS.addSet(w, entry, 'drop') },
       { text: entry.notes ? 'Edit note' : 'Add note', icon: 'note', onClick: () => openSheet({ type: 'textInput', title: 'Note for this workout', value: entry.notes, placeholder: 'Only for this workout', onSave: (v) => { entry.notes = v; WS.save(w); } }) },
       { text: 'Replace exercise', icon: 'swap', onClick: () => openSheet({ type: 'picker', multi: false, title: `Replace ${entry.snapshot.name}`, context: { workoutId: w.id }, onPick: ([nx]) => WS.undoable(w, `Replaced with ${nx.name}`, () => WS.replaceEntry(w, entry, nx)) }) },
@@ -396,7 +399,7 @@ export function SetMenuSheet(sheet) {
   const s = entry && entry.sets.find((x) => x.id === sheet.setId);
   if (!s) return null;
   return h(Sheet, { title: 'Set' }, [
-    h(Section, { title: 'Set type' }, h('div.pad', h('div.chips', SET_TYPES.map((t) => h(Chip, { key: t.key, active: s.type === t.key, onClick: () => { s.type = t.key; WS.save(w); } }, t.name))))),
+    h(Section, { title: 'Set type' }, h('div.pad', h('div.chips', SET_TYPES.map((t) => h(Chip, { key: t.key, active: s.type === t.key, onClick: () => WS.setType(w, entry, s, t.key) }, t.name))))),
     s.type !== 'warmup' && data.settings.rirMode !== 'off' && h(Section, { title: 'Reps in reserve' }, h('div.pad', h('div.rir', [0, 1, 2, 3, 4, 5].map((r) => h('button', { key: r, class: s.rir === r ? 'on' : '', onclick: () => { s.rir = s.rir === r ? null : r; WS.save(w); } }, r === 5 ? '5+' : String(r)))))),
     h(Section, { title: 'Note' }, h('div.field-card', h(TextField, { value: s.note, placeholder: 'e.g. paused reps, left knee', onChange: (v) => { s.note = v; WS.save(w); } }))),
     h(Button, { kind: 'danger', block: true, onClick: () => { closeSheet(); WS.undoable(w, 'Set deleted', () => WS.removeSet(w, entry, s.id)); } }, [icon('trash', 18), 'Delete set']),

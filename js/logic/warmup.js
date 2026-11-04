@@ -1,4 +1,4 @@
-// Automatic warm-up: each warm-up set is a % of the first working set's weight.
+// Automatic warm-up: each warm-up set is a % of the heaviest working set's weight.
 import { toDisplayWeight, fromDisplayWeight } from './units.js';
 
 export const DEFAULT_WARMUP_STEPS = [{ pct: 50, reps: 10 }, { pct: 70, reps: 5 }, { pct: 85, reps: 2 }];
@@ -33,8 +33,9 @@ export function syncWarmups(entry, settings) {
   const snap = entry.snapshot || {};
   if (!canAutoWarmup(snap.type)) return false;
   const steps = warmupSteps(settings);
-  const work = entry.sets.find((s) => s.type !== 'warmup' && s.type !== 'drop');
-  const workKg = work ? work.kg : null;
+  // Based on the heaviest working set, so changing any working weight moves the warm-up.
+  const workKgs = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.kg > 0).map((s) => s.kg);
+  const workKg = workKgs.length ? Math.max(...workKgs) : null;
   let k = -1, changed = false;
   for (const s of entry.sets) {
     if (s.type !== 'warmup') continue;
@@ -50,4 +51,11 @@ export function syncWarmups(entry, settings) {
     }
   }
   return changed;
+}
+
+/** The step the next added warm-up set will use (e.g. { pct: 70, reps: 5 }). */
+export function nextWarmupStep(entry, settings) {
+  const steps = warmupSteps(settings);
+  const have = entry.sets.filter((s) => s.type === 'warmup').length;
+  return steps[Math.min(have, steps.length - 1)];
 }
