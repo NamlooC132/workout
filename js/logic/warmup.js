@@ -25,6 +25,26 @@ export function warmupKg(workKg, pct, step, unit) {
 }
 
 /**
+ * The weight the warm-up is based on: the heaviest working set typed in this workout,
+ * else the suggested weight, else the heaviest working set last time.
+ */
+export function baseWorkKg(entry) {
+  const kgs = (sets) => (sets || []).filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.kg > 0).map((s) => s.kg);
+  const now = kgs(entry.sets);
+  if (now.length) return Math.max(...now);
+  const p = entry.progression || {};
+  if (p.status === 'increase' && p.suggestedKg > 0) return p.suggestedKg;
+  const last = kgs(entry.lastSummary?.sets);
+  return last.length ? Math.max(...last) : null;
+}
+
+/** % of the working weight for the warm-up set at this position (0 = first warm-up). */
+export function warmupPct(index, settings) {
+  const steps = warmupSteps(settings);
+  return steps[Math.min(index, steps.length - 1)].pct;
+}
+
+/**
  * Updates the automatic warm-up sets of an entry (not done and not edited by hand)
  * from the first working set. Returns true when something changed.
  */
@@ -34,8 +54,7 @@ export function syncWarmups(entry, settings) {
   if (!canAutoWarmup(snap.type)) return false;
   const steps = warmupSteps(settings);
   // Based on the heaviest working set, so changing any working weight moves the warm-up.
-  const workKgs = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.kg > 0).map((s) => s.kg);
-  const workKg = workKgs.length ? Math.max(...workKgs) : null;
+  const workKg = baseWorkKg(entry);
   let k = -1, changed = false;
   for (const s of entry.sets) {
     if (s.type !== 'warmup') continue;

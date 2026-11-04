@@ -483,3 +483,18 @@ test('warm-up follows the heaviest working set; next step matches the warm-up nu
   assert.deepEqual([entry.sets[0].kg, entry.sets[0].reps], [50, 10]);
   assert.deepEqual(nextWarmupStep(entry, settings), { pct: 70, reps: 5 });
 });
+
+test('warm-up uses the suggested or last-time weight when nothing is typed yet', async () => {
+  const { baseWorkKg } = await import('../js/logic/warmup.js');
+  const settings = { unit: 'kg', warmupSteps: [{ pct: 50, reps: 10 }, { pct: 70, reps: 5 }, { pct: 85, reps: 2 }] };
+  const entry = { snapshot: { type: 'weighted', weightStep: 2.5 }, progression: { status: 'none' },
+    lastSummary: { sets: [{ type: 'working', kg: 80, reps: 8 }, { type: 'working', kg: 90, reps: 6 }] },
+    sets: [{ type: 'warmup', auto: true, kg: null, reps: null }, { type: 'working', kg: null, reps: null }] };
+  assert.equal(baseWorkKg(entry), 90);
+  syncWarmups(entry, settings);
+  assert.equal(entry.sets[0].kg, 45);
+  entry.progression = { status: 'increase', suggestedKg: 92.5 };
+  assert.equal(baseWorkKg(entry), 92.5);
+  entry.sets[1].kg = 100;
+  assert.equal(baseWorkKg(entry), 100);
+});

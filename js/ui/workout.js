@@ -21,6 +21,7 @@ import { HealthBox } from './health.js';
 import { setGoals } from '../logic/progression.js';
 import { e1rm } from '../logic/records.js';
 import { setReps } from '../logic/model.js';
+import { warmupPct } from '../logic/warmup.js';
 
 /** Volume (weight × reps) of completed sets, warm-ups excluded. Sets without a `done` flag count (last-time summaries). */
 function volumeOf(sets, snap, bw) {
@@ -140,7 +141,7 @@ function ExerciseCard({ w, entry, index, st }) {
   let workNo = 0;
   // Same set last time (warm-ups not compared): ↑ better, ↓ worse, ↺ the same.
   const lastNonWarm = entry.lastSummary ? entry.lastSummary.sets.filter((x) => x.type !== 'warmup') : [];
-  let nonWarmNo = 0;
+  let nonWarmNo = 0, warmNo = 0;
   const compare = (s) => {
     const prevSet = lastNonWarm[nonWarmNo - 1];
     if (!s.done || !prevSet) return null;
@@ -178,7 +179,7 @@ function ExerciseCard({ w, entry, index, st }) {
       ]),
       ...entry.sets.map((s, si) => {
         const isWarm = s.type === 'warmup';
-        if (!isWarm) { workNo++; nonWarmNo++; }
+        if (!isWarm) { workNo++; nonWarmNo++; } else warmNo++;
         const trend = isWarm ? null : compare(s);
         const t = SET_TYPES.find((x) => x.key === s.type);
         const label = isWarm ? 'W' : `${workNo}${t && t.short ? t.short : ''}`;
@@ -193,7 +194,7 @@ function ExerciseCard({ w, entry, index, st }) {
             ]),
             showWeight && h('div.pill', [
               h('button.pill-btn', { onclick: () => bump(w, s, -step), 'aria-label': 'Less weight' }, icon('minus', 18)),
-              h(WeightField, { kg: s.kg, class: 'pill-input', placeholder: '–', onChange: (kg) => { s.kg = kg; if (isWarm) s.auto = false; WS.save(w); } }),
+              h(WeightField, { kg: s.kg, class: 'pill-input', placeholder: isWarm && s.auto ? `${warmupPct(warmNo - 1, data.settings)}%` : '–', onChange: (kg) => { s.kg = kg; if (isWarm) s.auto = false; WS.save(w); } }),
               h('button.pill-btn', { onclick: () => bump(w, s, step), 'aria-label': 'More weight' }, icon('plus', 18)),
             ]),
             uni
