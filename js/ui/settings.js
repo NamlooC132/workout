@@ -14,7 +14,7 @@ import { warmupSteps, DEFAULT_WARMUP_STEPS } from '../logic/warmup.js';
 import { activeWorkout } from '../store.js';
 import * as WS from '../workoutService.js';
 
-export const APP_VERSION = '1.23.1';
+export const APP_VERSION = '1.23.2';
 
 export function SettingsScreen() {
   const s = data.settings;
