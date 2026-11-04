@@ -443,3 +443,30 @@ test('per-set goals: each set has its own rep target', async () => {
   assert.equal(evaluateProgression(ex, last([12, 12, 11, 11, 10, 10, 9]), cfg, { unit: 'kg' }).status, 'increase');
   assert.equal(evaluateProgression(ex, last([12, 12, 11, 10, 10, 10, 9]), cfg, { unit: 'kg' }).status, 'keep');
 });
+
+// ---------- Automatic warm-up ----------
+import { syncWarmups, warmupKg, warmupCount } from '../js/logic/warmup.js';
+
+test('warm-up weights are 50/70/85 % of the first working set, rounded to the step', () => {
+  const settings = { warmupAuto: true, unit: 'kg', warmupSteps: [{ pct: 50, reps: 10 }, { pct: 70, reps: 5 }, { pct: 85, reps: 2 }] };
+  const entry = { snapshot: { type: 'weighted', weightStep: 2.5 }, sets: [
+    { type: 'warmup', auto: true, kg: null, reps: null, done: false },
+    { type: 'warmup', auto: true, kg: null, reps: null, done: false },
+    { type: 'warmup', auto: false, kg: 30, reps: 3, done: false },
+    { type: 'working', kg: 100, reps: 8, done: false },
+  ] };
+  syncWarmups(entry, settings);
+  assert.deepEqual(entry.sets.slice(0, 3).map((s) => [s.kg, s.reps]), [[50, 10], [70, 5], [30, 3]]);
+  entry.sets[3].kg = 80; // working weight changes → warm-ups follow
+  syncWarmups(entry, settings);
+  assert.deepEqual(entry.sets.slice(0, 2).map((s) => s.kg), [40, 55]);
+  assert.equal(warmupKg(62.5, 85, 2.5, 'kg'), 52.5);
+});
+
+test('warm-up count: own setting, else every weighted exercise only when chosen', () => {
+  const s = { warmupAuto: true, warmupScope: 'all', warmupSteps: [{ pct: 50, reps: 10 }, { pct: 70, reps: 5 }, { pct: 85, reps: 2 }] };
+  assert.equal(warmupCount({ warmupSets: 0, type: 'weighted' }, s), 3);
+  assert.equal(warmupCount({ warmupSets: 1, type: 'weighted' }, s), 1);
+  assert.equal(warmupCount({ warmupSets: 0, type: 'bodyweight' }, s), 0);
+  assert.equal(warmupCount({ warmupSets: 0, type: 'weighted' }, { ...s, warmupScope: 'chosen' }), 0);
+});

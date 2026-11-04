@@ -620,3 +620,19 @@ input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
 /* Exercise card flashes briefly after its settings were changed during a workout */
 .ex-card.just-changed { animation: justchanged 1.6s ease-out; }
 @keyframes justchanged { 0%, 30% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+/* Arrow on a finished set: compared with the same set last workout */
+.set-num { position: relative; }
+.set-num .trend { position: absolute; top: 2px; right: -2px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; }
+.set-num .trend.up { background: var(--green); }
+.set-num .trend.down { background: var(--red); }
+.set-num .trend.down .icon { transform: rotate(180deg); }
+.set-num .trend.same { background: var(--muted); opacity: 0.75; }
+[dir="rtl"] .set-num .trend { right: auto; left: 0; }
+[dir="rtl"] .set-num .trend.same .icon { transform: scaleX(-1); }
+
+/* Automatic warm-up steps in Settings */
+.wu-step { display: flex; align-items: center; gap: 8px; }
+.wu-step { gap: 5px; }
+.wu-step .w-64 { width: 52px; }
+.wu-step .goal-x { position: static; }

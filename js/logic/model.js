@@ -33,6 +33,9 @@ export function defaultSettings() {
     defaultSetType: 'working',
     defaultWarmupSets: 0,
     defaultDropSets: 0,
+    warmupAuto: true,                // fill warm-up sets from warmupSteps (% of the first working set)
+    warmupScope: 'chosen',           // 'chosen' = exercises with warm-up sets | 'all' = every weighted exercise
+    warmupSteps: [{ pct: 50, reps: 10 }, { pct: 70, reps: 5 }, { pct: 85, reps: 2 }],
     weekStart: 1,                    // 0 = Sunday, 1 = Monday
     indirectContribution: 0.5,
     dropSetsCount: 1,                // drop / rest-pause sets count as 1 (or 0.5) set

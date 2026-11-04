@@ -11,6 +11,7 @@ import { fromDisplayWeight, toDisplayWeight } from './logic/units.js';
 import { prsInWorkout, livePr } from './logic/records.js';
 import { buildHistory } from './logic/history.js';
 import { startRest, skipRest, syncWakeLock } from './timer.js';
+import { syncWarmups, warmupCount, canAutoWarmup } from './logic/warmup.js';
 
 /** ~20 % lighter, rounded to the weight step (display units). */
 function dropWeight(kg, step) {
@@ -29,9 +30,10 @@ export function makeEntry(exercise, item, workout) {
   const lastWork = lastSets.filter((s) => s.type !== 'warmup');
   const lastMain = lastWork.filter((s) => s.type !== 'drop');
   const sets = [];
-  for (let i = 0; i < (cfg.warmupSets || 0); i++) {
-    const src = lastWarm[i] || null;
-    sets.push(newSet({ type: 'warmup', kg: src ? src.kg : null, reps: src ? src.reps : null }));
+  const auto = !!data.settings.warmupAuto && canAutoWarmup(cfg.type);
+  for (let i = 0; i < warmupCount(cfg, data.settings); i++) {
+    const src = auto ? null : lastWarm[i] || null;
+    sets.push(newSet({ type: 'warmup', kg: src ? src.kg : null, reps: src ? src.reps : null, auto }));
   }
   for (let i = 0; i < Math.max(1, cfg.sets || 1); i++) {
     const src = lastMain[i] || lastMain[lastMain.length - 1] || null;
@@ -52,7 +54,7 @@ export function makeEntry(exercise, item, workout) {
     sets.push(newSet({ type: 'drop', kg: src ? src.kg : dropWeight(base?.kg, cfg.weightStep), reps: src ? src.reps : null }));
   }
   const evalResult = evaluateProgression(withConfig(exercise, cfg), last, cfg, data.settings);
-  return {
+  const entry = {
     id: uid(),
     exerciseId: exercise.id,
     snapshot: exerciseSnapshot(exercise, cfg),
@@ -64,6 +66,8 @@ export function makeEntry(exercise, item, workout) {
     progression: { ...evalResult, applied: false, dismissed: false },
     sets,
   };
+  syncWarmups(entry, data.settings);
+  return entry;
 }
 
 export function startWorkout(routine) {
@@ -101,7 +105,23 @@ export function startWorkout(routine) {
   return w;
 }
 
-export const save = (w) => saveWorkout(w);
+export const save = (w) => {
+  // Automatic warm-up sets follow the working weight live.
+  for (const e of w.entries || []) syncWarmups(e, data.settings);
+  return saveWorkout(w);
+};
+
+/** Adds the full automatic warm-up (one set per step) before the working sets. */
+export function addWarmups(w, entry) {
+  const have = entry.sets.filter((s) => s.type === 'warmup').length;
+  const n = Math.max(0, (data.settings.warmupSteps || []).length - have);
+  for (let i = 0; i < n; i++) {
+    const idx = entry.sets.findIndex((s) => s.type !== 'warmup');
+    entry.sets.splice(idx < 0 ? entry.sets.length : idx, 0, newSet({ type: 'warmup', auto: true }));
+  }
+  save(w);
+  return n;
+}
 
 /**
  * After an exercise (or its routine settings) is edited, apply the new settings to the
@@ -144,7 +164,7 @@ export function refreshExercise(exerciseId) {
     entry.changedAt = Date.now();
     n++;
   }
-  if (n) saveWorkout(w);
+  if (n) save(w);
   return n;
 }
 
@@ -162,7 +182,7 @@ export function addSet(w, entry, type) {
   const set = newSet({ type: type || (last && last.type !== 'warmup' ? 'working' : data.settings.defaultSetType || 'working'), kg: last ? last.kg : null, reps: last ? last.reps : null, repsL: last?.repsL ?? null, repsR: last?.repsR ?? null });
   if (type === 'warmup') {
     const idx = entry.sets.findIndex((s) => s.type !== 'warmup');
-    entry.sets.splice(idx < 0 ? entry.sets.length : idx, 0, { ...set, kg: null, reps: null });
+    entry.sets.splice(idx < 0 ? entry.sets.length : idx, 0, { ...set, kg: null, reps: null, repsL: null, repsR: null, auto: !!data.settings.warmupAuto });
   } else if (type === 'drop') {
     // Drop set: ~20 % lighter than the set before it, rounded to the weight step.
     const prev = entry.sets[entry.sets.length - 1];
@@ -445,6 +465,7 @@ export function copyPrevious(w, entry, set) {
   const i = entry.sets.indexOf(set);
   const prev = entry.sets.slice(0, i).reverse().find((s) => s.type === set.type || (s.type !== 'warmup' && set.type !== 'warmup'));
   if (!prev) return false;
+  set.auto = false;
   set.kg = prev.kg;
   set.reps = prev.reps;
   set.repsL = prev.repsL;

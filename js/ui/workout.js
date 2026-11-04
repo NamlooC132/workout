@@ -19,6 +19,9 @@ import { startRest, adjustRest, skipRest, restRemaining, syncWakeLock } from '..
 import { guideFor, photoFor } from '../logic/catalog.js';
 import { HealthBox } from './health.js';
 import { setGoals } from '../logic/progression.js';
+import { canAutoWarmup, warmupSteps } from '../logic/warmup.js';
+import { e1rm } from '../logic/records.js';
+import { setReps } from '../logic/model.js';
 
 /** Volume (weight × reps) of completed sets, warm-ups excluded. Sets without a `done` flag count (last-time summaries). */
 function volumeOf(sets, snap, bw) {
@@ -136,6 +139,19 @@ function ExerciseCard({ w, entry, index, st }) {
   const volNow = showWeight ? volumeOf(entry.sets.filter((s) => s.done), snap, bw) : 0;
   const volLast = showWeight && entry.lastSummary ? volumeOf(entry.lastSummary.sets, snap, bw) : 0;
   let workNo = 0;
+  // Same set last time (warm-ups not compared): ↑ better, ↓ worse, ↺ the same.
+  const lastNonWarm = entry.lastSummary ? entry.lastSummary.sets.filter((x) => x.type !== 'warmup') : [];
+  let nonWarmNo = 0;
+  const compare = (s) => {
+    const prevSet = lastNonWarm[nonWarmNo - 1];
+    if (!s.done || !prevSet) return null;
+    // Assisted: less help is better (then more reps). Otherwise estimated 1RM, or reps.
+    const score = (x) => (snap.type === 'assisted' ? -(x.kg || 0) * 1000 + setReps(x)
+      : showWeight && (x.kg || 0) > 0 ? e1rm(x.kg, setReps(x)) : setReps(x));
+    const a = score(s), b = score(prevSet);
+    if (Math.abs(a - b) < 0.01) return 'same';
+    return a > b ? 'up' : 'down';
+  };
 
   return h('div', { key: entry.id, class: cx('ex-card', entry.skipped && 'skipped', inSS && 'in-ss', entry.changedAt && Date.now() - entry.changedAt < 2500 && 'just-changed') }, [
     ssStart && h('div.ss-label', 'Superset · alternate sets'),
@@ -163,7 +179,8 @@ function ExerciseCard({ w, entry, index, st }) {
       ]),
       ...entry.sets.map((s, si) => {
         const isWarm = s.type === 'warmup';
-        if (!isWarm) workNo++;
+        if (!isWarm) { workNo++; nonWarmNo++; }
+        const trend = isWarm ? null : compare(s);
         const t = SET_TYPES.find((x) => x.key === s.type);
         const label = isWarm ? 'W' : `${workNo}${t && t.short ? t.short : ''}`;
         const isCurrent = s === currentSet;
@@ -171,18 +188,21 @@ function ExerciseCard({ w, entry, index, st }) {
         const showRir = rirMode !== 'off' && !isWarm && isCurrent && (rirMode === 'required' || st.rirOpen[s.id]);
         return h('div', { key: s.id, 'data-set': s.id, class: cx('set-wrap', s.done && 'done', isCurrent && 'current') }, [
           h('div.set-row', { class: gridCls }, [
-            h('button', { class: cx('set-num', s.type), onclick: () => openSheet({ type: 'setMenu', workoutId: w.id, entryId: entry.id, setId: s.id }), 'aria-label': `Set ${label} options` }, s.pr ? h('span.pr-num', ['🏆', h('small', label)]) : label),
+            h('button', { class: cx('set-num', s.type), onclick: () => openSheet({ type: 'setMenu', workoutId: w.id, entryId: entry.id, setId: s.id }), 'aria-label': `Set ${label} options` }, [
+              s.pr ? h('span.pr-num', ['🏆', h('small', label)]) : label,
+              trend && h('span', { class: cx('trend', trend), title: trend === 'up' ? 'Better than last time' : trend === 'down' ? 'Less than last time' : 'Same as last time' }, icon(trend === 'same' ? 'same' : 'arrowUp', 12, { weight: 3 })),
+            ]),
             showWeight && h('div.pill', [
               h('button.pill-btn', { onclick: () => bump(w, s, -step), 'aria-label': 'Less weight' }, icon('minus', 18)),
-              h(WeightField, { kg: s.kg, class: 'pill-input', placeholder: '–', onChange: (kg) => { s.kg = kg; WS.save(w); } }),
+              h(WeightField, { kg: s.kg, class: 'pill-input', placeholder: '–', onChange: (kg) => { s.kg = kg; if (isWarm) s.auto = false; WS.save(w); } }),
               h('button.pill-btn', { onclick: () => bump(w, s, step), 'aria-label': 'More weight' }, icon('plus', 18)),
             ]),
             uni
               ? [
-                h('div.pill', h(NumberField, { value: s.repsL, decimals: false, placeholder: 'L', class: 'pill-input', ariaLabel: 'Reps left', onChange: (v) => { s.repsL = v; s.reps = minReps(s); WS.save(w); } })),
-                h('div.pill', h(NumberField, { value: s.repsR, decimals: false, placeholder: 'R', class: 'pill-input', ariaLabel: 'Reps right', onChange: (v) => { s.repsR = v; s.reps = minReps(s); WS.save(w); } })),
+                h('div.pill', h(NumberField, { value: s.repsL, decimals: false, placeholder: 'L', class: 'pill-input', ariaLabel: 'Reps left', onChange: (v) => { s.repsL = v; s.reps = minReps(s); if (isWarm) s.auto = false; WS.save(w); } })),
+                h('div.pill', h(NumberField, { value: s.repsR, decimals: false, placeholder: 'R', class: 'pill-input', ariaLabel: 'Reps right', onChange: (v) => { s.repsR = v; s.reps = minReps(s); if (isWarm) s.auto = false; WS.save(w); } })),
               ]
-              : h('div.pill', h(NumberField, { value: s.reps, decimals: false, placeholder: isWarm ? '–' : String((s.type !== 'drop' && goals[workNo - 1]) || snap.repMax), class: 'pill-input', ariaLabel: 'Reps', onChange: (v) => { s.reps = v; WS.save(w); } })),
+              : h('div.pill', h(NumberField, { value: s.reps, decimals: false, placeholder: isWarm ? '–' : String((s.type !== 'drop' && goals[workNo - 1]) || snap.repMax), class: 'pill-input', ariaLabel: 'Reps', onChange: (v) => { s.reps = v; if (isWarm) s.auto = false; WS.save(w); } })),
             h('button', { class: cx('done-btn', s.done && 'on'), onclick: () => complete(w, entry, s), 'aria-label': s.done ? 'Mark set not done' : 'Set done' }, icon('check', 24, { weight: 3 })),
           ]),
           // Quiet extras: only on the set you're about to do
@@ -235,6 +255,7 @@ function minReps(s) {
 
 function bump(w, s, delta) {
   const u = data.settings.unit;
+  if (s.type === 'warmup') s.auto = false;
   const cur = displayWeight(s.kg || 0, u);
   const nextV = Math.max(0, Math.round((cur + delta) * 100) / 100);
   s.kg = fromDisplayWeight(nextV, u);
@@ -274,6 +295,8 @@ function entryMenu(w, entry) {
     type: 'actions', title: entry.snapshot.name, actions: [
       entry.exerciseId && { text: 'History', icon: 'history', onClick: () => openSheet({ type: 'exHistory', exerciseId: entry.exerciseId, name: entry.snapshot.name }) },
       { text: 'How to do it', icon: 'info', onClick: () => openSheet({ type: 'howTo', name: entry.snapshot.name, exerciseId: entry.exerciseId }) },
+      data.settings.warmupAuto && canAutoWarmup(entry.snapshot.type) && entry.sets.filter((x) => x.type === 'warmup').length < warmupSteps(data.settings).length
+        && { text: `Add automatic warm-up (${warmupSteps(data.settings).map((x) => x.pct + '%').join(', ')})`, icon: 'flame', onClick: () => WS.addWarmups(w, entry) },
       { text: 'Add warm-up set', icon: 'flame', onClick: () => WS.addSet(w, entry, 'warmup') },
       { text: 'Add drop set', icon: 'chevronDown', onClick: () => WS.addSet(w, entry, 'drop') },
       { text: entry.notes ? 'Edit note' : 'Add note', icon: 'note', onClick: () => openSheet({ type: 'textInput', title: 'Note for this workout', value: entry.notes, placeholder: 'Only for this workout', onSave: (v) => { entry.notes = v; WS.save(w); } }) },

@@ -48,6 +48,13 @@ export const DICT = {
   'Tap + to add one to your exercises. Muscles, rep range and a “How to” guide link are already set up.': 'הקש + כדי להוסיף לתרגילים שלך. שרירים, טווח חזרות ומדריך ביצוע כבר מוגדרים.',
   'Add exercise': 'הוסף תרגיל', 'Create new exercise': 'צור תרגיל חדש',
   'In your routines': 'בתוכניות שלך', 'Other exercises': 'תרגילים נוספים', 'My exercises': 'התרגילים שלי', 'More exercises': 'עוד תרגילים',
+  // ---------- Automatic warm-up & set arrows ----------
+  'Automatic warm-up': 'חימום אוטומטי', 'Fill warm-up sets with weight and reps': 'ממלא את סטי החימום במשקל ובחזרות',
+  'Add warm-up to': 'הוסף חימום ל', 'Every exercise': 'כל תרגיל', 'Chosen ones': 'תרגילים שבחרתי',
+  'Chosen ones = exercises where you set Warm-up sets (exercise → Advanced). In a workout you can also tap ⋯ → Add automatic warm-up.': 'תרגילים שבחרתי = תרגילים שהגדרת להם סטי חימום (תרגיל ← מתקדם). באימון אפשר גם ללחוץ ⋯ ← הוסף חימום אוטומטי.',
+  'Warm-up weight = % of your first working set, rounded to the − / + step. It follows the working weight live. Change a warm-up set by hand in a workout and it stays as you typed it.': 'משקל החימום = אחוז מהסט הראשון, מעוגל לקפיצת ה-− / +. הוא משתנה בזמן אמת לפי משקל העבודה. אם תשנה סט חימום ידנית באימון, הוא יישאר כמו שהקלדת.',
+  'reps': 'חזרות', '%  ×': '%  ×', 'Reset to 50 / 70 / 85 %': 'איפוס ל-50 / 70 / 85 %',
+  'Better than last time': 'יותר טוב מהפעם הקודמת', 'Less than last time': 'פחות מהפעם הקודמת', 'Same as last time': 'כמו בפעם הקודמת',
   'Exercise created': 'התרגיל נוצר', 'Exercise saved': 'התרגיל נשמר', 'Exercise saved · updated in this workout': 'התרגיל נשמר · עודכן באימון הזה', 'Edit exercise': 'עריכת תרגיל',
   'Change photo': 'החלף תמונה', 'Add photo': 'הוסף תמונה', 'Remove photo': 'הסר תמונה', 'Exercise name': 'שם התרגיל',
   'Muscles': 'שרירים', 'Tap once for a main muscle, twice for a helper, again to remove.': 'הקשה אחת – שריר עיקרי, שתיים – שריר עוזר, שוב – הסרה.',
@@ -316,6 +323,11 @@ const PL = (num, one, many) => (String(num) === '1' ? one : many.replace('#', nu
 
 // [regex on the whole English text, Hebrew replacement]. $1… are translated too.
 export const PATTERNS = [
+  [/^Warm-up (\d+)$/, 'חימום $1'],
+  [/^Warm-up (\d+) percent$/, 'אחוז חימום $1'],
+  [/^Warm-up (\d+) reps$/, 'חזרות חימום $1'],
+  [/^Remove warm-up (\d+)$/, 'הסר חימום $1'],
+  [/^Add automatic warm-up \((.+)\)$/, 'הוסף חימום אוטומטי ($1)'],
   [/^(\d+) days ago$/, 'לפני $1 ימים'],
   [/^(\d+) min$/, '$1 דק׳'],
   [/^(\d+) h (\d+) min$/, '$1 שע׳ $2 דק׳'],

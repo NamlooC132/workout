@@ -10,8 +10,11 @@ import { REST_STEP, REST_MIN, REST_MAX } from '../logic/restTimer.js';
 import { defaultProgressionStep } from '../logic/units.js';
 import { makeBackup, validateBackup, planImport } from '../logic/backup.js';
 import { wakeLockSupported } from '../timer.js';
+import { warmupSteps, DEFAULT_WARMUP_STEPS } from '../logic/warmup.js';
+import { activeWorkout } from '../store.js';
+import * as WS from '../workoutService.js';
 
-export const APP_VERSION = '1.21.2';
+export const APP_VERSION = '1.22.0';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -34,6 +37,8 @@ export function SettingsScreen() {
       h(Row, { title: 'Sound', right: h(Toggle, { checked: s.restSound, onChange: (v) => set({ restSound: v }) }) }),
       h(Row, { title: 'Keep screen on during workouts', right: h(Toggle, { checked: s.keepAwake, onChange: (v) => set({ keepAwake: v }) }) }),
     ]),
+
+    WarmupSection(s),
 
     h(Section, { title: 'Language · שפה' }, h(Row, { title: 'App language', right: h(Segmented, { small: true, value: s.language || 'en', onChange: (v) => set({ language: v }), options: [{ value: 'en', label: 'English' }, { value: 'he', label: 'עברית' }] }) })),
 
@@ -252,4 +257,38 @@ export function ActionsSheet(sheet) {
     title: a.text,
     onClick: () => { closeSheet(); a.onClick(); },
   }))));
+}
+
+// Automatic warm-up: steps as % of the first working set's weight.
+function WarmupSection(s) {
+  const steps = warmupSteps(s).map((x) => ({ ...x }));
+  const save = (patch) => {
+    saveSettings(patch);
+    const w = activeWorkout();
+    if (w) WS.save(w); // an open workout picks up the new warm-up right away
+  };
+  const setStep = (i, patch) => { steps[i] = { ...steps[i], ...patch }; save({ warmupSteps: steps }); };
+  const on = s.warmupAuto !== false;
+  return h(Section, {
+    title: 'Warm-up',
+    footer: 'Warm-up weight = % of your first working set, rounded to the − / + step. It follows the working weight live. Change a warm-up set by hand in a workout and it stays as you typed it.',
+  }, [
+    h(Row, { title: 'Automatic warm-up', subtitle: 'Fill warm-up sets with weight and reps', right: h(Toggle, { checked: on, onChange: (v) => save({ warmupAuto: v }) }) }),
+    on && h(Row, { title: 'Add warm-up to', right: h(Segmented, { small: true, value: s.warmupScope || 'chosen', onChange: (v) => save({ warmupScope: v }), options: [{ value: 'all', label: 'Every exercise' }, { value: 'chosen', label: 'Chosen ones' }] }) }),
+    on && (s.warmupScope || 'chosen') === 'chosen' && h('div.pad.small.muted', 'Chosen ones = exercises where you set Warm-up sets (exercise → Advanced). In a workout you can also tap ⋯ → Add automatic warm-up.'),
+    on && steps.map((st, i) => h(Row, {
+      key: 'wu' + i, title: `Warm-up ${i + 1}`,
+      right: h('div.wu-step', [
+        h(NumberField, { value: st.pct, decimals: false, class: 'w-64 center', ariaLabel: `Warm-up ${i + 1} percent`, onChange: (v) => v && setStep(i, { pct: Math.max(5, Math.min(100, v)) }) }),
+        h('span.muted', '%  ×'),
+        h(NumberField, { value: st.reps, decimals: false, class: 'w-64 center', ariaLabel: `Warm-up ${i + 1} reps`, onChange: (v) => v && setStep(i, { reps: Math.max(1, Math.min(50, v)) }) }),
+        h('span.muted', 'reps'),
+        steps.length > 1 && h('button.goal-x', { onclick: () => save({ warmupSteps: steps.filter((_, k) => k !== i) }), 'aria-label': `Remove warm-up ${i + 1}` }, '×'),
+      ]),
+    })),
+    on && h('div.pad.hstack.wrap', { style: { gap: '8px' } }, [
+      steps.length < 6 && h('button.btn.btn-secondary.btn-sm', { onclick: () => { const l = steps[steps.length - 1]; save({ warmupSteps: [...steps, { pct: Math.min(95, l.pct + 5), reps: Math.max(1, l.reps - 1) }] }); } }, [icon('plus', 16), 'Add warm-up set']),
+      h('button.btn.btn-plain.btn-sm', { onclick: () => save({ warmupSteps: DEFAULT_WARMUP_STEPS.map((x) => ({ ...x })) }) }, 'Reset to 50 / 70 / 85 %'),
+    ]),
+  ]);
 }
