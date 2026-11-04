@@ -498,3 +498,17 @@ test('warm-up uses the suggested or last-time weight when nothing is typed yet',
   entry.sets[1].kg = 100;
   assert.equal(baseWorkKg(entry), 100);
 });
+
+test('warm-up for weighted bodyweight (+kg) and assisted exercises', () => {
+  const settings = { unit: 'kg', warmupSteps: [{ pct: 50, reps: 10 }, { pct: 70, reps: 5 }, { pct: 85, reps: 2 }] };
+  const mk = (type, kg) => ({ snapshot: { type, weightStep: 2.5 }, sets: [
+    { type: 'warmup', auto: true, kg: null, reps: null }, { type: 'warmup', auto: true, kg: null, reps: null },
+    { type: 'working', kg, reps: 6 }] });
+  const bw = mk('weighted_bw', 10); syncWarmups(bw, settings);
+  assert.deepEqual(bw.sets.slice(0, 2).map((s) => [s.kg, s.reps]), [[5, 10], [7.5, 5]]);
+  const as = mk('assisted', 20); syncWarmups(as, settings);
+  assert.deepEqual(as.sets.slice(0, 2).map((s) => s.kg), [40, 27.5]);
+  const body = { snapshot: { type: 'bodyweight' }, sets: [{ type: 'warmup', auto: true, kg: null, reps: null }, { type: 'working', reps: 10 }] };
+  syncWarmups(body, settings);
+  assert.equal(body.sets[0].reps, 10);
+});

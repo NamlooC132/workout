@@ -2,7 +2,7 @@
 import { toDisplayWeight, fromDisplayWeight } from './units.js';
 
 export const DEFAULT_WARMUP_STEPS = [{ pct: 50, reps: 10 }, { pct: 70, reps: 5 }, { pct: 85, reps: 2 }];
-const NO_WARMUP_TYPES = ['bodyweight', 'assisted', 'weighted_bw'];
+const NO_WARMUP_TYPES = ['bodyweight']; // reps only – no weight column
 
 export const warmupSteps = (settings) => (settings?.warmupSteps && settings.warmupSteps.length ? settings.warmupSteps : DEFAULT_WARMUP_STEPS);
 
@@ -17,10 +17,12 @@ export function warmupCount(cfg, settings) {
 }
 
 /** Warm-up weight in kg for one step, rounded to the weight step (display units). */
-export function warmupKg(workKg, pct, step, unit) {
+export function warmupKg(workKg, pct, step, unit, type) {
   if (!workKg || workKg <= 0) return null;
   const st = step || 2.5;
-  const v = Math.round((toDisplayWeight(workKg, unit) * pct) / 100 / st) * st;
+  // Assisted: a warm-up gets MORE help (easier), e.g. 20 kg help at 50 % → 40 kg help.
+  const f = type === 'assisted' ? 100 / pct : pct / 100;
+  const v = Math.round((toDisplayWeight(workKg, unit) * f) / st) * st;
   return fromDisplayWeight(Math.max(st, v), unit);
 }
 
@@ -30,12 +32,13 @@ export function warmupKg(workKg, pct, step, unit) {
  */
 export function baseWorkKg(entry) {
   const kgs = (sets) => (sets || []).filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.kg > 0).map((s) => s.kg);
+  const pick = (arr) => (entry.snapshot?.type === 'assisted' ? Math.min(...arr) : Math.max(...arr));
   const now = kgs(entry.sets);
-  if (now.length) return Math.max(...now);
+  if (now.length) return pick(now);
   const p = entry.progression || {};
   if (p.status === 'increase' && p.suggestedKg > 0) return p.suggestedKg;
   const last = kgs(entry.lastSummary?.sets);
-  return last.length ? Math.max(...last) : null;
+  return last.length ? pick(last) : null;
 }
 
 /** % of the working weight for the warm-up set at this position (0 = first warm-up). */
@@ -62,7 +65,7 @@ export function syncWarmups(entry, settings) {
     // Ticked warm-ups keep their values – unless they were ticked while still empty.
     if (!s.auto || (s.done && (s.kg !== null || !withWeight))) continue;
     const st = steps[Math.min(k, steps.length - 1)];
-    const kg = withWeight ? warmupKg(workKg, st.pct, snap.weightStep, settings.unit) : s.kg;
+    const kg = withWeight ? warmupKg(workKg, st.pct, snap.weightStep, settings.unit, snap.type) : s.kg;
     const reps = st.reps;
     if (s.kg !== kg || s.reps !== reps) {
       s.kg = kg; s.reps = reps;
