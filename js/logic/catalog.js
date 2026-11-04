@@ -713,6 +713,8 @@ const LOCAL_PHOTOS = {
   'spider curl': 'spider-curl',
   'smith machine hip thrust': 'smith-machine-hip-thrust',
   'lying rear delt raise': 'lying-rear-delt-raise',
+  'donkey kick': 'donkey-kick',
+  'cable pull-through': 'cable-pull-through',
 };
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
