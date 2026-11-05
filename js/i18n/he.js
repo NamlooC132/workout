@@ -382,6 +382,18 @@ export const DICT = {
   'Sharp pain is a reason to stop, not to push through. If it doesn’t go away, see a doctor or physiotherapist.': 'כאב חד הוא סיבה לעצור, לא להמשיך בכוח. אם הוא לא עובר, כדאי לפנות לרופא או לפיזיותרפיסט.',
   'Ask how I feel before a workout': 'לשאול איך אני מרגיש לפני אימון',
   'Three quick questions (sleep, energy, soreness) and a pain check when you start a routine. You can always skip it; suggestions are never applied without your tap.': 'שלוש שאלות קצרות (שינה, אנרגיה, כאבי שרירים) ובדיקת כאב כשמתחילים תוכנית. תמיד אפשר לדלג, והצעות אף פעם לא מוחלות בלי אישור שלך.',
+  'Exercise role': 'סוג התרגיל', 'For tired days (readiness check)': 'לימים עייפים (בדיקת מוכנות)',
+  'Automatic (Main lift)': 'אוטומטי (גדול)', 'Automatic (Accessory)': 'אוטומטי (עזר)', 'Main lift': 'גדול', 'Accessory': 'עזר',
+  'Suggested changes': 'שינויים מוצעים', 'Nothing changes until you tap Apply.': 'שום דבר לא משתנה עד שתלחץ "החלה".', 'Untick what you want to keep as planned.': 'בטל את הסימון במה שתרצה להשאיר כמו בתוכנית.',
+  'Done editing': 'סיום עריכה', 'Skip today': 'דילוג היום', 'About 10 % less weight': 'בערך 10% פחות משקל',
+  'Changes applied': 'השינויים הוחלו', 'No changes': 'בלי שינויים', 'Light workout': 'אימון קל', 'Rest day': 'יום מנוחה', 'Or': 'או',
+  'End this workout': 'סיום האימון הזה', 'Take a rest day?': 'לקחת יום מנוחה?', 'This workout will be removed. Nothing else changes.': 'האימון הזה יימחק. שום דבר אחר לא משתנה.',
+  'Enjoy your rest day': 'תהנה מיום המנוחה', 'Light workout = the deload: half the sets and 10 % less weight.': 'אימון קל = דילואד: חצי מהסטים ו-10% פחות משקל.',
+  'A deload week can help you recover: fewer sets and less weight for 7 days.': 'שבוע דילואד יכול לעזור להתאושש: פחות סטים ופחות משקל למשך 7 ימים.',
+  'Start deload week': 'התחל שבוע דילואד', 'Deload week started – 7 days': 'שבוע דילואד התחיל – 7 ימים', 'Deload week ended': 'שבוע הדילואד הסתיים', 'End now': 'סיים עכשיו',
+  'Deload week – use “Apply deload” in the workout.': 'שבוע דילואד – השתמש ב"החל דילואד" באימון.',
+  'Nothing to change in this workout – listen to your body.': 'אין מה לשנות באימון הזה – תקשיב לגוף.',
+  'Readiness': 'מוכנות', 'How ready did I feel?': 'כמה הייתי מוכן?',
 };
 
 const n = (x) => x; // numbers stay as they are
@@ -389,6 +401,15 @@ const PL = (num, one, many) => (String(num) === '1' ? one : many.replace('#', nu
 
 // [regex on the whole English text, Hebrew replacement]. $1… are translated too.
 export const PATTERNS = [
+  [/^One set fewer on (\d+) accessory exercises?$/, (g) => (g[1] === '1' ? 'סט אחד פחות בתרגיל עזר אחד' : `סט אחד פחות ב-${g[1]} תרגילי עזר`)],
+  [/^One set fewer on (\d+) exercises?$/, (g) => (g[1] === '1' ? 'סט אחד פחות בתרגיל אחד' : `סט אחד פחות ב-${g[1]} תרגילים`)],
+  [/^About 10 % less weight on (\d+) exercises?$/, (g) => (g[1] === '1' ? 'בערך 10% פחות משקל בתרגיל אחד' : `בערך 10% פחות משקל ב-${g[1]} תרגילים`)],
+  [/^Skip (\d+) exercises? that use the painful area$/, (g) => (g[1] === '1' ? 'דילוג על תרגיל אחד שמעמיס על האזור הכואב' : `דילוג על ${g[1]} תרגילים שמעמיסים על האזור הכואב`)],
+  [/^Apply (\d+) changes$/, 'החל $1 שינויים'],
+  [/^(\d+) tired check-ins in a row$/, '$1 בדיקות עייפות ברצף'],
+  [/^Until (.+)$/, 'עד $1'],
+  [/^([\d.]+) average readiness$/, 'מוכנות ממוצעת $1'],
+  [/^Last (\d+) check-ins · (\d+) tired$/, (g) => `${g[1]} הבדיקות האחרונות · ${g[2]} עם עייפות`],
   [/^Sleep (\d)$/, 'שינה $1'],
   [/^Energy (\d)$/, 'אנרגיה $1'],
   [/^Soreness (\d)$/, 'כאבי שרירים $1'],

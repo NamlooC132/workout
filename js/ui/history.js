@@ -1,4 +1,5 @@
 // History tab: past workouts (view / edit / delete) and the per-exercise progress screen.
+import { LEVELS } from '../logic/readiness.js';
 import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
 import { data, ui, update, openSheet, confirm, toast, history, exercisesById, doneWorkouts, saveWorkout, deleteWorkout, cached } from '../store.js';
@@ -16,6 +17,8 @@ import { guideFor, photoFor } from '../logic/catalog.js';
 import { MuscleMap } from './musclemap.js';
 import { HealthBox, RunDetailScreen, runSummary } from './health.js';
 import { isRun } from '../logic/health.js';
+
+const DECISIONS = { applied: 'Changes applied', light: 'Light workout', cancelled: 'No changes' };
 
 function workoutTonnage(w) {
   const bw = bodyweightAt(data.measurements, w.startedAt);
@@ -111,6 +114,14 @@ export function WorkoutDetailScreen({ id }) {
     (edit || !(w.health?.hr || w.health?.kcal)) && h(Section, { title: 'Heart rate & calories' }, h('div.pad', HealthBox({ health: (w.health = w.health || { hr: null, kcal: null }), from: w.startedAt, to: w.endedAt, onChange: save }))),
     !edit && w.notes && h('div.callout.mt', [icon('note', 18), w.notes]),
     !edit && w.deload && h('div.callout.blue.mt', [icon('info', 18), 'Deload workout – not used for weight suggestions.']),
+    !edit && w.readiness && !w.readiness.skipped && h('div.callout.mt.rd-hist', [
+      h('span.rd-dot', { class: `tone-${LEVELS[w.readiness.level]?.tone || 'green'}` }, fmtNum(w.readiness.avg, 1)),
+      h('div', [
+        h('div', [h('span', 'Readiness'), ' · ', h('span', LEVELS[w.readiness.level]?.title || '')]),
+        h('div.small.muted', [h('span', `Sleep ${w.readiness.sleep}`), ' · ', h('span', `Energy ${w.readiness.energy}`), ' · ', h('span', `Soreness ${w.readiness.soreness}`),
+          w.readiness.decision && DECISIONS[w.readiness.decision] && [' · ', h('span', DECISIONS[w.readiness.decision])]]),
+      ]),
+    ]),
     !edit && prs.length > 0 && h(Section, { title: 'Personal records' }, prs.map((p, i) => h(Row, { key: i, left: h('span.pr', icon('trophy', 20)), title: p.name, subtitle: p.kind }))),
     !edit && Object.keys(vol).length > 0 && h(Section, { title: 'Sets per muscle' }, h('div.pad.chips', Object.entries(vol).sort((a, b) => b[1].total - a[1].total).map(([m, v]) => h('span.chip.chip-static', { key: m }, `${muscleName(m, data.settings)} ${fmtNum(v.total, 1)}`)))),
     ...w.entries.map((e) => EntryBlock({ w, e, edit, save })),

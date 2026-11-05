@@ -34,6 +34,8 @@ export function defaultSettings() {
     defaultWarmupSets: 0,
     defaultDropSets: 0,
     readinessCheck: true,           // short 'how do you feel?' check when a routine starts (1.27)
+    readinessDeloadUntil: null,      // deload week started from the readiness check (ms)
+    readinessDeloadSnoozedAt: null,  // 'Not now' on the deload suggestion – asks again after 7 days
     showYoga: false,                 // Yoga section (tab + home link) – off until switched on in Settings
     warmupScope: 'chosen',           // 'chosen' = exercises with warm-up sets | 'all' = every weighted exercise
     warmupSteps: [{ pct: 50, reps: 10 }, { pct: 70, reps: 5 }, { pct: 85, reps: 2 }],
@@ -85,6 +87,7 @@ export function newExercise(settings, fields = {}) {
       step: null,              // display units; null = settings default (2.5 kg / 5 lb)
     },
     notes: '',                 // permanent technique notes
+    role: null,                // readiness check: null = automatic | 'major' (main lift) | 'accessory'
     guide: null,               // optional 'how to' link (else the catalog guide / a video search)
     createdAt: Date.now(),
     ...fields,

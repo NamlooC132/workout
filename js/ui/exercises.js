@@ -1,4 +1,5 @@
 // Exercise library: list screen, multi-select picker and the exercise editor.
+import { autoRole } from '../logic/readiness.js';
 import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
 import { data, ui, update, openSheet, closeSheet, saveExercise, deleteExercise, saveRoutine, confirm, toast, history, doneWorkouts } from '../store.js';
@@ -403,6 +404,14 @@ export function ExerciseEditorSheet(sheet) {
         h(Row, { title: 'One side at a time', subtitle: 'Log left and right reps separately', right: h(Toggle, { checked: d.unilateral, onChange: (v) => set({ unilateral: v }) }) }),
         !limited && h(Row, { title: 'Equipment', right: select(EQUIPMENT, d.equipment, (v) => set({ equipment: v })) }),
         !limited && h(Row, { title: 'Category', right: select(CATEGORIES, d.category, (v) => set({ category: v })) }),
+        !limited && h(Row, {
+          title: 'Exercise role', subtitle: 'For tired days (readiness check)',
+          right: select([
+            { value: 'auto', label: autoRole(d) === 'major' ? 'Automatic (Main lift)' : 'Automatic (Accessory)' },
+            { value: 'major', label: 'Main lift' },
+            { value: 'accessory', label: 'Accessory' },
+          ], d.role || 'auto', (v) => set({ role: v === 'auto' ? null : v })),
+        }),
       ]),
       !limited && h(Section, { title: 'Exact muscle %', footer: 'How much one working set counts for each muscle.' }, allMuscles(s).filter((m) => d.muscles[m.key] > 0).map((m) => {
         const v = d.muscles[m.key] || 0;

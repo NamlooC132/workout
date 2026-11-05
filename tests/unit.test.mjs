@@ -611,3 +611,84 @@ test('readiness: painful area flags exercises that work it ≥ 50 %', () => {
   assert.deepEqual(entriesForAreas(es, ['knee']).map((e) => e.id), ['a']);
   assert.deepEqual(entriesForAreas(es, []), []);
 });
+
+import { autoRole, exerciseRole, buildPlan, planSummary, applyPlan, tiredStreak, shouldSuggestDeload, readinessSeries } from '../js/logic/readiness.js';
+
+test('readiness: main lift vs accessory, automatic and by hand', () => {
+  const role = (n) => autoRole(CATALOG.find((e) => e.name === n));
+  assert.equal(role('Bench Press'), 'major');
+  assert.equal(role('Squat'), 'major');
+  assert.equal(role('Deadlift'), 'major');
+  assert.equal(role('Lateral Raise'), 'accessory');
+  assert.equal(role('Leg Extension'), 'accessory');
+  assert.equal(role('Hip Thrust'), 'accessory');
+  assert.equal(exerciseRole({ category: 'Isolation', muscles: { biceps: 1 }, role: 'major' }), 'major');
+  assert.equal(exerciseRole({ category: 'Compound', muscles: { chest: 1 }, role: 'accessory' }), 'accessory');
+  assert.equal(exerciseRole({ category: 'Compound', muscles: { chest: 1 }, role: null }), 'major');
+});
+
+function rdWorkout() {
+  const ws = (n, kg) => Array.from({ length: n }, () => newSet({ kg, reps: 8 }));
+  return {
+    id: 'w', status: 'active', deload: false, entries: [
+      { id: 'bench', skipped: false, snapshot: { name: 'Bench', muscles: { chest: 1, front_delts: 0.5 }, weightStep: 2.5 }, sets: [newSet({ type: 'warmup', kg: 40 }), ...ws(3, 80)], progression: { status: 'increase' } },
+      { id: 'raise', skipped: false, snapshot: { name: 'Raise', muscles: { side_delts: 1 }, weightStep: 1 }, sets: ws(3, 10) },
+      { id: 'curl', skipped: false, snapshot: { name: 'Curl', muscles: { biceps: 1 }, weightStep: 1 }, sets: ws(1, 12) },
+    ],
+  };
+}
+const roles = { bench: 'major', raise: 'accessory', curl: 'accessory' };
+const roleOf = (e) => roles[e.id];
+const round = (kg, e) => Math.round(kg / (e.snapshot.weightStep || 2.5)) * (e.snapshot.weightStep || 2.5);
+
+test('readiness plan: good = nothing, moderate = accessory sets only', () => {
+  const w = rdWorkout();
+  assert.deepEqual(buildPlan(w, { level: 'good', pain: false, areas: [] }, roleOf), []);
+  const p = buildPlan(w, { level: 'moderate', pain: false, areas: [] }, roleOf);
+  assert.deepEqual(p.map((c) => c.id), ['set:raise']); // curl has only 1 set – never goes to 0
+  assert.deepEqual(planSummary(p, 'moderate'), ['One set fewer on 1 accessory exercise']);
+});
+
+test('readiness plan: high = a set and ~10 % weight everywhere; pain = skip', () => {
+  const w = rdWorkout();
+  const p = buildPlan(w, { level: 'high', pain: true, areas: ['shoulder'] }, roleOf);
+  assert.deepEqual(p.map((c) => c.id).sort(), ['kg:curl', 'skip:bench', 'skip:raise'].sort());
+  const p2 = buildPlan(w, { level: 'high', pain: false, areas: [] }, roleOf);
+  assert.deepEqual(p2.map((c) => c.id), ['set:bench', 'kg:bench', 'set:raise', 'kg:raise', 'kg:curl']);
+  const counts = applyPlan(w, p2, round);
+  assert.deepEqual(counts, { skip: 0, removeSet: 2, lighter: 3 });
+  const bench = w.entries[0];
+  assert.equal(bench.sets.filter((s) => s.type === 'working').length, 2);
+  assert.equal(bench.sets[0].kg, 40, 'warm-up untouched here (it follows the working weight in the app)');
+  assert.deepEqual(bench.sets.filter((s) => s.type === 'working').map((s) => s.kg), [72.5, 72.5]);
+  assert.equal(bench.progression.dismissed, true);
+  assert.deepEqual(w.entries[2].sets.map((s) => s.kg), [11]);
+  // A deload workout only gets the pain skips.
+  const d = rdWorkout(); d.deload = true;
+  assert.deepEqual(buildPlan(d, { level: 'high', pain: true, areas: ['elbow'] }, roleOf).map((c) => c.id), ['skip:curl']);
+  // Done sets are never changed.
+  const x = rdWorkout(); x.entries[1].sets.forEach((s) => { s.done = true; });
+  assert.equal(buildPlan(x, { level: 'high', pain: false, areas: [] }, roleOf).some((c) => c.entryId === 'raise'), false);
+});
+
+test('readiness: tired streak, deload suggestion and chart series', () => {
+  const r = (level) => ({ skipped: false, level, avg: level === 'good' ? 4 : 2.7 });
+  const ws = [
+    { id: 'a', status: 'done', startedAt: 1, readiness: r('good') },
+    { id: 'b', status: 'done', startedAt: 2, readiness: r('moderate') },
+    { id: 'c', status: 'done', startedAt: 3, readiness: { skipped: true } },
+    { id: 'd', status: 'done', startedAt: 4, readiness: r('high') },
+    { id: 'e', status: 'active', startedAt: 5, readiness: r('high') },
+  ];
+  assert.equal(tiredStreak(ws), 2);
+  assert.equal(tiredStreak(ws, r('moderate'), 'e'), 3);
+  assert.equal(tiredStreak(ws, r('good')), 0);
+  const s = defaultSettings();
+  assert.equal(shouldSuggestDeload(3, s, 1e12), true);
+  assert.equal(shouldSuggestDeload(2, s, 1e12), false);
+  assert.equal(shouldSuggestDeload(3, s, 1e12, true), false);
+  assert.equal(shouldSuggestDeload(3, { ...s, readinessDeloadUntil: 1e12 + 1 }, 1e12), false);
+  assert.equal(shouldSuggestDeload(3, { ...s, readinessDeloadSnoozedAt: 1e12 - 86400000 }, 1e12), false);
+  assert.equal(shouldSuggestDeload(3, { ...s, readinessDeloadSnoozedAt: 1e12 - 8 * 86400000 }, 1e12), true);
+  assert.deepEqual(readinessSeries(ws).map((p) => p.x), [1, 2, 4]);
+});

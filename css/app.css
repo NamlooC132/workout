@@ -964,3 +964,13 @@ select.select { border-radius: 8px; min-height: 36px; }
 .rd-advice + .rd-advice { margin-top: 6px; }
 .rd-list { margin: 6px 0 0; padding-inline-start: 20px; }
 .rd-list li + li { margin-top: 2px; }
+.rd-change { display: flex; gap: 8px; align-items: flex-start; }
+.rd-change svg { flex: none; color: var(--accent); margin-top: 1px; }
+.rd-actions { display: grid; gap: 8px; padding: 4px 0 12px; }
+.rd-actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rd-deload { display: block; margin-bottom: 14px; }
+.rd-hist { align-items: center; }
+.rd-dot { flex: none; width: 40px; height: 40px; border-radius: 8px; display: grid; place-items: center; font-weight: 700; }
+.rd-dot.tone-green { background: var(--green-soft); color: var(--green); }
+.rd-dot.tone-yellow { background: var(--yellow-soft); color: var(--yellow); }
+.rd-dot.tone-red { background: rgba(229, 56, 59, 0.14); color: var(--red); }

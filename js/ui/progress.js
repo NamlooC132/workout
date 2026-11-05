@@ -1,5 +1,6 @@
 // Progress tab: overview (frequency, streak, calendar, PRs, stalls), weekly/monthly muscle
 // volume vs targets, exercise list and body measurements.
+import { readinessSeries } from '../logic/readiness.js';
 import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
 import { data, ui, update, openSheet, closeSheet, saveMeasurement, deleteMeasurement, saveSettings, confirm, toast, history, doneWorkouts, cached } from '../store.js';
@@ -84,6 +85,12 @@ function Overview(st) {
   const runT = thisWeekKm > 0 ? `${fmtNum(thisWeekKm, 1)} km this week` : `${fmtNum(rs.last4 / 4, 1)} km a week`;
   const runS = `${fmtNum(rs.last4, 1)} km in the last 4 weeks${rs.prev4 > 0 ? ` (${rs.last4 > rs.prev4 * 1.05 ? 'up from' : rs.last4 < rs.prev4 * 0.95 ? 'down from' : 'about the same as'} ${fmtNum(rs.prev4, 1)})` : ''}${rs.recentPace ? ` · average pace ${fmtPace(rs.recentPace)} /km` : ''}.`;
 
+  // Readiness check-ins (1.27): average of the last 5, chart of the last 30.
+  const rdSeries = readinessSeries(data.workouts, 30);
+  const rdRecent = rdSeries.slice(-5);
+  const rdAvg = rdRecent.length ? rdRecent.reduce((a, p) => a + p.y, 0) / rdRecent.length : 0;
+  const rdTired = rdRecent.filter((p) => p.y < 3.5).length;
+
   return h('div', [
     Insight({ q: 'Am I getting stronger?', t: strongT, s: strongS, tone: tb.up.length > tb.down.length ? 'good' : tb.down.length > tb.up.length ? 'warn' : '' },
       trend.length > 0 && h('div.trend-chips', [
@@ -92,6 +99,9 @@ function Overview(st) {
 
     Insight({ q: 'How often did I train?', t: freqT, s: freqS },
       h(BarChart, { bars: freq.map((f) => ({ label: new Date(f.from).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }), value: f.count })), formatY: (v) => String(v) })),
+
+    rdSeries.length > 0 && Insight({ q: 'How ready did I feel?', t: `${fmtNum(rdAvg, 1)} average readiness`, s: `Last ${rdRecent.length} check-ins · ${rdTired} tired`, tone: rdAvg >= 3.5 ? 'good' : rdAvg < 2.5 ? 'warn' : '' },
+      rdSeries.length > 1 && h(LineChart, { id: 'readiness', points: rdSeries, formatY: (v) => fmtNum(v, 1) })),
 
     runs.length > 0 && Insight({ q: 'How is my running going?', t: runT, s: runS, tone: rs.last4 > rs.prev4 * 1.05 ? 'good' : '' }, [
       h(BarChart, { bars: rs.weekly.map((wk) => ({ label: new Date(wk.from).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }), value: Math.round(wk.km * 10) / 10 })), formatY: (v) => `${fmtNum(v, 1)}` }),

@@ -72,7 +72,8 @@ export function makeEntry(exercise, item, workout) {
 
 export function startWorkout(routine) {
   const block = activeBlock(data.blocks);
-  const deload = isDeloadWeek(block);
+  // Deload: a training-plan deload week, or a deload week started from the readiness check.
+  const deload = isDeloadWeek(block) || (data.settings.readinessDeloadUntil || 0) > Date.now();
   const w = {
     id: uid(),
     routineId: routine ? routine.id : null,
