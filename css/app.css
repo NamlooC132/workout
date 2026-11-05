@@ -947,3 +947,20 @@ select.select { border-radius: 8px; min-height: 36px; }
 
 /* RepDB credit link in the Settings footer */
 .section-foot a { color: inherit; }
+
+/* ---------- Readiness check (1.27) ---------- */
+.rd-q + .rd-q { margin-top: 16px; }
+.rd-q-title { font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+.rd-scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.rd-n { min-height: 44px; border-radius: 8px; background: var(--fill); color: var(--text); font-size: 17px; font-weight: 600; }
+.rd-n.active { background: var(--accent); color: var(--on-accent); }
+.rd-ends { display: flex; justify-content: space-between; margin-top: 4px; font-size: 12px; color: var(--muted); }
+.rd-result { display: flex; align-items: center; gap: 14px; padding: 14px 16px; margin-bottom: 16px; border-radius: 10px; background: var(--card); }
+.rd-score { flex: none; width: 56px; height: 56px; border-radius: 10px; display: grid; place-items: center; font-size: 22px; font-weight: 700; }
+.rd-level { font-weight: 700; font-size: 17px; }
+.tone-green .rd-score { background: var(--green-soft); color: var(--green); }
+.tone-yellow .rd-score { background: var(--yellow-soft); color: var(--yellow); }
+.tone-red .rd-score { background: rgba(229, 56, 59, 0.14); color: var(--red); }
+.rd-advice + .rd-advice { margin-top: 6px; }
+.rd-list { margin: 6px 0 0; padding-inline-start: 20px; }
+.rd-list li + li { margin-top: 2px; }

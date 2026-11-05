@@ -28,7 +28,13 @@ function lastDoneAt(routineId) {
 /** Starts a routine, asking first if another workout is already running. */
 export function beginRoutine(routine) {
   const running = activeWorkout();
-  const go = () => { startWorkout(routine); ui.workoutOpen = true; update(); };
+  const go = () => {
+    const w = startWorkout(routine);
+    ui.workoutOpen = true;
+    // Readiness check (Settings → Readiness check). Skipping it leaves the workout exactly as planned.
+    if (data.settings.readinessCheck !== false && w.entries.length) openSheet({ type: 'readiness', workoutId: w.id });
+    update();
+  };
   if (!running) return go();
   confirm({
     title: 'A workout is already in progress',

@@ -14,7 +14,7 @@ import { warmupSteps, DEFAULT_WARMUP_STEPS } from '../logic/warmup.js';
 import { activeWorkout } from '../store.js';
 import * as WS from '../workoutService.js';
 
-export const APP_VERSION = '1.26.1';
+export const APP_VERSION = '1.27.0';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -39,6 +39,10 @@ export function SettingsScreen() {
     ]),
 
     WarmupSection(s),
+
+    h(Section, { title: 'Readiness check', footer: 'Three quick questions (sleep, energy, soreness) and a pain check when you start a routine. You can always skip it; suggestions are never applied without your tap.' }, [
+      h(Row, { title: 'Ask how I feel before a workout', right: h(Toggle, { checked: s.readinessCheck !== false, onChange: (v) => set({ readinessCheck: v }) }) }),
+    ]),
 
     h(Section, { title: 'Sections', footer: 'Turn on only what you use. Your data stays saved when a section is hidden.' }, [
       h(Row, { left: icon('yoga', 22), title: 'Show Yoga', subtitle: 'Log sessions, a pose journal and stats', right: h(Toggle, { checked: !!s.showYoga, onChange: (v) => { set({ showYoga: v }); if (v) toast('Yoga is now in the bottom bar'); } }) }),

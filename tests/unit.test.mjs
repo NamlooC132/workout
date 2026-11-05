@@ -573,3 +573,41 @@ test('backup carries yoga data; import merges poses by name', async () => {
   assert.equal(plan.yogaEntries[0].poseId, 'x9');
   assert.equal(plan.yogaSessions.length, 1);
 });
+
+// ---------- Readiness check (1.27) ----------
+import { readinessScore, levelFor, readinessRecord, involvesAreas, entriesForAreas } from '../js/logic/readiness.js';
+
+test('readiness: average and level boundaries', () => {
+  assert.deepEqual(readinessScore({ sleep: 5, energy: 4, soreness: 4 }), { avg: 4.3, level: 'good' });
+  assert.equal(levelFor(3.5), 'good');
+  assert.equal(levelFor(3.4), 'moderate');
+  assert.equal(levelFor(2.5), 'moderate');
+  assert.equal(levelFor(2.4), 'high');
+  assert.equal(readinessScore({ sleep: 3, energy: 3, soreness: 3 }).level, 'moderate');
+  assert.equal(readinessScore({ sleep: 1, energy: 2, soreness: 2 }).level, 'high');
+  assert.equal(readinessScore({ sleep: 5, energy: null, soreness: 5 }), null);
+  assert.equal(readinessScore({ sleep: 6, energy: 5, soreness: 5 }), null);
+});
+
+test('readiness: record keeps answers; missing answers = skipped', () => {
+  const r = readinessRecord({ sleep: 2, energy: 3, soreness: 4, pain: true, areas: ['knee', 'knee', 'bogus'] }, 1000);
+  assert.equal(r.skipped, false);
+  assert.equal(r.avg, 3);
+  assert.equal(r.level, 'moderate');
+  assert.deepEqual(r.areas, ['knee']);
+  assert.deepEqual(readinessRecord(null, 5), { at: 5, skipped: true });
+  assert.deepEqual(readinessRecord({ sleep: 4, energy: 4, soreness: 4, pain: false, areas: ['knee'] }).areas, []);
+});
+
+test('readiness: painful area flags exercises that work it ≥ 50 %', () => {
+  assert.equal(involvesAreas({ quads: 1, glutes: 0.5 }, ['knee']), true);
+  assert.equal(involvesAreas({ chest: 1, front_delts: 0.25 }, ['shoulder']), false);
+  assert.equal(involvesAreas({ chest: 1, front_delts: 0.5 }, ['shoulder']), true);
+  const es = [
+    { id: 'a', skipped: false, snapshot: { muscles: { quads: 1 } } },
+    { id: 'b', skipped: true, snapshot: { muscles: { quads: 1 } } },
+    { id: 'c', skipped: false, snapshot: { muscles: { biceps: 1 } } },
+  ];
+  assert.deepEqual(entriesForAreas(es, ['knee']).map((e) => e.id), ['a']);
+  assert.deepEqual(entriesForAreas(es, []), []);
+});

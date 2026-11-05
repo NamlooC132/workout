@@ -364,6 +364,24 @@ export const DICT = {
   '− / + buttons change weight by': 'קפיצה בכפתורי − / + של המשקל',
   'Only for the buttons next to the weight. Automatic increases use “Increase by” below.': 'רק לכפתורים שליד המשקל. העלאות אוטומטיות משתמשות ב"הוסף" למטה.',
   '− / + buttons change rest by': 'קפיצה בכפתורי − / + של המנוחה', 'Step-by-step guide with pictures ↗': 'מדריך מצולם שלב אחר שלב ↗', 'kg': 'ק״ג', 'lbs': 'ליברות', 'Thigh pad: 3': 'ריפוד ירכיים: 3', 'Seat position 4': 'מיקום כיסא 4',
+  // Readiness check (1.27)
+  'Readiness check': 'בדיקת מוכנות', 'How do you feel today? 5 = best.': 'איך אתה מרגיש היום? 5 = הכי טוב.',
+  'Sleep quality': 'איכות שינה', 'Energy': 'אנרגיה', 'Muscle soreness': 'כאבי שרירים',
+  'Poor': 'גרועה', 'Very low': 'נמוכה מאוד', 'Very high': 'גבוהה מאוד', 'Very sore': 'כואב מאוד', 'Not sore': 'לא כואב',
+  'Sharp pain or a possible injury?': 'יש כאב חד או חשד לפציעה?', 'No': 'לא', 'Yes': 'כן',
+  'Where? (pick all that apply)': 'איפה? (אפשר לבחור כמה)',
+  'Neck': 'צוואר', 'Shoulder': 'כתף', 'Elbow': 'מרפק', 'Wrist': 'שורש כף היד', 'Stomach': 'בטן', 'Hip': 'ירך / אגן', 'Knee': 'ברך', 'Ankle / calf': 'קרסול / שוק',
+  'Good to go': 'מוכן לאימון', 'Somewhat tired': 'עייפות בינונית', 'Very tired': 'עייפות גבוהה',
+  'Train as planned – no changes.': 'מתאמנים לפי התוכנית – בלי שינויים.',
+  'Suggestion: one set fewer on accessory exercises.': 'הצעה: סט אחד פחות בתרגילי העזר.',
+  'Suggestion: about 10 % less weight on every exercise.': 'הצעה: בערך 10% פחות משקל בכל התרגילים.',
+  'Suggestion: one set fewer on every exercise, including the main lifts.': 'הצעה: סט אחד פחות בכל תרגיל, כולל התרגילים הגדולים.',
+  'Or make it a light workout – or take a rest day.': 'או אימון קל – או יום מנוחה.',
+  'Pain': 'כאב', 'Area:': 'אזור:', 'We recommend skipping:': 'מומלץ לדלג על:',
+  'None of today’s exercises work this area much.': 'אף תרגיל באימון של היום לא מעמיס הרבה על האזור הזה.',
+  'Sharp pain is a reason to stop, not to push through. If it doesn’t go away, see a doctor or physiotherapist.': 'כאב חד הוא סיבה לעצור, לא להמשיך בכוח. אם הוא לא עובר, כדאי לפנות לרופא או לפיזיותרפיסט.',
+  'Ask how I feel before a workout': 'לשאול איך אני מרגיש לפני אימון',
+  'Three quick questions (sleep, energy, soreness) and a pain check when you start a routine. You can always skip it; suggestions are never applied without your tap.': 'שלוש שאלות קצרות (שינה, אנרגיה, כאבי שרירים) ובדיקת כאב כשמתחילים תוכנית. תמיד אפשר לדלג, והצעות אף פעם לא מוחלות בלי אישור שלך.',
 };
 
 const n = (x) => x; // numbers stay as they are
@@ -371,6 +389,11 @@ const PL = (num, one, many) => (String(num) === '1' ? one : many.replace('#', nu
 
 // [regex on the whole English text, Hebrew replacement]. $1… are translated too.
 export const PATTERNS = [
+  [/^Sleep (\d)$/, 'שינה $1'],
+  [/^Energy (\d)$/, 'אנרגיה $1'],
+  [/^Soreness (\d)$/, 'כאבי שרירים $1'],
+  [/^Sleep quality (\d)$/, 'איכות שינה $1'],
+  [/^Muscle soreness (\d)$/, 'כאבי שרירים $1'],
   [/^(\d+)-day streak 🔥$/, 'רצף של $1 ימים 🔥'],
   [/^(\d+) h$/, '$1 שע׳'],
   [/^(\d+) s$/, '$1 שנ׳'],
