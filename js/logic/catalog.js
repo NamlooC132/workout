@@ -450,7 +450,7 @@ const UNSPLASH = {
 };
 
 // RepDB flat illustrations (free in-app use with attribution: "Exercise data by RepDB (repdb.co)", shown in Settings).
-// Files: images/exercises/rdb-<file>.webp. Used before the AI pictures. Do not use these as input for AI image tools (licence).
+// Files: images/exercises/rdb-<file>.webp. Used before the AI pictures. Each one was checked by eye; Smith Machine Incline Press and Single-Leg Romanian Deadlift were left out (RepDB's pictures are wrong). Do not use these as input for AI image tools (licence).
 const REPDB = {
   "ab wheel rollout": 'ab-wheel-rollout-peak', "arnold press": 'arnold-press-peak', "assisted dip": 'assisted-dips-peak',
   "back extension": 'back-extension-peak', "barbell curl": 'barbell-curl-peak', "barbell lunge": 'barbell-lunge-peak',
@@ -511,10 +511,10 @@ const REPDB = {
   "single-arm overhead dumbbell extension": 'single-arm-dumbbell-overhead-tricep-extension-peak',
   "single-leg calf raise": 'single-leg-calf-raise-peak', "single-leg extension": 'single-leg-extension-peak',
   "single-leg glute bridge": 'single-leg-glute-bridge-peak', "single-leg hip thrust": 'single-leg-hip-thrust-peak',
-  "single-leg leg press": 'single-leg-press-peak', "single-leg romanian deadlift": 'single-leg-romanian-deadlift-peak',
+  "single-leg leg press": 'single-leg-press-peak', 
   "skull crusher": 'skull-crusher-peak', "smith machine bench press": 'smith-machine-bench-press-peak',
   "smith machine calf raise": 'smith-machine-calf-raise-peak', "smith machine decline press": 'smith-machine-decline-bench-press-peak',
-  "smith machine hip thrust": 'smith-machine-hip-thrust-peak', "smith machine incline press": 'smith-machine-incline-bench-press-peak',
+  "smith machine hip thrust": 'smith-machine-hip-thrust-peak', 
   "smith machine romanian deadlift": 'smith-machine-rdl-peak', "smith machine row": 'smith-machine-bent-over-row-peak',
   "smith machine shoulder press": 'smith-machine-shoulder-press-peak', "smith machine shrug": 'smith-machine-shrug-peak',
   "smith machine split squat": 'smith-machine-split-squat-peak', "smith machine squat": 'smith-machine-squat-peak',
