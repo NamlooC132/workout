@@ -101,3 +101,7 @@ No third-party libraries and no build step: what you upload is what runs.
 - **Settings:** kg/lbs, cm/in, week start, defaults, RIR off/optional/required, progression defaults, volume targets, custom muscles, timer options, theme, Export all, Share routines, Import, storage status, erase all.
 - **Offline:** turn on Airplane mode → the app still opens and works.
 - **Dark mode:** follows the phone, or set it in Settings → Theme.
+
+## Credits
+
+Exercise data by RepDB (repdb.co) – https://repdb.co. Flat exercise illustrations (`images/exercises/rdb-*.webp`) are used in-app under the RepDB free licence; they may not be redistributed as a dataset or used as input for AI image tools.

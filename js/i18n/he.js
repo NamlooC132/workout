@@ -348,6 +348,7 @@ export const DICT = {
   'Shoulder blades back and down': 'שכמות לאחור ולמטה',
   'workouts': 'אימונים', 'helper': 'עוזר', 'ago': 'לפני', 'h': 'שע׳', 'min': 'דק׳', 'kcal': 'קלוריות', 'bpm': 'פעימות/דקה',
   'AI-generated image': 'תמונה שנוצרה ב-AI',
+  'Illustration: RepDB (repdb.co)': 'איור: RepDB (repdb.co)',
   'AI-generated picture – it can get the machine or the movement wrong, so don’t rely on it.': 'התמונה נוצרה ב-AI ויכולה להראות מכונה או תנועה לא נכונה – אל תסתמכו עליה.',
   'Not sure how it looks? Watch a video ↗': 'לא בטוחים איך זה נראה? צפו בסרטון ↗',
   'Watch a video on YouTube ↗': 'צפו בסרטון ביוטיוב ↗',

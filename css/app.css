@@ -944,3 +944,6 @@ select.select { border-radius: 8px; min-height: 36px; }
   .workout .page { max-width: 760px; }
   .rest-bar { max-width: 736px; }
 }
+
+/* RepDB credit link in the Settings footer */
+.section-foot a { color: inherit; }

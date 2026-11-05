@@ -14,7 +14,7 @@ import { warmupSteps, DEFAULT_WARMUP_STEPS } from '../logic/warmup.js';
 import { activeWorkout } from '../store.js';
 import * as WS from '../workoutService.js';
 
-export const APP_VERSION = '1.25.0';
+export const APP_VERSION = '1.26.0';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -62,6 +62,7 @@ export function SettingsScreen() {
 
     h(Section, {}, h(Row, { left: icon('gear', 22), title: 'Advanced settings', subtitle: 'Exercise defaults, RIR, overload rules, muscle volume, deload', chevron: true, onClick: () => nav('/settings/advanced') })),
     h('div.section-foot.center', `Workout Log ${APP_VERSION} · works offline · no account`),
+    h('div.section-foot.center', h('a', { href: 'https://repdb.co', target: '_blank', rel: 'noopener' }, 'Exercise data by RepDB (repdb.co)')),
   ]);
 }
 
