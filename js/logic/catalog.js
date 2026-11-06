@@ -1082,12 +1082,14 @@ const AI_PICS = {
 };
 /** The AI picture for a catalog exercise name (list thumbnails), or null. */
 export function thumbFor(name) {
-  const f = AI_PICS[String(name || '').trim().toLowerCase()];
-  return f ? `./images/exercises/ai/${f}.webp` : null;
+  const key = String(name || '').trim().toLowerCase();
+  const f = AI_PICS[key] || AI_PICS[catalogMatch(key)?.name.toLowerCase()];
+  return f ? `./images/exercises/ai/${f}-hq.webp` : null;
 }
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
-  if (AI_PICS[key]) return { src: thumbFor(key), page: null, credit: 'AI-generated image' };
+  const ai = thumbFor(key);
+  if (ai) return { src: ai, page: null, credit: 'AI-generated image' };
   if (REPDB[key]) return { src: `./images/exercises/rdb-${REPDB[key]}.webp`, page: 'https://repdb.co', credit: 'Illustration: RepDB (repdb.co)' };
   if (LOCAL_PHOTOS[key]) return { src: `./images/exercises/${LOCAL_PHOTOS[key]}.jpg`, page: null, credit: 'AI-generated image' };
   if (UNSPLASH[key]) return UNSPLASH[key];
