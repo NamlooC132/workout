@@ -797,7 +797,7 @@ const LOCAL_PHOTOS = {
 // 1.29: AI-drawn pictures (ChatGPT, 2026), one per catalog exercise. Shown as the list picture and in the
 // exercise sheet with an "AI – may be wrong" note. images/exercises/ai/<file>.webp
 const AI_PICS = {
-  "neutral-grip dumbbell press": 'neutral-grip-dumbbell-press',
+  "neutral-grip dumbbell press": 'neutral-grip-dumbbell-press-2', // redrawn 2026-11-06: flat bench, elbows ~45–60°
   "bench press": 'bench-press',
   "incline bench press": 'incline-bench-press',
   "decline bench press": 'decline-bench-press',
