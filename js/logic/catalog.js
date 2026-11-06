@@ -1086,9 +1086,54 @@ const AI_ALIAS = {
   'close grip seated row': 'seated cable row', 'close-grip seated row': 'seated cable row',
   'lat pullover': 'straight-arm pulldown', 'seated incline curl': 'incline dumbbell curl',
 };
+// Loose word match for names written differently, e.g. Hevy style "Incline Chest Press (Machine)".
+// Every word of the built-in name (or one of its other names) must appear; extra words in the user's name
+// cost points, so "Arnold Press (Dumbbell)" → Arnold Press, not Dumbbell Shoulder Press.
+const W_STRONG = new Set('incline decline flat close wide narrow reverse single arm seated standing lying kneeling hammer preacher overhead front lateral rear side behind neck sumo romanian stiff split goblet hack pendulum smith machine cable dumbbell barbell ez kettlebell band bodyweight weighted assisted landmine trap safety belt zercher pause deficit rack nordic sissy pistol spider bayesian zottman drag concentration upright high low straight rope v t iso floor jm skullcrusher hanging bulgarian walking box neutral'.split(' '));
+const W_CORE = new Set('press curl row raise fly extension pulldown pushdown squat deadlift lunge thrust bridge kickback dip pullup chinup pushup situp stepup crunch shrug plank pullover rollout twist swing walk hang deck'.split(' '));
+const W_BODY = new Set('chest back bicep tricep shoulder delt lat leg ab glute calf hamstring quad hip'.split(' '));
+const W_FILL = new Set('grip the to of with on and a bench exercise'.split(' '));
+const EQUIP = new Set(['machine', 'cable', 'dumbbell', 'barbell']);
+const SYN = { db: 'dumbbell', bb: 'barbell', biceps: 'bicep', triceps: 'tricep', ezbar: 'ez', alternating: 'single', unilateral: 'single', vbar: 'v', abs: 'ab', glutes: 'glute', delts: 'delt', lats: 'lat', legs: 'leg', shoulders: 'shoulder', calves: 'calf', crossovers: 'crossover', dips: 'dip', rows: 'row', curls: 'curl' };
+function words(name) {
+  return [...new Set(String(name || '').toLowerCase().replace(/[’']/g, '')
+    .replace(/\b(pull|push|chin|sit|step)[\s-]?ups?\b/g, '$1up')
+    .replace(/\bskull[\s-]?crushers?\b/g, 'skullcrusher')
+    .replace(/\bcalf press\b/g, 'calf raise')
+    .split(/[^a-z0-9]+/).filter(Boolean)
+    .map((w) => SYN[w] || (w.length > 4 && w.endsWith('s') && !w.endsWith('ss') ? w.slice(0, -1) : w)))];
+}
+const hitW = (w) => (W_STRONG.has(w) ? 3 : W_CORE.has(w) ? 2 : W_BODY.has(w) || W_FILL.has(w) ? 0.5 : 2);
+const missCatW = (w) => (W_FILL.has(w) && w !== 'bench' ? 0.5 : 2);
+const missUserW = (w) => (EQUIP.has(w) || W_FILL.has(w) ? 0.5 : W_BODY.has(w) ? 1 : W_STRONG.has(w) ? 1.5 : 2);
+let CAT_WORDS = null;
+const FUZZY = new Map();
+export function fuzzyCatalog(name) {
+  const key = String(name || '').toLowerCase();
+  if (FUZZY.has(key)) return FUZZY.get(key);
+  if (!CAT_WORDS) {
+    CAT_WORDS = [];
+    for (const c of CATALOG) {
+      CAT_WORDS.push([c, words(c.name)]);
+      if (c.aka) CAT_WORDS.push([c, words(c.aka)]);
+    }
+  }
+  const u = words(name);
+  let best = null, bestScore = 0;
+  for (const [c, cw] of CAT_WORDS) {
+    const hit = cw.filter((w) => u.includes(w));
+    if (!hit.some((w) => !W_FILL.has(w) && !W_BODY.has(w))) continue;
+    if (cw.filter((w) => !u.includes(w)).reduce((a, w) => a + missCatW(w), 0) > 1) continue;
+    const score = 1 + hit.reduce((a, w) => a + hitW(w), 0) - u.filter((w) => !cw.includes(w)).reduce((a, w) => a + missUserW(w), 0);
+    if (score > bestScore) { best = c; bestScore = score; }
+  }
+  FUZZY.set(key, best);
+  return best;
+}
+
 export function thumbFor(name) {
   const key = String(name || '').trim().toLowerCase();
-  const f = AI_PICS[key] || AI_PICS[AI_ALIAS[key]] || AI_PICS[catalogMatch(key)?.name.toLowerCase()];
+  const f = AI_PICS[key] || AI_PICS[AI_ALIAS[key]] || AI_PICS[catalogMatch(key)?.name.toLowerCase()] || AI_PICS[fuzzyCatalog(key)?.name.toLowerCase()];
   return f ? `./images/exercises/ai/${f}-hq.webp` : null;
 }
 export function photoFor(name) {
