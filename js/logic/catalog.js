@@ -1137,7 +1137,7 @@ export function fuzzyCatalog(name) {
 export function thumbFor(name, size = 'sm') {
   const key = String(name || '').trim().toLowerCase();
   const f = AI_PICS[key] || AI_PICS[AI_ALIAS[key]] || AI_PICS[catalogMatch(key)?.name.toLowerCase()] || AI_PICS[fuzzyCatalog(key)?.name.toLowerCase()];
-  return f ? `./images/exercises/ai/${f}-v2-${size === 'lg' ? 'lg' : 'sm'}.webp` : null;
+  return f ? `./images/exercises/ai/${f}-v3-${size === 'lg' ? 'lg' : 'sm'}.webp` : null;
 }
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
