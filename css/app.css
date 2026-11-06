@@ -974,3 +974,4 @@ select.select { border-radius: 8px; min-height: 36px; }
 .rd-dot.tone-green { background: var(--green-soft); color: var(--green); }
 .rd-dot.tone-yellow { background: var(--yellow-soft); color: var(--yellow); }
 .rd-dot.tone-red { background: rgba(229, 56, 59, 0.14); color: var(--red); }
+.thumb.ai { background: #0c0d0f; }

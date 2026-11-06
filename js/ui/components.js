@@ -5,7 +5,7 @@ import { MuscleMap } from './musclemap.js';
 import { data, ui, update, closeSheet, openSheet } from '../store.js';
 import { parseNum, fmtNum } from '../logic/util.js';
 import { displayWeight, fromDisplayWeight } from '../logic/units.js';
-import { videoFor } from '../logic/catalog.js';
+import { videoFor, thumbFor } from '../logic/catalog.js';
 
 // ---------- Navigation ----------
 export function nav(path) {
@@ -167,18 +167,19 @@ export function ExercisePhoto({ name, photo }) {
   ]);
 }
 
-/** Exercise picture: your photo, else an automatic muscle map, else initials. Tap to zoom the muscles. */
+/** Exercise picture: your photo, else the AI picture, else an automatic muscle map, else initials. Tap to zoom the muscles. */
 export function Thumb({ image, size = 44, name, muscles, zoom = true }) {
   const hasMuscles = muscles && Object.values(muscles).some((v) => v > 0);
   const canZoom = zoom && hasMuscles;
+  const pic = image || thumbFor(name);
   return h('div.thumb', {
-    class: cx(!image && hasMuscles && 'map', canZoom && 'zoomable'),
+    class: cx(!pic && hasMuscles && 'map', pic && !image && 'ai', canZoom && 'zoomable'),
     style: { width: size + 'px', height: size + 'px', borderRadius: Math.round(size * 0.26) + 'px' },
     onclick: canZoom ? (e) => { e.stopPropagation(); e.preventDefault(); openSheet({ type: 'muscleView', name, muscles, image }); } : undefined,
     role: canZoom ? 'button' : undefined,
     'aria-label': canZoom ? `Show muscles worked by ${name || 'this exercise'}` : undefined,
   },
-    image ? h('img', { src: image, alt: '' })
+    pic ? h('img', { src: pic, alt: '', loading: 'lazy' })
       : hasMuscles ? MuscleMap({ muscles, size, view: 'auto' })
         : h('span.thumb-ph', name ? initials(name) : icon('dumbbell', Math.round(size * 0.45))));
 }
