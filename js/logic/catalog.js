@@ -1086,7 +1086,6 @@ const AI_ALIAS = {
   'close grip seated row': 'seated cable row', 'close-grip seated row': 'seated cable row',
   'lat pullover': 'straight-arm pulldown', 'pullover': 'straight-arm pulldown', 'cable pullover': 'straight-arm pulldown',
   'seated incline curl': 'incline dumbbell curl',
-  'neutral-grip dumbbell press': 'dumbbell bench press', // its own AI picture was drawn seated upright – closest picture until a new one
 };
 // Loose word match for names written differently, e.g. Hevy style "Incline Chest Press (Machine)".
 // Every word of the built-in name (or one of its other names) must appear; extra words in the user's name
