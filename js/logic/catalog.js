@@ -1133,14 +1133,15 @@ export function fuzzyCatalog(name) {
   return best;
 }
 
-export function thumbFor(name) {
+/** AI picture for an exercise name: 'sm' (176 px, lists) or 'lg' (720 px, exercise sheet), or null. */
+export function thumbFor(name, size = 'sm') {
   const key = String(name || '').trim().toLowerCase();
   const f = AI_PICS[key] || AI_PICS[AI_ALIAS[key]] || AI_PICS[catalogMatch(key)?.name.toLowerCase()] || AI_PICS[fuzzyCatalog(key)?.name.toLowerCase()];
-  return f ? `./images/exercises/ai/${f}-hq.webp` : null;
+  return f ? `./images/exercises/ai/${f}-${size === 'lg' ? 'lg' : 'sm'}.webp` : null;
 }
 export function photoFor(name) {
   const key = String(name || '').trim().toLowerCase();
-  const ai = thumbFor(key);
+  const ai = thumbFor(key, 'lg');
   if (ai) return { src: ai, page: null, credit: 'AI-generated image' };
   if (REPDB[key]) return { src: `./images/exercises/rdb-${REPDB[key]}.webp`, page: 'https://repdb.co', credit: 'Illustration: RepDB (repdb.co)' };
   if (LOCAL_PHOTOS[key]) return { src: `./images/exercises/${LOCAL_PHOTOS[key]}.jpg`, page: null, credit: 'AI-generated image' };
