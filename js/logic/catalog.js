@@ -1081,9 +1081,14 @@ const AI_PICS = {
   "cable hip adduction": 'cable-hip-adduction',
 };
 /** The AI picture for a catalog exercise name (list thumbnails), or null. */
+// Freddy's own exercise names → the built-in exercise whose AI picture fits.
+const AI_ALIAS = {
+  'close grip seated row': 'seated cable row', 'close-grip seated row': 'seated cable row',
+  'lat pullover': 'straight-arm pulldown', 'seated incline curl': 'incline dumbbell curl',
+};
 export function thumbFor(name) {
   const key = String(name || '').trim().toLowerCase();
-  const f = AI_PICS[key] || AI_PICS[catalogMatch(key)?.name.toLowerCase()];
+  const f = AI_PICS[key] || AI_PICS[AI_ALIAS[key]] || AI_PICS[catalogMatch(key)?.name.toLowerCase()];
   return f ? `./images/exercises/ai/${f}-hq.webp` : null;
 }
 export function photoFor(name) {
