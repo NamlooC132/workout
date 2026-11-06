@@ -1021,7 +1021,7 @@ const AI_PICS = {
   "glute bridge": 'glute-bridge',
   "cable glute kickback": 'cable-glute-kickback',
   "cable pull-through": 'cable-pull-through',
-  "hip abduction machine": 'hip-abduction-machine-2', // redrawn with FLUX 2026-11-06: pads outside the knees
+  "hip abduction machine": 'hip-abduction-machine-3', // redrawn with FLUX 2026-11-06: pads outside the knees, black background
   "reverse hyperextension": 'reverse-hyperextension',
   "kettlebell swing": 'kettlebell-swing',
   "sumo deadlift": 'sumo-deadlift',
