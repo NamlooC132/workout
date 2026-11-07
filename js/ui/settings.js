@@ -14,7 +14,7 @@ import { warmupSteps, DEFAULT_WARMUP_STEPS } from '../logic/warmup.js';
 import { activeWorkout } from '../store.js';
 import * as WS from '../workoutService.js';
 
-export const APP_VERSION = '1.30.8';
+export const APP_VERSION = '1.31.0';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -93,7 +93,7 @@ export function AdvancedSettingsScreen() {
     ]),
 
     h(Section, { title: 'Progressive overload', footer: 'Used for new exercises; each exercise can have its own rule and step. Suggestions are never applied without your tap.' }, [
-      h(Row, { title: 'Default rule', right: select([{ value: 'descending', label: 'Reps drop 1 per set' }, { value: 'all_max', label: 'Max reps on all sets' }, { value: 'avg', label: 'Average reps' }, { value: 'custom', label: 'Custom' }], s.defaultRule, (v) => set({ defaultRule: v })) }),
+      h(Row, { title: 'Default rule', right: select([{ value: 'descending', label: 'Reps drop 1 per set' }, { value: 'all_max', label: 'Max reps on all sets' }, { value: 'avg', label: 'Average reps' }, ...(s.defaultRule === 'custom' ? [{ value: 'custom', label: 'Custom' }] : [])], s.defaultRule, (v) => set({ defaultRule: v })) }),
       h(Row, { title: 'Increase by', right: h('div.hstack', [h(NumberField, { value: s.defaultProgressionStep, placeholder: String(defaultProgressionStep(unit)), class: 'w-80', onChange: (v) => set({ defaultProgressionStep: v || null }) }), h('span.muted', unit)]) }),
     ]),
 

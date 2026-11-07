@@ -692,3 +692,12 @@ test('readiness: tired streak, deload suggestion and chart series', () => {
   assert.equal(shouldSuggestDeload(3, { ...s, readinessDeloadSnoozedAt: 1e12 - 8 * 86400000 }, 1e12), true);
   assert.deepEqual(readinessSeries(ws).map((p) => p.x), [1, 2, 4]);
 });
+
+test('all_max with min RIR: needs max reps AND enough RIR on every set', () => {
+  const ex = newExercise(settings, { repMax: 10, sets: 2, progression: { rule: 'all_max', customMinRir: 2 } });
+  const mk = (rir) => ({ workout: workout('w', day(0), []), entry: entry(ex, [S(50, 10, { rir }), S(50, 10, { rir })]) });
+  assert.equal(evaluateProgression(ex, mk(1), cfg(ex), settings).status, 'keep');
+  assert.equal(evaluateProgression(ex, mk(2), cfg(ex), settings).status, 'increase');
+  const plain = newExercise(settings, { repMax: 10, sets: 2, progression: { rule: 'all_max' } });
+  assert.equal(evaluateProgression(plain, { workout: workout('w', day(0), []), entry: entry(plain, [S(50, 10), S(50, 10)]) }, cfg(plain), settings).status, 'increase');
+});

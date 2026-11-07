@@ -5,7 +5,9 @@
 //                drop by one rep (6–10: 10, 9, 8 …)                      (default)
 //   all_max – every working set reached the TOP of the rep range
 //   avg     – the average reps of the working sets reached a target
-//   custom  – every working set reached N reps (optionally with ≥ X RIR left)
+//   all_max can also require ≥ X RIR left on every set (progression.customMinRir).
+//   custom  – every working set reached N reps (optionally with ≥ X RIR left). Removed from the
+//             menus in 1.31 (all_max + RIR covers it); exercises that already use it keep working.
 //   per_set – each working set has its own goal, e.g. 12, 12, 11, 11, 10, 10, 9
 //
 // Extra conditions for ANY rule (decisions documented in the README):
@@ -118,8 +120,14 @@ export function evaluateProgression(exercise, last, cfg, settings) {
       ? `You hit ${need} reps${rirText} on every set last time`
       : `Aim for ${need} reps${rirText} on every set.`;
   } else {
+    // all_max, optionally "with at least X RIR" on every set (customMinRir, 1.31)
+    const minRir = exercise.progression?.customMinRir;
     hit = reps.every((r) => r >= repMax);
-    reason = hit ? `You hit ${repMax} reps on every set last time` : `Keep this weight – aim for ${repMax} reps on every set.`;
+    if (hit && minRir !== null && minRir !== undefined) {
+      hit = sets.every((s) => s.rir !== null && s.rir !== undefined && s.rir >= minRir);
+    }
+    const rirText = minRir !== null && minRir !== undefined ? ` with ${minRir}+ RIR` : '';
+    reason = hit ? `You hit ${repMax} reps${rirText} on every set last time` : `Keep this weight – aim for ${repMax} reps${rirText} on every set.`;
   }
 
   if (!hit) return { status: 'keep', reason };

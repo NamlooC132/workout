@@ -394,6 +394,7 @@ export const DICT = {
   'Deload week – use “Apply deload” in the workout.': 'שבוע דילואד – השתמש ב"החל דילואד" באימון.',
   'Nothing to change in this workout – listen to your body.': 'אין מה לשנות באימון הזה – תקשיב לגוף.',
   'Readiness': 'מוכנות', 'How ready did I feel?': 'כמה הייתי מוכן?',
+  'Optional: only count sets with this many reps left in reserve': 'רשות: רק סטים שנשארו בהם לפחות כמה חזרות במאגר נחשבים'
 };
 
 const n = (x) => x; // numbers stay as they are
@@ -465,6 +466,7 @@ export const PATTERNS = [
   [/^When your average reps reach the target at one weight, the app suggests you (.+)\.$/, 'כשממוצע החזרות מגיע ליעד באותו משקל, האפליקציה תציע $1.'],
   [/^When every set reaches the reps \(and RIR\) above at one weight, the app suggests you (.+)\.$/, 'כשכל סט מגיע לחזרות (ול-RIR) שלמעלה באותו משקל, האפליקציה תציע $1.'],
   [/^When you hit (\d+) reps on every working set at the same weight, the app suggests you (.+)\.$/, 'כשתגיע ל-$1 חזרות בכל סטי העבודה באותו משקל, האפליקציה תציע $2.'],
+  [/^When you hit (\d+) reps with at least (\d+) RIR on every working set at the same weight, the app suggests you (.+)\.$/, 'כשתגיע ל-$1 חזרות עם RIR של לפחות $2 בכל סטי העבודה באותו משקל, האפליקציה תציע $3.'],
   [/^(\d+) bpm$/, '$1 פעימות/דקה'],
   [/^Volume (.+)$/, 'נפח $1'],
   [/^Only for “(.+)”\.$/, 'רק עבור "$1".'],
@@ -597,7 +599,7 @@ export const PATTERNS = [
   [/^(.+) \(imported\)$/, '$1 (מיובא)'],
   [/^Complete all (\d+) working sets to unlock a weight increase\.$/, 'השלם את כל $1 סטי העבודה כדי לפתוח העלאת משקל.'],
   [/^You hit (.+) last time$/, 'בפעם הקודמת עשית $1'],
-  [/^Keep this weight – aim for (\d+) reps on every set\.$/, 'השאר את המשקל – כוון ל-$1 חזרות בכל סט.'],
+  [/^Keep this weight – aim for (\d+) reps( with \d+\+ RIR)? on every set\.$/, (g) => `השאר את המשקל – כוון ל-${g[1]} חזרות${g[2] ? g[2].replace(' with ', ' עם ') : ''} בכל סט.`],
   [/^Keep this weight – aim for (.+)\.$/, 'השאר את המשקל – כוון ל-$1.'],
   [/^You averaged ([\d.,]+) reps last time \(target ([\d.,]+)\)$/, 'בפעם הקודמת ממוצע $1 חזרות (יעד $2)'],
   [/^Average ([\d.,]+) reps – aim for ([\d.,]+) on average\.$/, 'ממוצע $1 חזרות – כוון לממוצע $2.'],

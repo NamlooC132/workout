@@ -434,8 +434,8 @@ export function ExerciseEditorSheet(sheet) {
             { value: 'descending', label: 'Reps drop 1 per set (10, 9, 8)' },
             { value: 'all_max', label: 'Max reps on all sets' },
             { value: 'avg', label: 'Average reps' },
-            { value: 'custom', label: 'Custom' },
             { value: 'per_set', label: 'Goal for each set' },
+            ...(d.progression.rule === 'custom' ? [{ value: 'custom', label: 'Custom' }] : []), // old rule, only shown if already in use
           ], d.progression.rule, (v) => { setProg({ rule: v }); if (v === 'per_set' && !(d.progression.setGoals || []).length) applyGoals(setGoals({ ...d, progression: { ...d.progression, rule: 'descending' } }, d.sets)); }),
         }),
         perSet && h('div.pad', [
@@ -449,7 +449,7 @@ export function ExerciseEditorSheet(sheet) {
         ]),
         d.progression.rule === 'avg' && h(Row, { title: 'Average reps needed', right: h(Stepper, { value: d.progression.avgTarget || d.repMax, min: 1, max: 100, onChange: (v) => setProg({ avgTarget: v }) }) }),
         d.progression.rule === 'custom' && h(Row, { title: 'Reps on every set', right: h(Stepper, { value: d.progression.customReps || d.repMax, min: 1, max: 100, onChange: (v) => setProg({ customReps: v }) }) }),
-        d.progression.rule === 'custom' && h(Row, { title: 'With at least RIR', right: select([{ value: '', label: 'Any' }, ...[0, 1, 2, 3, 4, 5].map((x) => ({ value: String(x), label: String(x) }))], d.progression.customMinRir === null || d.progression.customMinRir === undefined ? '' : String(d.progression.customMinRir), (v) => setProg({ customMinRir: v === '' ? null : Number(v) })) }),
+        (d.progression.rule === 'custom' || d.progression.rule === 'all_max') && h(Row, { title: 'With at least RIR', subtitle: d.progression.rule === 'all_max' ? 'Optional: only count sets with this many reps left in reserve' : undefined, right: select([{ value: '', label: 'Any' }, ...[0, 1, 2, 3, 4, 5].map((x) => ({ value: String(x), label: String(x) }))], d.progression.customMinRir === null || d.progression.customMinRir === undefined ? '' : String(d.progression.customMinRir), (v) => setProg({ customMinRir: v === '' ? null : Number(v) })) }),
         hasWeight && h(Row, {
           title: d.type === 'assisted' ? 'Reduce assistance by' : 'Increase by',
           right: h('div.hstack', [
@@ -518,7 +518,9 @@ function progressionFooter(d, s) {
   if (d.progression.rule === 'per_set') return `When every set reaches its own goal above at one weight, the app suggests you ${verb}. Warm-ups and drop sets don’t count.`;
   if (d.progression.rule === 'avg') return `When your average reps reach the target at one weight, the app suggests you ${verb}.`;
   if (d.progression.rule === 'custom') return `When every set reaches the reps (and RIR) above at one weight, the app suggests you ${verb}.`;
-  return `When you hit ${d.repMax} reps on every working set at the same weight, the app suggests you ${verb}.`;
+  const rir = d.progression.customMinRir;
+  const rirText = rir !== null && rir !== undefined ? ` with at least ${rir} RIR` : '';
+  return `When you hit ${d.repMax} reps${rirText} on every working set at the same weight, the app suggests you ${verb}.`;
 }
 
 export function select(options, value, onChange) {
