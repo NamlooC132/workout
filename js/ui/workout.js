@@ -206,7 +206,7 @@ function ExerciseCard({ w, entry, index, st }) {
                 h('div.pill', h(NumberField, { value: s.repsL, decimals: false, placeholder: 'L', class: 'pill-input', ariaLabel: 'Reps left', onChange: (v) => { s.repsL = v; s.reps = minReps(s); if (isWarm) s.auto = false; WS.save(w); } })),
                 h('div.pill', h(NumberField, { value: s.repsR, decimals: false, placeholder: 'R', class: 'pill-input', ariaLabel: 'Reps right', onChange: (v) => { s.repsR = v; s.reps = minReps(s); if (isWarm) s.auto = false; WS.save(w); } })),
               ]
-              : h('div.pill', h(NumberField, { value: s.reps, decimals: false, placeholder: isWarm ? '–' : String((s.type !== 'drop' && goals[workNo - 1]) || snap.repMax), class: 'pill-input', ariaLabel: 'Reps', onChange: (v) => { s.reps = v; if (isWarm) s.auto = false; WS.save(w); } })),
+              : h('div.pill', h(NumberField, { value: s.reps, decimals: false, placeholder: isWarm ? '–' : String(WS.goalReps(entry, s) ?? ''), class: 'pill-input', ariaLabel: 'Reps', onChange: (v) => { s.reps = v; if (isWarm) s.auto = false; WS.save(w); } })),
             h('button', { class: cx('done-btn', s.done && 'on'), onclick: () => complete(w, entry, s), 'aria-label': s.done ? 'Mark set not done' : 'Set done' }, icon('check', 24, { weight: 3 })),
           ]),
           // Quiet extras: only on the set you're about to do

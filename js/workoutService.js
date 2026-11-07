@@ -5,7 +5,7 @@ import { data, saveWorkout, saveRoutine, saveExercise, deleteWorkout, history, e
 import { uid, deepClone } from './logic/util.js';
 import { newSet, effectiveConfig, withConfig, exerciseSnapshot, newRoutineItem } from './logic/model.js';
 import { lastSession } from './logic/history.js';
-import { evaluateProgression } from './logic/progression.js';
+import { evaluateProgression, setGoals } from './logic/progression.js';
 import { activeBlock, blockWeek, isDeloadWeek } from './logic/blocks.js';
 import { fromDisplayWeight, toDisplayWeight } from './logic/units.js';
 import { prsInWorkout, livePr } from './logic/records.js';
@@ -257,6 +257,20 @@ export function nextUp(w, afterSet = null) {
 }
 
 /** Tick / untick a set. Returns false (and explains) if the set can't be completed yet. */
+/** The gray rep goal shown in a set's Reps box (null for warm-ups). Ticking an empty set uses it, like Hevy. */
+export function goalReps(entry, set) {
+  if (set.type === 'warmup') return null;
+  const snap = entry.snapshot;
+  const workCount = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length;
+  const goals = setGoals(snap, workCount);
+  let workNo = 0;
+  for (const s of entry.sets) {
+    if (s.type !== 'warmup') workNo++;
+    if (s === set) break;
+  }
+  return (set.type !== 'drop' && goals[workNo - 1]) || snap.repMax || null;
+}
+
 export function toggleSet(w, entry, set) {
   if (set.done) {
     set.done = false;
@@ -266,8 +280,12 @@ export function toggleSet(w, entry, set) {
     return true;
   }
   const uni = entry.snapshot.unilateral;
-  const hasReps = uni ? (set.repsL > 0 || set.repsR > 0) : set.reps > 0;
+  let hasReps = uni ? (set.repsL > 0 || set.repsR > 0) : set.reps > 0;
   const bwType = entry.snapshot.type === 'bodyweight';
+  if (!hasReps && !uni) {
+    const g = goalReps(entry, set);
+    if (g > 0) { set.reps = g; hasReps = true; }
+  }
   if (!hasReps) {
     toast('Enter your reps first');
     return false;
