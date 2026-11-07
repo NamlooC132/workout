@@ -15,6 +15,7 @@ import { displayWeight, fromDisplayWeight } from '../logic/units.js';
 import { workoutVolume } from '../logic/volume.js';
 import { tonnage, bodyweightAt, personalRecords } from '../logic/records.js';
 import * as WS from '../workoutService.js';
+import { tr } from '../i18n.js';
 import { startRest, adjustRest, skipRest, restRemaining, syncWakeLock } from '../timer.js';
 import { guideFor, photoFor } from '../logic/catalog.js';
 import { HealthBox } from './health.js';
@@ -131,7 +132,8 @@ function ExerciseCard({ w, entry, index, st }) {
   const currentSet = entry.sets.find((s) => !s.done);
   const notes = [ex?.notes, entry.routineNotes, entry.notes].filter(Boolean).join(' · ');
   // The exercise note from the most recent earlier workout that has one ("Last time: …").
-  const lastNote = (history().get(entry.exerciseId) || []).find((it) => it.workout.id !== w.id && it.workout.status === 'done' && it.entry?.notes)?.entry.notes;
+  const lastNote = ex?.lastNote && ex.lastNote.workoutId !== w.id ? ex.lastNote.text
+    : (history().get(entry.exerciseId) || []).map((it) => it.workout.id !== w.id && WS.entryNoteText(it.entry)).find(Boolean);
   const openHistory = () => openSheet({ type: 'exHistory', exerciseId: entry.exerciseId, name: snap.name });
   const workCount = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length;
   const goals = setGoals(snap, workCount);
@@ -168,7 +170,7 @@ function ExerciseCard({ w, entry, index, st }) {
       h(IconButton, { name: 'more', label: 'Exercise options', onClick: () => entryMenu(w, entry) }),
     ]),
     notes && h('div.notes-line', [icon('note', 14), h('span', notes)]),
-    lastNote && lastNote !== entry.notes && h('div.notes-line.last-note', [icon('note', 14), h('span', [h('b', 'Last time:'), ' ', h('span', lastNote)])]),
+    lastNote && lastNote !== entry.notes && h('div.notes-line.last-note', [icon('note', 14), h('span', [h('b', 'Last time:'), ' ', h('span', lastNote.replace(/\b(Set \d+|Warm-up):/g, (m, k) => `${tr(k)}:`))])]),
 
     !entry.skipped && !w.deload && ProgressionBanner({ w, entry, p: entry.progression || {} }),
 

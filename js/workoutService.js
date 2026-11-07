@@ -440,7 +440,24 @@ export function doneCount(w) {
  * mode: 'complete' marks unchecked sets that have reps as done; 'drop' removes them.
  * Returns the PRs set in this workout.
  */
+/** Notes written on an exercise in this workout: the exercise note plus set notes ("Set 2: paused"). */
+export function entryNoteText(e) {
+  let n = 0;
+  const setNotes = (e.sets || []).map((s) => {
+    if (s.type !== 'warmup') n++;
+    return s.note ? `${s.type === 'warmup' ? 'Warm-up' : `Set ${n}`}: ${s.note}` : '';
+  }).filter(Boolean);
+  return [e.notes, ...setNotes].filter(Boolean).join(' · ');
+}
+
 export function finishWorkout(w, mode) {
+  // Remember the notes on the exercise itself, so the next workout shows them ("Last time: …")
+  // even when this exercise had no completed sets (it is removed from the workout below).
+  for (const e of w.entries) {
+    const text = entryNoteText(e);
+    const ex = text && e.exerciseId && data.exercises.find((x) => x.id === e.exerciseId);
+    if (ex) saveExercise({ ...ex, lastNote: { text, at: w.startedAt, workoutId: w.id } });
+  }
   for (const e of w.entries) {
     e.sets = e.sets.filter((s) => {
       if (s.done) return true;
