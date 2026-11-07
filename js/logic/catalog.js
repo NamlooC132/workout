@@ -808,7 +808,7 @@ const AI_PICS = {
   "smith machine bench press": 'smith-machine-bench-press',
   "smith machine incline press": 'smith-machine-incline-press',
   "dumbbell fly": 'dumbbell-fly',
-  "incline dumbbell fly": 'incline-dumbbell-fly',
+  "incline dumbbell fly": 'incline-dumbbell-fly-2', // Freddy's redraw 2026-11-08
   "pec deck": 'pec-deck',
   "cable fly": 'cable-fly',
   "seated cable fly": 'seated-cable-fly',
@@ -886,7 +886,7 @@ const AI_PICS = {
   "landmine press": 'landmine-press',
   "dumbbell front raise": 'dumbbell-front-raise',
   "cable front raise": 'cable-front-raise',
-  "behind-the-neck press": 'behind-the-neck-press',
+  "behind-the-neck press": 'behind-the-neck-press-2', // Freddy's redraw 2026-11-08
   "seated dumbbell shoulder press": 'seated-dumbbell-shoulder-press',
   "single-arm dumbbell shoulder press": 'single-arm-dumbbell-shoulder-press',
   "cable shoulder press": 'cable-shoulder-press',
@@ -909,8 +909,8 @@ const AI_PICS = {
   "lying rear delt raise": 'lying-rear-delt-raise',
   "barbell rear delt row": 'barbell-rear-delt-row',
   "cable rear delt row": 'cable-rear-delt-row',
-  "dumbbell external rotation": 'dumbbell-external-rotation',
-  "cable external rotation": 'cable-external-rotation',
+  "dumbbell external rotation": 'dumbbell-external-rotation-2', // Freddy's redraw 2026-11-08
+  "cable external rotation": 'cable-external-rotation-2', // Freddy's redraw 2026-11-08
   "barbell curl": 'barbell-curl',
   "ez bar curl": 'ez-bar-curl',
   "dumbbell curl": 'dumbbell-curl',
@@ -930,7 +930,7 @@ const AI_PICS = {
   "preacher hammer curl": 'preacher-hammer-curl',
   "seated dumbbell curl": 'seated-dumbbell-curl',
   "zottman curl": 'zottman-curl',
-  "drag curl": 'drag-curl',
+  "drag curl": 'drag-curl-2', // Freddy's redraw 2026-11-08
   "close-grip ez bar curl": 'close-grip-ez-bar-curl',
   "wide-grip barbell curl": 'wide-grip-barbell-curl',
   "cable preacher curl": 'cable-preacher-curl',
@@ -996,10 +996,10 @@ const AI_PICS = {
   "narrow-stance leg press": 'narrow-stance-leg-press',
   "single-leg leg press": 'single-leg-leg-press',
   "smith machine split squat": 'smith-machine-split-squat',
-  "barbell lunge": 'barbell-lunge',
+  "barbell lunge": 'barbell-lunge-2', // Freddy's redraw 2026-11-08
   "dumbbell lunge": 'dumbbell-lunge',
   "lateral lunge": 'lateral-lunge',
-  "barbell step-up": 'barbell-step-up',
+  "barbell step-up": 'barbell-step-up-2', // Freddy's redraw 2026-11-08
   "sissy squat": 'sissy-squat',
   "bodyweight squat": 'bodyweight-squat',
   "pistol squat": 'pistol-squat',
@@ -1029,7 +1029,7 @@ const AI_PICS = {
   "dumbbell hip thrust": 'dumbbell-hip-thrust',
   "single-leg hip thrust": 'single-leg-hip-thrust',
   "single-leg glute bridge": 'single-leg-glute-bridge',
-  "frog pump": 'frog-pump',
+  "frog pump": 'frog-pump-2', // Freddy's redraw 2026-11-08
   "cable hip abduction": 'cable-hip-abduction',
   "machine glute kickback": 'machine-glute-kickback',
   "donkey kick": 'donkey-kick',
@@ -1055,7 +1055,7 @@ const AI_PICS = {
   "oblique crunch": 'oblique-crunch',
   "dumbbell side bend": 'dumbbell-side-bend',
   "pallof press": 'pallof-press',
-  "cable woodchop": 'cable-woodchop',
+  "cable woodchop": 'cable-woodchop-2', // Freddy's redraw 2026-11-08
   "plank": 'plank',
   "dead bug": 'dead-bug',
   "decline crunch": 'decline-crunch',
@@ -1064,7 +1064,7 @@ const AI_PICS = {
   "standing cable crunch": 'standing-cable-crunch',
   "cable reverse crunch": 'cable-reverse-crunch',
   "russian twist": 'russian-twist',
-  "cable russian twist": 'cable-russian-twist',
+  "cable russian twist": 'cable-russian-twist-2', // Freddy's redraw 2026-11-08
   "toes to bar": 'toes-to-bar',
   "v-up": 'v-up',
   "jackknife sit-up": 'jackknife-sit-up',
