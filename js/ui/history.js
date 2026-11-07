@@ -6,7 +6,7 @@ import { data, ui, update, openSheet, confirm, toast, history, exercisesById, do
 import { Page, Section, Row, Empty, Button, IconButton, Thumb, Segmented, NumberField, WeightField, LineChart, ExercisePhoto, nav, fmtW, fmtDate, fmtDateTime, relDay } from './components.js';
 import { setsSummary } from './workout.js';
 import { select } from './exercises.js';
-import { fmtDuration, fmtNum, deepClone } from '../logic/util.js';
+import { fmtDuration, fmtNum, deepClone, plural } from '../logic/util.js';
 import { displayWeight } from '../logic/units.js';
 import { workoutVolume } from '../logic/volume.js';
 import { prsInWorkout, personalRecords, exerciseSeries, isStalled, progressionHistory, tonnage, bodyweightAt } from '../logic/records.js';
@@ -56,7 +56,7 @@ export function HistoryScreen() {
           title: [w.routineName, w.deload && h('span.tag.blue', { style: { marginLeft: '6px' } }, 'DELOAD'), prs > 0 && h('span.pr', { style: { marginLeft: '6px' } }, `🏆${prs > 1 ? '×' + prs : ''}`)],
           subtitle: [
             h('div', fmtDateTime(w.startedAt)),
-            h('div', [`${fmtDuration(w.endedAt - w.startedAt)} · ${workSetCount(w)} sets · ${fmtNum(displayWeight(workoutTonnage(w), data.settings.unit), 0)} ${data.settings.unit}`, w.health?.hr ? ` · ♥ ${w.health.hr}` : '', w.health?.kcal ? ` · ${w.health.kcal} kcal` : '']),
+            h('div', [`${fmtDuration(w.endedAt - w.startedAt)} · ${plural(workSetCount(w), 'set')} · ${fmtNum(displayWeight(workoutTonnage(w), data.settings.unit), 0)} ${data.settings.unit}`, w.health?.hr ? ` · ♥ ${w.health.hr}` : '', w.health?.kcal ? ` · ${w.health.kcal} kcal` : '']),
           ],
           chevron: true,
           onClick: () => nav('/workout/' + w.id),
@@ -208,7 +208,7 @@ export function ExerciseScreen({ id }) {
   const bw = type === 'bodyweight';
   const metrics = [
     !bw && { value: 'top', label: type === 'assisted' ? 'Assist' : 'Weight' },
-    { value: 'e1rm', label: 'e1RM' },
+    { value: 'e1rm', label: 'Est. 1RM' },
     { value: 'reps', label: 'Reps' },
     { value: 'volume', label: 'Volume' },
   ].filter(Boolean);
@@ -238,7 +238,7 @@ export function ExerciseScreen({ id }) {
       h('div.grow', [
         h('div', { style: { fontSize: '22px', fontWeight: 800 } }, name),
         ex && h('div.muted.small', contributions(ex).map((c) => `${muscleName(c.key, data.settings)}${c.value < 1 ? ` ${c.value * 100}%` : ''}`).join(' · ') || 'No muscles set'),
-        ex && h('div.muted.small', `${ex.sets} × ${ex.repMin}–${ex.repMax} · ${list.length} sessions`),
+        ex && h('div.muted.small', `${ex.sets} × ${ex.repMin}–${ex.repMax} · ${plural(list.length, 'session')}`),
       ]),
     ]),
     h('div.mt', ExercisePhoto({ name, photo: photoFor(name) })),
@@ -266,11 +266,11 @@ export function ExerciseScreen({ id }) {
     ])),
     stalled && series.length < 2 && h('div.callout.yellow.mt', [icon('info', 18), h('div', [h('b', 'Possibly stalled. '), 'No improvement in your last 3 sessions. Consider a deload, a rep-range change or swapping the exercise.'])]),
 
-    h(Section, { title: 'Personal records' }, list.length === 0
+    h(Section, { title: 'Personal records', footer: rec.bestE1rm ? 'Est. 1RM = about the most you could lift for one rep, worked out from your sets.' : null }, list.length === 0
       ? h('div.pad.muted', 'Finish a workout with this exercise to set your first records.')
       : h('div.pad', h('div.stat-grid', [
         !bw && rec.bestWeight && recStat(type === 'assisted' ? 'Least assist' : 'Heaviest', fmtW(rec.bestWeight.value), `× ${rec.bestWeight.detail.reps} · ${fmtDate(rec.bestWeight.date, { day: 'numeric', month: 'short' })}`),
-        rec.bestE1rm && recStat('Best e1RM', fmtW(rec.bestE1rm.value), fmtDate(rec.bestE1rm.date, { day: 'numeric', month: 'short' })),
+        rec.bestE1rm && recStat('Best est. 1RM', fmtW(rec.bestE1rm.value), fmtDate(rec.bestE1rm.date, { day: 'numeric', month: 'short' })),
         rec.bestReps && recStat('Most reps', `${rec.bestReps.value}`, bw ? fmtDate(rec.bestReps.date, { day: 'numeric', month: 'short' }) : `@ ${fmtW(rec.bestReps.detail.kg ?? 0)}`),
         rec.bestSetVolume && recStat('Best set', fmtW(rec.bestSetVolume.value), 'weight × reps'),
         rec.bestSessionVolume && recStat('Best session', fmtW(rec.bestSessionVolume.value), 'total volume'),

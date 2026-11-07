@@ -6,7 +6,7 @@ import { data, ui, update, openSheet, closeSheet, saveExercise, deleteExercise, 
 import { Page, Section, Row, Empty, Button, IconButton, Stepper, Toggle, Segmented, Chip, Sheet, TextField, Thumb, NumberField, nav } from './components.js';
 import { newExercise, effectiveConfig, withConfig } from '../logic/model.js';
 import { allMuscles, muscleName, contributions, EXERCISE_TYPES, EQUIPMENT, CATEGORIES } from '../logic/muscles.js';
-import { fmtClock, deepClone, fmtNum } from '../logic/util.js';
+import { fmtClock, deepClone, fmtNum, plural } from '../logic/util.js';
 import { REST_STEP, REST_MIN, REST_MAX } from '../logic/restTimer.js';
 import { defaultProgressionStep } from '../logic/units.js';
 import { setGoals } from '../logic/progression.js';
@@ -149,7 +149,7 @@ export function LibraryScreen() {
         key: ex.id,
         left: h(Thumb, { image: ex.image, name: ex.name, muscles: ex.muscles }),
         title: ex.name,
-        subtitle: `${exerciseSubtitle(ex)} · ${(hist.get(ex.id) || []).length} sessions`,
+        subtitle: `${exerciseSubtitle(ex)} · ${plural((hist.get(ex.id) || []).length, 'session')}`,
         chevron: true,
         onClick: () => nav('/exercise/' + ex.id),
       }))),

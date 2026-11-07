@@ -91,6 +91,11 @@ export function fmtDuration(ms) {
 }
 
 /** Number with up to 2 decimals, no trailing zeros. */
+/** "1 session", "2 sessions" (word = singular; many = plural if not word + 's'). */
+export function plural(n, word, many = word + 's') {
+  return `${n} ${String(n) === '1' ? word : many}`;
+}
+
 export function fmtNum(v, maxDecimals = 2) {
   if (v === null || v === undefined || Number.isNaN(v)) return '';
   const r = Math.round(v * 10 ** maxDecimals) / 10 ** maxDecimals;

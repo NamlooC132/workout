@@ -7,7 +7,7 @@ import { select } from './exercises.js';
 import { newBlock } from '../logic/model.js';
 import { PHASES } from '../logic/muscles.js';
 import { activeBlock, blockRange, blockWeek, isDeloadWeek } from '../logic/blocks.js';
-import { dateKey, deepClone, addDays, parseDateKey, startOfWeek } from '../logic/util.js';
+import { dateKey, deepClone, addDays, parseDateKey, startOfWeek, plural } from '../logic/util.js';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -19,7 +19,7 @@ export function PlanScreen() {
     title: 'Training plan', backTo: '/routines',
     actions: [h(IconButton, { name: 'plus', label: 'New block', onClick: () => openSheet({ type: 'blockEditor', blockId: null }) })],
   }, [
-    h('div.callout.blue', [icon('info', 18), h('div', 'Plan training blocks (e.g. 6 weeks of accumulation with a deload in week 6). Pick which routine you do on which day – the Routines tab then shows today’s workout, and the calendar shows planned vs done. You never have to follow a fixed split.')]),
+    h('div.callout.blue', [icon('info', 18), h('div', 'Plan training blocks (for example 6 weeks of training, with an easier deload week at the end). Pick which routine you do on which day – the Workout tab then shows today’s workout, and the calendar shows planned vs done. You can still train any day you like.')]),
     blocks.length === 0 && h(Empty, { iconName: 'calendar', title: 'No training blocks', text: 'Optional – create one to plan phases, deloads and your weekly schedule.', action: h(Button, { onClick: () => openSheet({ type: 'blockEditor', blockId: null }) }, 'New block') }),
     blocks.length > 0 && h(Section, { title: 'Blocks' }, blocks.map((b) => {
       const r = blockRange(b);
@@ -28,7 +28,7 @@ export function PlanScreen() {
       return h(Row, {
         key: b.id,
         title: [b.name, isActive && h('span.tag.green', { style: { marginLeft: '6px' } }, `WEEK ${blockWeek(b)}`), isActive && isDeloadWeek(b) && h('span.tag.blue', { style: { marginLeft: '4px' } }, 'DELOAD')],
-        subtitle: [h('div', `${b.phase} · ${b.weeks} weeks${r ? ` · ${fmtDate(r.from, { day: 'numeric', month: 'short' })} – ${fmtDate(addDays(r.to, -1), { day: 'numeric', month: 'short' })}` : ''}${b.deloadWeeks?.length ? ` · deload wk ${b.deloadWeeks.join(', ')}` : ''}`), sched.length ? h('div', sched.join(' · ')) : null],
+        subtitle: [h('div', `${b.phase} · ${plural(b.weeks, 'week')}${r ? ` · ${fmtDate(r.from, { day: 'numeric', month: 'short' })} – ${fmtDate(addDays(r.to, -1), { day: 'numeric', month: 'short' })}` : ''}${b.deloadWeeks?.length ? ` · deload wk ${b.deloadWeeks.join(', ')}` : ''}`), sched.length ? h('div', sched.join(' · ')) : null],
         chevron: true,
         onClick: () => openSheet({ type: 'blockEditor', blockId: b.id }),
       });

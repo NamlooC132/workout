@@ -189,7 +189,7 @@ export function LogRunSheet(sheet) {
 
     // Step 2
     h('div.lr-step', [
-      h('div.lr-head', [h('span.lr-num', '2'), h('div', [h('div.lr-title', 'Get your run from Health'), h('div.lr-sub', 'Tap Get, come back, then Paste')])]),
+      h('div.lr-head', [h('span.lr-num', '2'), h('div', [h('div.lr-title', 'Get your run from Health'), h('div.lr-sub', 'Tap Get from Health, come back, then tap Paste')])]),
       h('div.lr-btns', [
         h('button.btn.btn-primary', { onclick: () => { sheet.endAt = Date.now(); getFromHealth(Date.now() - 2 * 86400000, Date.now()); } }, [icon('heart', 18), 'Get from Health']),
         h('button.btn.btn-secondary', { onclick: findRun }, [icon('copy', 18), 'Paste']),
@@ -198,7 +198,7 @@ export function LogRunSheet(sheet) {
         h('div.grow', [h('b', `${dayLabel(r.from)} · ${hhmm(r.from)}`), h('div.small.muted', `${fmtRunTime(Math.round((r.to - r.from) / 1000))} · ${fmtPace((r.to - r.from) / 1000 / r.km)} /km`)]),
         h('span.fr-km', fmtKm(r.km)),
       ]))),
-      h('div.lr-note', sheet.startAt ? 'To get the shortcut ask Freddy' : 'No start time? Tap Get and Paste anyway – the app finds your run. · To get the shortcut ask Freddy'),
+      h('div.lr-note', sheet.startAt ? 'To get the shortcut ask Freddy' : 'No start time? Tap Get from Health and Paste anyway – the app finds your run. · To get the shortcut ask Freddy'),
     ]),
 
     // Result

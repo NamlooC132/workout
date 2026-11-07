@@ -5,7 +5,7 @@ import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
 import { data, ui, update, openSheet, closeSheet, saveMeasurement, deleteMeasurement, saveSettings, confirm, toast, history, doneWorkouts, cached } from '../store.js';
 import { Page, Section, Row, Empty, Button, IconButton, Segmented, Sheet, NumberField, Thumb, Chip, LineChart, BarChart, TargetBar, nav, fmtW, fmtDate, relDay } from './components.js';
-import { fmtNum, addDays, startOfWeek, startOfMonth, addMonths, dateKey, uid, parseDateKey, startOfDay } from '../logic/util.js';
+import { fmtNum, addDays, startOfWeek, startOfMonth, addMonths, dateKey, uid, parseDateKey, startOfDay, plural } from '../logic/util.js';
 import { allMuscles, muscleName } from '../logic/muscles.js';
 import { volumeBetween, weekRange, weeklySeries, monthRange, targetStatus } from '../logic/volume.js';
 import { weeklyFrequency, weekStreak, strengthTrend, trendBuckets } from '../logic/analytics.js';
@@ -70,7 +70,7 @@ function Overview(st) {
   // Takeaway 2: How often did I train?
   const last4 = freq.slice(-4).reduce((a, b) => a + b.count, 0) / 4;
   const prev4 = freq.slice(-8, -4).reduce((a, b) => a + b.count, 0) / 4;
-  const freqT = done.length === 0 ? 'No workouts yet' : `${fmtNum(last4, 1)} workouts a week`;
+  const freqT = done.length === 0 ? 'No workouts yet' : `${plural(fmtNum(last4, 1), 'workout')} a week`;
   const freqS = done.length === 0 ? 'Finish your first workout to see this.'
     : `Last 4 weeks${prev4 > 0 ? ` (${last4 > prev4 + 0.2 ? 'up from' : last4 < prev4 - 0.2 ? 'down from' : 'same as'} ${fmtNum(prev4, 1)} before)` : ''}. This week: ${thisWeek}${streak > 1 ? ` · ${streak}-week streak 🔥` : ''}.`;
 
@@ -167,7 +167,7 @@ function Calendar(st) {
       h(IconButton, { name: 'chevronLeft', label: 'Previous month', size: 18, onClick: () => { st.monthOffset = (st.monthOffset || 0) - 1; update(); } }),
       h(IconButton, { name: 'chevronRight', label: 'Next month', size: 18, onClick: () => { st.monthOffset = (st.monthOffset || 0) + 1; update(); } }),
     ]),
-    footer: h('div.legend', [h('span', [h('i', { style: { background: 'var(--accent)' } }), `Trained (${doneCount} days)`]), h('span', [h('i', { style: { background: 'var(--fill2)' } }), 'Planned']), h('span', [h('i', { style: { border: '1.5px dashed var(--muted)' } }), 'Missed'])]),
+    footer: h('div.legend', [h('span', [h('i', { style: { background: 'var(--accent)' } }), `Trained (${plural(doneCount, 'day')})`]), h('span', [h('i', { style: { background: 'var(--fill2)' } }), 'Planned']), h('span', [h('i', { style: { border: '1.5px dashed var(--muted)' } }), 'Missed'])]),
   }, h('div.cal', [
     ...dows.map((d, i) => h('div.dow', { key: 'd' + i }, d)),
     ...days.slice(0, days[35] && days[35].date >= monthEnd ? 35 : 42).map((d) => {
@@ -225,8 +225,8 @@ function Volume(st) {
       h(IconButton, { name: 'chevronRight', label: 'Later', onClick: () => shift(1), disabled: isWeek ? st.weekOffset >= 0 : (st.monthOffsetV || 0) >= 0 }),
     ]),
     h('div.legend', { style: { margin: '6px 4px' } }, [
-      h('span', [h('i', { style: { background: 'var(--accent)' } }), 'Direct sets']),
-      h('span', [h('i', { style: { background: 'color-mix(in srgb, var(--accent) 40%, transparent)' } }), 'Indirect']),
+      h('span', [h('i', { style: { background: 'var(--accent)' } }), 'Main muscle']),
+      h('span', [h('i', { style: { background: 'color-mix(in srgb, var(--accent) 40%, transparent)' } }), 'Helper muscle']),
       h('span', [h('i', { style: { background: 'var(--green-soft)', border: '1px solid var(--green)' } }), 'Target']),
     ]),
     h(Section, {
@@ -255,7 +255,7 @@ function Volume(st) {
       h('div.chips', { style: { padding: '10px 12px 0', overflowX: 'auto', flexWrap: 'nowrap' } }, muscles.map((m) => h(Chip, { key: m.key, active: st.muscle === m.key, onClick: () => { st.muscle = m.key; update(); } }, m.name))),
       h(BarChart, { bars: trend.map((t) => ({ label: new Date(t.from).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }), value: t.volume[st.muscle]?.total || 0 })) }),
     ])),
-    h('div.callout', [icon('info', 18), h('div', 'Volume = completed hard sets (warm-ups excluded). Direct sets count 1, indirect sets 0.5 by default. It’s a useful training guide, not a measurement of how much muscle you build – sleep, food, effort and recovery matter too.')]),
+    h('div.callout', [icon('info', 18), h('div', 'Volume = completed hard sets (warm-ups excluded). A set counts 1 for its main muscles and 0.5 for helper muscles by default. It’s a useful training guide, not a measurement of how much muscle you build – sleep, food, effort and recovery matter too.')]),
   ]);
 }
 
@@ -275,7 +275,7 @@ function Exercises() {
     const rec = personalRecords(l, data.measurements);
     return h(Row, {
       key: e.id, left: h(Thumb, { image: e.image, name: e.name, muscles: e.muscles }), title: e.name,
-      subtitle: `${l.length} sessions · last ${relDay(l[0].workout.startedAt)}${rec.bestE1rm ? ` · e1RM ${fmtW(rec.bestE1rm.value)}` : ''}`,
+      subtitle: `${plural(l.length, 'session')} · last ${relDay(l[0].workout.startedAt)}${rec.bestE1rm ? ` · est. 1RM ${fmtW(rec.bestE1rm.value)}` : ''}`,
       right: trend.has(e.id) ? ((t) => h('span', { class: cx('tpct', t.change > 0.01 ? 'up' : t.change < -0.02 ? 'down' : '') }, `${t.change > 0 ? '+' : ''}${fmtNum(t.change * 100, 0)} %`))(trend.get(e.id)) : null,
       chevron: true, onClick: () => nav('/exercise/' + e.id),
     });

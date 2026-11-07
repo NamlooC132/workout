@@ -4,7 +4,7 @@ import { icon } from './icons.js';
 import { data, ui, update, openSheet, closeSheet, saveSettings, confirm, toast, applyImport, eraseAll, seedSamples, sortedRoutines } from '../store.js';
 import { Page, Section, Row, Button, Stepper, Toggle, Segmented, Sheet, NumberField, TextField, Chip, fmtDate, nav } from './components.js';
 import { select } from './exercises.js';
-import { fmtClock, uid, fmtNum } from '../logic/util.js';
+import { fmtClock, uid, fmtNum, plural } from '../logic/util.js';
 import { allMuscles, BASE_MUSCLES } from '../logic/muscles.js';
 import { REST_STEP, REST_MIN, REST_MAX } from '../logic/restTimer.js';
 import { defaultProgressionStep } from '../logic/units.js';
@@ -14,7 +14,7 @@ import { warmupSteps, DEFAULT_WARMUP_STEPS } from '../logic/warmup.js';
 import { activeWorkout } from '../store.js';
 import * as WS from '../workoutService.js';
 
-export const APP_VERSION = '1.31.3';
+export const APP_VERSION = '1.31.4';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -163,7 +163,7 @@ export function ExportRoutinesSheet(sheet) {
     actions: [h('button.link-btn.strong', { disabled: !sheet.sel.size, onclick: () => { closeSheet(); exportFile('routines', [...sheet.sel]); } }, 'Share')],
   }, [
     h(Section, { footer: 'Your friend taps Settings → Import data. Their own history stays on their phone; exercises with the same name are reused.' }, routines.map((r) => h(Row, {
-      key: r.id, title: r.name, subtitle: `${r.items.length} exercises`,
+      key: r.id, title: r.name, subtitle: plural(r.items.length, 'exercise'),
       right: sheet.sel.has(r.id) ? h('span', { style: { color: 'var(--accent)' } }, icon('check', 22)) : null,
       onClick: () => { if (sheet.sel.has(r.id)) sheet.sel.delete(r.id); else sheet.sel.add(r.id); update(); },
     }))),
@@ -288,8 +288,8 @@ function WarmupSection(s) {
     title: 'Warm-up',
     footer: 'Warm-up weight = % of your heaviest working set, rounded to the − / + step. It follows the working weight live. Change a warm-up set by hand in a workout and it stays as you typed it.',
   }, [
-    on && h(Row, { title: 'Add warm-up to', right: h(Segmented, { small: true, value: s.warmupScope || 'chosen', onChange: (v) => save({ warmupScope: v }), options: [{ value: 'all', label: 'Every exercise' }, { value: 'chosen', label: 'Chosen ones' }] }) }),
-    on && (s.warmupScope || 'chosen') === 'chosen' && h('div.pad.small.muted', 'Chosen ones = exercises where you set Warm-up sets (exercise → Advanced). In a workout you can also tap ⋯ → Add warm-up set.'),
+    on && h(Row, { title: 'Add warm-up to', right: h(Segmented, { small: true, value: s.warmupScope || 'chosen', onChange: (v) => save({ warmupScope: v }), options: [{ value: 'all', label: 'Every exercise' }, { value: 'chosen', label: 'Only ones I pick' }] }) }),
+    on && (s.warmupScope || 'chosen') === 'chosen' && h('div.pad.small.muted', 'Only ones I pick = exercises where you set Warm-up sets (exercise → Advanced). In a workout you can also tap ⋯ → Add warm-up set.'),
     on && steps.map((st, i) => h(Row, {
       key: 'wu' + i, title: `Warm-up ${i + 1}`,
       right: h('div.wu-step', [

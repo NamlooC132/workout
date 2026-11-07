@@ -120,11 +120,11 @@ export function RoutinesScreen() {
     !st.edit && h('div.hero', [
       sug
         ? [h('div.hero-k', sug.why), h('div.hero-t', sug.routine.name)]
-        : [h('div.hero-k', 'Ready when you are'), h('div.hero-t', routines.length ? 'Empty workout' : 'Start training')],
+        : [h('div.hero-k', 'Ready when you are'), h('div.hero-t', routines.length ? 'Quick workout' : 'Start training')],
       h('button.hero-btn', { onclick: () => beginRoutine(sug ? sug.routine : null) }, [icon('play', 22), 'Start workout']),
       h('div.hero-alt', [
         routines.length > 1 && h('button', { onclick: () => document.getElementById('routine-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, 'Choose another routine'),
-        h('button', { onclick: () => beginRoutine(null) }, 'Start empty workout'),
+        h('button', { onclick: () => beginRoutine(null) }, 'Start quick workout'),
         h('button', { onclick: () => openSheet({ type: 'logRun' }) }, 'Log a run'),
         data.settings.showYoga && h('button', { onclick: () => nav('/yoga/log') }, 'Log yoga'),
       ]),
@@ -163,7 +163,7 @@ export function RoutinesScreen() {
 
     showBackup && h('div.backup-card', [
       h('div.hstack', [icon('download', 20), h('b', 'Back up your workouts')]),
-      h('div.small', { style: { margin: '6px 0 10px' } }, [`${unsaved} workouts not backed up${s.lastBackupAt ? ` · last backup ${relDay(s.lastBackupAt).toLowerCase()}` : ''}. `, h('button.link-btn.inline-link', { onclick: () => openSheet({ type: 'dataInfo' }) }, 'Why?')]),
+      h('div.small', { style: { margin: '6px 0 10px' } }, [`${plural(unsaved, 'workout')} not backed up${s.lastBackupAt ? ` · last backup ${relDay(s.lastBackupAt).toLowerCase()}` : ''}. `, h('button.link-btn.inline-link', { onclick: () => openSheet({ type: 'dataInfo' }) }, 'Why?')]),
       h('div.hstack', [
         h(Button, { size: 'sm', onClick: () => exportFile('full') }, 'Back up now'),
         h(Button, { size: 'sm', kind: 'plain', onClick: () => saveSettings({ backupSnoozeUntil: now + 7 * 86400000 }) }, 'Later'),
