@@ -606,8 +606,10 @@ export function liveChanges(w) {
       progression: cfg.progression || {},
     };
     // Fewer sets because of the readiness check or a deload are automatic – not a change to save.
-    if (e.autoWorkSets !== undefined && e.autoWorkSets === now.sets) now.sets = was.sets;
-    if (e.autoDropSets !== undefined && e.autoDropSets === now.dropSets) now.dropSets = was.dropSets;
+    // Only what the user changed after that counts: routine 3 → app made it 2 → user removed 1 more
+    // = "3 → 2" (one set less), not "3 → 1".
+    if (e.autoWorkSets !== undefined) now.sets = Math.max(1, was.sets + (now.sets - e.autoWorkSets));
+    if (e.autoDropSets !== undefined) now.dropSets = Math.max(0, was.dropSets + (now.dropSets - e.autoDropSets));
     const lines = [];
     const add = (label, a, b) => lines.push({ label, from: a, to: b });
     if (now.warmupSets !== was.warmupSets) add('Warm-up sets', was.warmupSets, now.warmupSets);
