@@ -333,6 +333,9 @@ export function applyDeload(w) {
     const doneWork = e.sets.filter((s) => s.type !== 'warmup' && s.done).length;
     let toRemove = Math.max(0, doneWork + work.length - keep);
     for (let i = work.length - 1; i >= 0 && toRemove > 0; i--, toRemove--) e.sets = e.sets.filter((s) => s !== work[i]);
+    // Set counts chosen by the app (not the user): liveChanges() won't offer to save them.
+    e.autoWorkSets = e.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length;
+    e.autoDropSets = e.sets.filter((s) => s.type === 'drop').length;
     const step = e.snapshot.weightStep || 2.5;
     for (const s of e.sets) {
       if (s.done || s.type === 'warmup' || !s.kg) continue;
@@ -602,6 +605,9 @@ export function liveChanges(w) {
       ...Object.fromEntries(LIVE_KEYS.map((k) => [k, k === 'unilateral' ? !!cfg[k] : cfg[k]])),
       progression: cfg.progression || {},
     };
+    // Fewer sets because of the readiness check or a deload are automatic – not a change to save.
+    if (e.autoWorkSets !== undefined && e.autoWorkSets === now.sets) now.sets = was.sets;
+    if (e.autoDropSets !== undefined && e.autoDropSets === now.dropSets) now.dropSets = was.dropSets;
     const lines = [];
     const add = (label, a, b) => lines.push({ label, from: a, to: b });
     if (now.warmupSets !== was.warmupSets) add('Warm-up sets', was.warmupSets, now.warmupSets);

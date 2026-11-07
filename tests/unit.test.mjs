@@ -659,6 +659,7 @@ test('readiness plan: high = a set and ~10 % weight everywhere; pain = skip', ()
   assert.deepEqual(counts, { skip: 0, removeSet: 2, lighter: 3 });
   const bench = w.entries[0];
   assert.equal(bench.sets.filter((s) => s.type === 'working').length, 2);
+  assert.equal(bench.autoWorkSets, 2, 'the app remembers the set count it chose, so Finish won’t ask to save it');
   assert.equal(bench.sets[0].kg, 40, 'warm-up untouched here (it follows the working weight in the app)');
   assert.deepEqual(bench.sets.filter((s) => s.type === 'working').map((s) => s.kg), [72.5, 72.5]);
   assert.equal(bench.progression.dismissed, true);

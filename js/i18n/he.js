@@ -394,7 +394,8 @@ export const DICT = {
   'Deload week – use “Apply deload” in the workout.': 'שבוע דילואד – השתמש ב"החל דילואד" באימון.',
   'Nothing to change in this workout – listen to your body.': 'אין מה לשנות באימון הזה – תקשיב לגוף.',
   'Readiness': 'מוכנות', 'How ready did I feel?': 'כמה הייתי מוכן?',
-  'Optional: only count sets with this many reps left in reserve': 'רשות: רק סטים שנשארו בהם לפחות כמה חזרות במאגר נחשבים'
+  'Optional: only count sets with this many reps left in reserve': 'רשות: רק סטים שנשארו בהם לפחות כמה חזרות במאגר נחשבים',
+  'Last time:': 'בפעם הקודמת:'
 };
 
 const n = (x) => x; // numbers stay as they are

@@ -130,6 +130,8 @@ function ExerciseCard({ w, entry, index, st }) {
   const step = snap.weightStep || data.settings.defaultWeightStep || 2.5;
   const currentSet = entry.sets.find((s) => !s.done);
   const notes = [ex?.notes, entry.routineNotes, entry.notes].filter(Boolean).join(' · ');
+  // The exercise note from the most recent earlier workout that has one ("Last time: …").
+  const lastNote = (history().get(entry.exerciseId) || []).find((it) => it.workout.id !== w.id && it.workout.status === 'done' && it.entry?.notes)?.entry.notes;
   const openHistory = () => openSheet({ type: 'exHistory', exerciseId: entry.exerciseId, name: snap.name });
   const workCount = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length;
   const goals = setGoals(snap, workCount);
@@ -166,6 +168,7 @@ function ExerciseCard({ w, entry, index, st }) {
       h(IconButton, { name: 'more', label: 'Exercise options', onClick: () => entryMenu(w, entry) }),
     ]),
     notes && h('div.notes-line', [icon('note', 14), h('span', notes)]),
+    lastNote && lastNote !== entry.notes && h('div.notes-line.last-note', [icon('note', 14), h('span', [h('b', 'Last time:'), ' ', h('span', lastNote)])]),
 
     !entry.skipped && !w.deload && ProgressionBanner({ w, entry, p: entry.progression || {} }),
 
