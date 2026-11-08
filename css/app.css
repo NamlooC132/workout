@@ -975,3 +975,8 @@ select.select { border-radius: 8px; min-height: 36px; }
 .rd-dot.tone-yellow { background: var(--yellow-soft); color: var(--yellow); }
 .rd-dot.tone-red { background: rgba(229, 56, 59, 0.14); color: var(--red); }
 .thumb.ai { background: #0c0d0f; }
+
+/* 1.32.0: spider chart for sets per muscle */
+.spider-wrap { padding: 4px 6px 0; }
+.spider { display: block; width: 100%; height: auto; max-width: 440px; margin: 0 auto; overflow: visible; font-family: inherit; }
+.spider text { user-select: none; -webkit-user-select: none; }

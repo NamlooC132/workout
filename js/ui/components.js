@@ -296,6 +296,56 @@ export function TargetBar({ direct, indirect, target, maxScale }) {
   ]);
 }
 
+/**
+ * Spider (radar) chart of sets per muscle – one spoke per muscle.
+ * axes: [{ key, label, main, helper, target: {min,max}|null, status: 'low'|'ok'|'high'|'none' }]
+ * Dark fill = main-muscle sets, light fill = + helper sets, green stripe on each spoke = target range.
+ */
+export function SpiderChart({ axes, maxScale, selected, onPick }) {
+  const n = axes.length;
+  if (n < 3) return null;
+  const W = 400, H = 390, cx = 200, cy = 195, R = 120;
+  const raw = Math.max(1, maxScale || 0, ...axes.map((a) => a.main + a.helper));
+  const stepV = raw <= 4 ? 1 : raw <= 8 ? 2 : raw <= 20 ? 5 : 10;
+  const scale = Math.ceil(raw / stepV) * stepV;
+  const ang = (i) => -Math.PI / 2 + (i * 2 * Math.PI) / n;
+  const pt = (i, v) => {
+    const r = R * Math.min(1, Math.max(0, v || 0) / scale);
+    return [cx + r * Math.cos(ang(i)), cy + r * Math.sin(ang(i))];
+  };
+  const pts = (vals) => vals.map((v, i) => pt(i, v).map((x) => x.toFixed(1)).join(',')).join(' ');
+  const ring = (v) => axes.map((_, i) => pt(i, v).map((x) => x.toFixed(1)).join(',')).join(' ');
+  const hasT = (a) => a.target && (a.target.min || a.target.max);
+  const lblA = -Math.PI / 2 + Math.PI / n; // ring numbers sit between the first two spokes
+  const levels = [];
+  for (let v = stepV; v <= scale; v += stepV) levels.push(v);
+  return h('svg.spider', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Sets per muscle', direction: 'ltr' }, [
+    ...levels.map((v) => h('polygon', { key: 'r' + v, points: ring(v), fill: 'none', stroke: 'var(--sep)', 'stroke-width': v === scale ? 1.2 : 0.8 })),
+    ...axes.map((_, i) => { const [x, y] = pt(i, scale); return h('line', { key: 's' + i, x1: cx, y1: cy, x2: x.toFixed(1), y2: y.toFixed(1), stroke: 'var(--sep)', 'stroke-width': 0.8 }); }),
+    // Target range: a thick green stripe on each spoke, from min to max sets.
+    ...axes.map((a, i) => {
+      if (!hasT(a)) return null;
+      const [x1, y1] = pt(i, a.target.min || 0), [x2, y2] = pt(i, a.target.max || scale);
+      return h('line', { key: 'g' + i, x1: x1.toFixed(1), y1: y1.toFixed(1), x2: x2.toFixed(1), y2: y2.toFixed(1), stroke: 'var(--green)', 'stroke-opacity': 0.28, 'stroke-width': 9, 'stroke-linecap': 'round' });
+    }),
+    h('polygon', { points: pts(axes.map((a) => a.main + a.helper)), fill: 'color-mix(in srgb, var(--accent) 28%, transparent)', stroke: 'var(--accent)', 'stroke-width': 2, 'stroke-linejoin': 'round' }),
+    h('polygon', { points: pts(axes.map((a) => a.main)), fill: 'color-mix(in srgb, var(--accent) 55%, transparent)', stroke: 'none' }),
+    ...axes.map((a, i) => { const [x, y] = pt(i, a.main + a.helper); return h('circle', { key: 'd' + i, cx: x.toFixed(1), cy: y.toFixed(1), r: a.key === selected ? 4.5 : 3, fill: 'var(--accent)' }); }),
+    ...levels.map((v) => h('text', { key: 'l' + v, x: (cx + ((R * v) / scale) * Math.cos(lblA)).toFixed(1), y: (cy + ((R * v) / scale) * Math.sin(lblA) + 3).toFixed(1), 'text-anchor': 'middle', 'font-size': 9.5, fill: 'var(--muted)' }, String(v))),
+    ...axes.map((a, i) => {
+      const c = Math.cos(ang(i)), s = Math.sin(ang(i));
+      const x = cx + (R + 10) * c, y = cy + (R + 10) * s + (s > 0.3 ? 9 : s < -0.3 ? -2 : 4);
+      const anchor = c > 0.05 ? 'start' : c < -0.05 ? 'end' : 'middle';
+      const color = a.status === 'low' ? 'var(--yellow)' : 'var(--text)';
+      return h('text', {
+        key: 't' + a.key, x: x.toFixed(1), y: y.toFixed(1), 'text-anchor': anchor, 'font-size': 11.5,
+        'font-weight': a.key === selected ? 800 : 600, fill: color, style: { cursor: 'pointer' },
+        onclick: onPick ? () => onPick(a.key) : undefined,
+      }, a.label);
+    }),
+  ]);
+}
+
 // ---------- Drag to reorder ----------
 /**
  * Use on a drag handle: onpointerdown: (e) => startDrag(e, (from, to) => …)

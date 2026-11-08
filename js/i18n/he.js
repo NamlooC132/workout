@@ -215,7 +215,7 @@ export const DICT = {
   'Avg / week': 'ממוצע לשבוע', 'last 12 wks': '12 שבועות אחרונים', 'Previous month': 'החודש הקודם', 'Next month': 'החודש הבא',
   'Planned': 'מתוכנן', 'Missed': 'פוספס', 'No sets logged in this period': 'לא נרשמו סטים בתקופה הזו', 'Every muscle hit its target 🎯': 'כל השרירים הגיעו ליעד 🎯',
   'Finish a workout to see your muscle volume.': 'סיים אימון כדי לראות את נפח השרירים.', 'Nice balance – keep it up.': 'איזון יפה – תמשיך כך.',
-  'Am I training every muscle enough?': 'האם אני מאמן מספיק כל שריר?', 'Main muscle': 'שריר עיקרי', 'Helper muscle': 'שריר עוזר', 'Edit targets': 'עריכת יעדים',
+  'Am I training every muscle enough?': 'האם אני מאמן מספיק כל שריר?', 'Main muscle': 'שריר עיקרי', 'List': 'רשימה', 'Spider chart': 'גרף רדאר', 'Tap a muscle name to see its last 12 weeks. Yellow = below target.': 'הקש על שם שריר כדי לראות את 12 השבועות האחרונים שלו. צהוב = מתחת ליעד.', 'Helper muscle': 'שריר עוזר', 'Edit targets': 'עריכת יעדים',
   'Sets per muscle (avg per week)': 'סטים לשריר (ממוצע לשבוע)',
   'Volume = completed hard sets (warm-ups excluded). A set counts 1 for its main muscles and 0.5 for helper muscles by default. It’s a useful training guide, not a measurement of how much muscle you build – sleep, food, effort and recovery matter too.': 'נפח = סטים קשים שהושלמו (בלי חימום). סט נחשב 1 לשרירים העיקריים שלו ו-0.5 לשרירים העוזרים כברירת מחדל. זה כלי עזר לאימון, לא מדידה של כמה שריר בנית – שינה, תזונה, מאמץ והתאוששות חשובים גם הם.',
   'No exercise history yet': 'אין עדיין היסטוריית תרגילים', 'Finish a workout to see charts and records here.': 'סיים אימון כדי לראות כאן גרפים ושיאים.',
@@ -535,10 +535,10 @@ export const PATTERNS = [
   [/^(\d+) trained$/, '$1 התאמנת'], [/^(\d+) planned$/, '$1 מתוכנן'],
   [/^Week of (.+)$/, 'שבוע של $1'],
   [/^(\d+) of (\d+) muscles on target$/, '$1 מתוך $2 שרירים ביעד'],
-  [/^Below target: (.+?)(…?)\.$/, (g, t) => `מתחת ליעד: ${g[1].split(', ').map(t).join(', ')}${g[2]}.`],
+  [/^Below target: (.+?)(…|\.)$/, (g, t) => `מתחת ליעד: ${g[1].split(', ').map(t).join(', ')}${g[2]}`],
   [/^([\d.,]+) sets total(?: · ([\d.,]+) \/ week)?$/, (g) => `${g[1]} סטים בסה״כ${g[2] ? ` · ${g[2]} לשבוע` : ''}`],
-  [/^([\d.,]+) direct · ([\d.,]+) indirect(?: · ([+−-]?[\d.,]+) vs previous (week|month))?$/, (g) =>
-    `${g[1]} ישיר · ${g[2]} עקיף${g[3] ? ` · ${g[3]} לעומת ${g[4] === 'week' ? 'השבוע הקודם' : 'החודש הקודם'}` : ''}`],
+  [/^([\d.,]+) main · ([\d.,]+) helper(?: · ([+−-]?[\d.,]+) vs previous (week|month))?$/, (g) =>
+    `${g[1]} עיקרי · ${g[2]} עוזר${g[3] ? ` · ${g[3]} לעומת ${g[4] === 'week' ? 'השבוע הקודם' : 'החודש הקודם'}` : ''}`],
   [/^(.+) – last 12 weeks$/, '$1 – 12 שבועות אחרונים'],
   [/^(\d+) of (\d+) going up$/, '$1 מתוך $2 בעלייה'],
   [/^(\d+) sessions$/, '$1 אימונים'],

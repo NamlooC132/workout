@@ -4,7 +4,7 @@ import { readinessSeries } from '../logic/readiness.js';
 import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
 import { data, ui, update, openSheet, closeSheet, saveMeasurement, deleteMeasurement, saveSettings, confirm, toast, history, doneWorkouts, cached } from '../store.js';
-import { Page, Section, Row, Empty, Button, IconButton, Segmented, Sheet, NumberField, Thumb, Chip, LineChart, BarChart, TargetBar, nav, fmtW, fmtDate, relDay } from './components.js';
+import { Page, Section, Row, Empty, Button, IconButton, Segmented, Sheet, NumberField, Thumb, Chip, LineChart, BarChart, TargetBar, SpiderChart, nav, fmtW, fmtDate, relDay } from './components.js';
 import { fmtNum, addDays, startOfWeek, startOfMonth, addMonths, dateKey, uid, parseDateKey, startOfDay, plural } from '../logic/util.js';
 import { allMuscles, muscleName } from '../logic/muscles.js';
 import { volumeBetween, weekRange, weeklySeries, monthRange, targetStatus } from '../logic/volume.js';
@@ -211,10 +211,11 @@ function Volume(st) {
   const trend = weeklySeries(data.workouts, Date.now(), 12, s);
 
   const per = isWeek ? 1 : weeks;
+  const spider = s.volumeView === 'spider';
   const stat = rows.map((r) => ({ ...r, st: targetStatus(r.v.total / per, s.volumeTargets[r.m.key]) }));
   const low = stat.filter((r) => r.st === 'low'), ok = stat.filter((r) => r.st === 'ok'), withT = stat.filter((r) => r.st !== 'none');
   const volT = total === 0 ? 'No sets logged in this period' : low.length === 0 ? 'Every muscle hit its target 🎯' : `${ok.length} of ${withT.length} muscles on target`;
-  const volS = total === 0 ? 'Finish a workout to see your muscle volume.' : low.length ? `Below target: ${low.slice(0, 4).map((r) => r.m.name).join(', ')}${low.length > 4 ? '…' : ''}.` : 'Nice balance – keep it up.';
+  const volS = total === 0 ? 'Finish a workout to see your muscle volume.' : low.length ? `Below target: ${low.slice(0, 4).map((r) => r.m.name).join(', ')}${low.length > 4 ? '…' : '.'}` : 'Nice balance – keep it up.';
 
   return h('div', [
     h('section.insight', [h('div.iq', 'Am I training every muscle enough?'), h('div.it', volT), h('div.is', volS)]),
@@ -229,10 +230,18 @@ function Volume(st) {
       h('span', [h('i', { style: { background: 'color-mix(in srgb, var(--accent) 40%, transparent)' } }), 'Helper muscle']),
       h('span', [h('i', { style: { background: 'var(--green-soft)', border: '1px solid var(--green)' } }), 'Target']),
     ]),
+    h(Segmented, { small: true, value: spider ? 'spider' : 'list', onChange: (v) => saveSettings({ volumeView: v }), options: [{ value: 'list', label: 'List' }, { value: 'spider', label: 'Spider chart' }] }),
     h(Section, {
       right: h('button.link-btn', { style: { minHeight: 'auto', padding: 0, textTransform: 'none', letterSpacing: 0, fontSize: '13px' }, onclick: () => openSheet({ type: 'targets' }) }, 'Edit targets'),
       title: isWeek ? 'Sets per muscle' : 'Sets per muscle (avg per week)',
-    }, rows.map(({ m, v, p }) => {
+      footer: spider ? 'Tap a muscle name to see its last 12 weeks. Yellow = below target.' : null,
+    }, spider
+      ? h('div.spider-wrap', h(SpiderChart, {
+        axes: stat.map((r) => ({ key: r.m.key, label: r.m.name, main: r.v.direct / per, helper: r.v.indirect / per, target: s.volumeTargets[r.m.key] || null, status: r.st })),
+        maxScale, selected: st.muscle,
+        onPick: (k) => { st.muscle = k; update(); setTimeout(() => document.getElementById('trend')?.scrollIntoView({ behavior: 'smooth' }), 50); },
+      }))
+      : rows.map(({ m, v, p }) => {
       const per = isWeek ? 1 : weeks;
       const val = v.total / per;
       const tgt = s.volumeTargets[m.key];
@@ -248,7 +257,7 @@ function Volume(st) {
           tgt && (tgt.min || tgt.max) && h('span.muted.small', `/ ${tgt.min || 0}–${tgt.max || '∞'}`),
         ]),
         h(TargetBar, { direct: v.direct / per, indirect: v.indirect / per, target: tgt, maxScale }),
-        h('div.muted.small', { style: { marginTop: '4px' } }, `${fmtNum(v.direct / per, 1)} direct · ${fmtNum(v.indirect / per, 1)} indirect${delta ? ` · ${delta > 0 ? '+' : ''}${fmtNum(delta, 1)} vs previous ${isWeek ? 'week' : 'month'}` : ''}`),
+        h('div.muted.small', { style: { marginTop: '4px' } }, `${fmtNum(v.direct / per, 1)} main · ${fmtNum(v.indirect / per, 1)} helper${delta ? ` · ${delta > 0 ? '+' : ''}${fmtNum(delta, 1)} vs previous ${isWeek ? 'week' : 'month'}` : ''}`),
       ]);
     })),
     h('div#trend', h(Section, { title: `${muscleName(st.muscle, s)} – last 12 weeks` }, [
