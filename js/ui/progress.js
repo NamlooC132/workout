@@ -227,7 +227,7 @@ function Volume(st) {
     ]),
     h('div.legend', { style: { margin: '6px 4px' } }, [
       h('span', [h('i', { style: { background: 'var(--accent)' } }), 'Main muscle']),
-      h('span', [h('i', { style: { background: 'color-mix(in srgb, var(--accent) 40%, transparent)' } }), 'Helper muscle']),
+      h('span', [h('i', { style: { background: 'var(--helper)' } }), 'Helper muscle']),
       !spider && h('span', [h('i', { style: { background: 'var(--green-soft)', border: '1px solid var(--green)' } }), 'Target']),
     ]),
     h(Segmented, { small: true, value: spider ? 'spider' : 'list', onChange: (v) => saveSettings({ volumeView: v }), options: [{ value: 'list', label: 'List' }, { value: 'spider', label: 'Spider chart' }] }),

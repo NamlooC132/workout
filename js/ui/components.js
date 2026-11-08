@@ -321,8 +321,8 @@ export function SpiderChart({ axes, selected, onPick }) {
   return h('svg.spider', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Sets per muscle', direction: 'ltr' }, [
     ...levels.map((v) => h('polygon', { key: 'r' + v, points: ring(v), fill: 'none', stroke: 'var(--sep)', 'stroke-width': v === scale ? 1.2 : 0.8 })),
     ...axes.map((_, i) => { const [x, y] = pt(i, scale); return h('line', { key: 's' + i, x1: cx, y1: cy, x2: x.toFixed(1), y2: y.toFixed(1), stroke: 'var(--sep)', 'stroke-width': 0.8 }); }),
-    h('polygon', { points: pts(axes.map((a) => a.main + a.helper)), fill: 'color-mix(in srgb, var(--accent) 28%, transparent)', stroke: 'var(--accent)', 'stroke-width': 2, 'stroke-linejoin': 'round' }),
-    h('polygon', { points: pts(axes.map((a) => a.main)), fill: 'color-mix(in srgb, var(--accent) 55%, transparent)', stroke: 'none' }),
+    h('polygon', { points: pts(axes.map((a) => a.main + a.helper)), fill: 'color-mix(in srgb, var(--helper) 55%, transparent)', stroke: 'var(--accent)', 'stroke-width': 2, 'stroke-linejoin': 'round' }),
+    h('polygon', { points: pts(axes.map((a) => a.main)), fill: 'color-mix(in srgb, var(--accent) 80%, transparent)', stroke: 'none' }),
     ...axes.map((a, i) => { const [x, y] = pt(i, a.main + a.helper); return h('circle', { key: 'd' + i, cx: x.toFixed(1), cy: y.toFixed(1), r: a.key === selected ? 4.5 : 3, fill: 'var(--accent)' }); }),
     ...levels.map((v) => h('text', { key: 'l' + v, x: (cx + ((R * v) / scale) * Math.cos(lblA)).toFixed(1), y: (cy + ((R * v) / scale) * Math.sin(lblA) + 3).toFixed(1), 'text-anchor': 'middle', 'font-size': 9.5, fill: 'var(--muted)' }, String(v))),
     ...axes.map((a, i) => {

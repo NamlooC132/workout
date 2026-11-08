@@ -980,3 +980,9 @@ select.select { border-radius: 8px; min-height: 36px; }
 .spider-wrap { padding: 4px 6px 0; }
 .spider { display: block; width: 100%; height: auto; max-width: 440px; margin: 0 auto; overflow: visible; font-family: inherit; }
 .spider text { user-select: none; -webkit-user-select: none; }
+
+/* 1.32.2: helper-muscle sets = same green, lighter – easy to tell from main sets and from the target zone */
+:root { --helper: color-mix(in srgb, var(--accent) 50%, #ffffff); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --helper: color-mix(in srgb, var(--accent) 55%, #ffffff); } }
+:root[data-theme="dark"] { --helper: color-mix(in srgb, var(--accent) 55%, #ffffff); }
+.tbar-indirect { background: var(--helper); box-shadow: inset 2px 0 0 rgba(0, 0, 0, 0.18); }
