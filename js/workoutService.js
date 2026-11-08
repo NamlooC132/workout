@@ -77,7 +77,7 @@ export function startWorkout(routine) {
   const w = {
     id: uid(),
     routineId: routine ? routine.id : null,
-    routineName: routine ? routine.name : 'Quick workout',
+    routineName: routine ? routine.name : 'Empty workout',
     startedAt: Date.now(),
     endedAt: null,
     status: 'active',

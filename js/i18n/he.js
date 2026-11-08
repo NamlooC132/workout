@@ -231,8 +231,8 @@ export const DICT = {
   // ---------- Routines (home) ----------
   'A workout is already in progress': 'כבר יש אימון פעיל', 'Resume current workout': 'חזור לאימון הנוכחי', 'Planned for today': 'מתוכנן להיום',
   'Suggested': 'מומלץ', 'New routine': 'תוכנית חדשה', 'Edit routines': 'עריכת תוכניות', 'Ready when you are': 'מוכן כשאתה מוכן',
-  'Quick workout': 'אימון מהיר', 'Start training': 'התחל להתאמן', 'Start workout': 'התחל אימון', 'Choose another routine': 'בחר תוכנית אחרת',
-  'Start quick workout': 'התחל אימון מהיר', 'Workout in progress': 'אימון בתהליך', 'Continue workout': 'המשך אימון', 'Done today ✓': 'בוצע היום ✓',
+  'Empty workout': 'אימון ריק', 'Start training': 'התחל להתאמן', 'Start workout': 'התחל אימון', 'Choose another routine': 'בחר תוכנית אחרת',
+  'Start empty workout': 'התחל אימון ריק', 'Workout in progress': 'אימון בתהליך', 'Continue workout': 'המשך אימון', 'Done today ✓': 'בוצע היום ✓',
   'Rest day – recover well. You can still start any routine.': 'יום מנוחה – תתאושש טוב. אפשר עדיין להתחיל כל תוכנית.',
   'No routines yet': 'אין תוכניות עדיין', 'Create a routine once, then just tap Start workout.': 'צור תוכנית פעם אחת, ואז פשוט הקש "התחל אימון".',
   'Drag ≡ to reorder · ⋯ for options': 'גרור ≡ כדי לסדר · ⋯ לאפשרויות', 'My routines': 'התוכניות שלי',
