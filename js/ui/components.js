@@ -298,14 +298,14 @@ export function TargetBar({ direct, indirect, target, maxScale }) {
 
 /**
  * Spider (radar) chart of sets per muscle – one spoke per muscle.
- * axes: [{ key, label, main, helper, target: {min,max}|null, status: 'low'|'ok'|'high'|'none' }]
- * Dark fill = main-muscle sets, light fill = + helper sets, green stripe on each spoke = target range.
+ * axes: [{ key, label, main, helper, status: 'low'|'ok'|'high'|'none' }]
+ * Dark fill = main-muscle sets, light fill = + helper sets. Names below target are yellow.
  */
-export function SpiderChart({ axes, maxScale, selected, onPick }) {
+export function SpiderChart({ axes, selected, onPick }) {
   const n = axes.length;
   if (n < 3) return null;
   const W = 400, H = 390, cx = 200, cy = 195, R = 120;
-  const raw = Math.max(1, maxScale || 0, ...axes.map((a) => a.main + a.helper));
+  const raw = Math.max(1, ...axes.map((a) => a.main + a.helper));
   const stepV = raw <= 4 ? 1 : raw <= 8 ? 2 : raw <= 20 ? 5 : 10;
   const scale = Math.ceil(raw / stepV) * stepV;
   const ang = (i) => -Math.PI / 2 + (i * 2 * Math.PI) / n;
@@ -315,19 +315,12 @@ export function SpiderChart({ axes, maxScale, selected, onPick }) {
   };
   const pts = (vals) => vals.map((v, i) => pt(i, v).map((x) => x.toFixed(1)).join(',')).join(' ');
   const ring = (v) => axes.map((_, i) => pt(i, v).map((x) => x.toFixed(1)).join(',')).join(' ');
-  const hasT = (a) => a.target && (a.target.min || a.target.max);
   const lblA = -Math.PI / 2 + Math.PI / n; // ring numbers sit between the first two spokes
   const levels = [];
   for (let v = stepV; v <= scale; v += stepV) levels.push(v);
   return h('svg.spider', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Sets per muscle', direction: 'ltr' }, [
     ...levels.map((v) => h('polygon', { key: 'r' + v, points: ring(v), fill: 'none', stroke: 'var(--sep)', 'stroke-width': v === scale ? 1.2 : 0.8 })),
     ...axes.map((_, i) => { const [x, y] = pt(i, scale); return h('line', { key: 's' + i, x1: cx, y1: cy, x2: x.toFixed(1), y2: y.toFixed(1), stroke: 'var(--sep)', 'stroke-width': 0.8 }); }),
-    // Target range: a thick green stripe on each spoke, from min to max sets.
-    ...axes.map((a, i) => {
-      if (!hasT(a)) return null;
-      const [x1, y1] = pt(i, a.target.min || 0), [x2, y2] = pt(i, a.target.max || scale);
-      return h('line', { key: 'g' + i, x1: x1.toFixed(1), y1: y1.toFixed(1), x2: x2.toFixed(1), y2: y2.toFixed(1), stroke: 'var(--green)', 'stroke-opacity': 0.28, 'stroke-width': 9, 'stroke-linecap': 'round' });
-    }),
     h('polygon', { points: pts(axes.map((a) => a.main + a.helper)), fill: 'color-mix(in srgb, var(--accent) 28%, transparent)', stroke: 'var(--accent)', 'stroke-width': 2, 'stroke-linejoin': 'round' }),
     h('polygon', { points: pts(axes.map((a) => a.main)), fill: 'color-mix(in srgb, var(--accent) 55%, transparent)', stroke: 'none' }),
     ...axes.map((a, i) => { const [x, y] = pt(i, a.main + a.helper); return h('circle', { key: 'd' + i, cx: x.toFixed(1), cy: y.toFixed(1), r: a.key === selected ? 4.5 : 3, fill: 'var(--accent)' }); }),

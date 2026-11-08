@@ -228,7 +228,7 @@ function Volume(st) {
     h('div.legend', { style: { margin: '6px 4px' } }, [
       h('span', [h('i', { style: { background: 'var(--accent)' } }), 'Main muscle']),
       h('span', [h('i', { style: { background: 'color-mix(in srgb, var(--accent) 40%, transparent)' } }), 'Helper muscle']),
-      h('span', [h('i', { style: { background: 'var(--green-soft)', border: '1px solid var(--green)' } }), 'Target']),
+      !spider && h('span', [h('i', { style: { background: 'var(--green-soft)', border: '1px solid var(--green)' } }), 'Target']),
     ]),
     h(Segmented, { small: true, value: spider ? 'spider' : 'list', onChange: (v) => saveSettings({ volumeView: v }), options: [{ value: 'list', label: 'List' }, { value: 'spider', label: 'Spider chart' }] }),
     h(Section, {
@@ -237,8 +237,8 @@ function Volume(st) {
       footer: spider ? 'Tap a muscle name to see its last 12 weeks. Yellow = below target.' : null,
     }, spider
       ? h('div.spider-wrap', h(SpiderChart, {
-        axes: stat.map((r) => ({ key: r.m.key, label: r.m.name, main: r.v.direct / per, helper: r.v.indirect / per, target: s.volumeTargets[r.m.key] || null, status: r.st })),
-        maxScale, selected: st.muscle,
+        axes: stat.map((r) => ({ key: r.m.key, label: r.m.name, main: r.v.direct / per, helper: r.v.indirect / per, status: r.st })),
+        selected: st.muscle,
         onPick: (k) => { st.muscle = k; update(); setTimeout(() => document.getElementById('trend')?.scrollIntoView({ behavior: 'smooth' }), 50); },
       }))
       : rows.map(({ m, v, p }) => {
