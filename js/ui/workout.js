@@ -165,6 +165,7 @@ function ExerciseCard({ w, entry, index, st }) {
         h('div.last-time', entry.lastSummary ? `Last: ${setsSummary(entry.lastSummary.sets, snap)}` : `First time · aim for ${snap.repMin}–${snap.repMax} reps`),
         entry.lastSummary && h('div.last-time.goal-line', perSetRule ? `Goal: ${goals.join(', ')} reps` : `Goal: ${snap.repMin}–${snap.repMax} reps`),
         !entry.lastSummary && perSetRule && h('div.last-time.goal-line', `Goal: ${goals.join(', ')} reps`),
+        h('div.last-time.rest-line', [icon('timer', 13), h('span', 'Rest'), h('span', fmtClock(snap.rest || data.settings.defaultRest || 90))]),
       ]),
       h(IconButton, { name: 'info', label: `How to do ${snap.name}`, class: 'howto-btn', onClick: () => openSheet({ type: 'howTo', name: snap.name, exerciseId: entry.exerciseId }) }),
       h(IconButton, { name: 'more', label: 'Exercise options', onClick: () => entryMenu(w, entry) }),
@@ -418,7 +419,7 @@ export function FinishSummarySheet(sheet) {
   if (!w) return null;
   const sets = w.entries.reduce((t, e) => t + e.sets.filter((s) => s.done && s.type !== 'warmup').length, 0);
   const prs = sheet.prs || [];
-  return h(Sheet, { title: 'Workout complete' }, [
+  return h(Sheet, { title: 'Workout complete', left: h('button.link-btn', { onclick: closeSheet }, 'Back') }, [
     h('div.center', { style: { fontSize: '42px', margin: '6px 0 2px' } }, prs.length ? '🏆' : '💪'),
     h('div.center', { style: { fontSize: '21px', fontWeight: 800, marginBottom: '14px' } }, w.routineName),
     h('div.summary-strip', { style: { gridTemplateColumns: 'repeat(2, 1fr)' } }, [

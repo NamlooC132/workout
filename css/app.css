@@ -986,3 +986,7 @@ select.select { border-radius: 8px; min-height: 36px; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --helper: color-mix(in srgb, var(--accent) 55%, #ffffff); } }
 :root[data-theme="dark"] { --helper: color-mix(in srgb, var(--accent) 55%, #ffffff); }
 .tbar-indirect { background: var(--helper); box-shadow: inset 2px 0 0 rgba(0, 0, 0, 0.18); }
+
+/* 1.32.3: rest time under each exercise name */
+.rest-line { display: flex; align-items: center; gap: 4px; }
+.rest-line svg { flex: none; opacity: 0.8; }
