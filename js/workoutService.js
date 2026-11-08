@@ -666,9 +666,13 @@ const fmtSec = (s) => (s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStar
 const normProg = (p) => Object.fromEntries(Object.entries(p || {}).filter(([, v]) => v !== null && v !== undefined).sort(([a], [b]) => a.localeCompare(b)));
 
 /** Saves workout changes for next time: into the routine (this routine only) or the library exercise. */
+/** Saves the changes; returns what is needed to undo them (see undoLiveChanges). */
 export function saveLiveChanges(w, changes) {
   const routine = w.routineId ? data.routines.find((r) => r.id === w.routineId) : null;
   const keys = ['sets', 'warmupSets', 'dropSets', ...LIVE_KEYS, 'progression'];
+  const backup = routine
+    ? { routine: deepClone(routine) }
+    : { exercises: changes.map((c) => data.exercises.find((x) => x.id === c.exerciseId)).filter(Boolean).map(deepClone) };
   if (routine) {
     const items = routine.items.map((it) => {
       const c = changes.find((x) => x.exerciseId === it.exerciseId);
@@ -688,5 +692,16 @@ export function saveLiveChanges(w, changes) {
       const ex = data.exercises.find((x) => x.id === c.exerciseId);
       if (ex) saveExercise({ ...ex, ...deepClone(Object.fromEntries(keys.map((k) => [k, c.values[k]]))) });
     }
+  }
+  return backup;
+}
+
+/** Puts the routine / exercises back the way they were before saveLiveChanges. */
+export function undoLiveChanges(backup) {
+  if (!backup) return;
+  if (backup.routine) {
+    if (data.routines.some((r) => r.id === backup.routine.id)) saveRoutine(backup.routine);
+  } else {
+    for (const ex of backup.exercises || []) if (data.exercises.some((x) => x.id === ex.id)) saveExercise(ex);
   }
 }

@@ -497,8 +497,16 @@ export function SaveWorkoutChangesSheet(sheet) {
       key: i, title: l.label, right: l.from === '' && l.to === '' ? h('span.muted', 'changed') : h('span', [h('span.muted', String(l.from)), '  →  ', h('b', String(l.to))]),
     })))),
     h('div.pad.vstack', { style: { gap: '10px' } }, [
-      h(Button, { block: true, onClick: () => { if (w) WS.saveLiveChanges(w, sheet.changes); toast(routine ? `Saved in ${routine.name}` : 'Changes saved'); next(); } }, 'Save changes'),
-      h(Button, { kind: 'secondary', block: true, onClick: next }, 'Don’t save'),
+      // Back from the summary returns here, so both buttons can be pressed again:
+      // Save only once, and "Don't save" after a save puts everything back.
+      h(Button, { block: true, onClick: () => {
+        if (w && !sheet.saved) { sheet.saved = WS.saveLiveChanges(w, sheet.changes); toast(routine ? `Saved in ${routine.name}` : 'Changes saved'); }
+        next();
+      } }, sheet.saved ? '✓ Changes saved' : 'Save changes'),
+      h(Button, { kind: 'secondary', block: true, onClick: () => {
+        if (sheet.saved) { WS.undoLiveChanges(sheet.saved); sheet.saved = null; toast('Changes not saved'); }
+        next();
+      } }, 'Don’t save'),
     ]),
   ]);
 }

@@ -58,7 +58,7 @@ export const DICT = {
   'Changes are for this workout.': 'השינויים הם לאימון הזה.', 'When you finish the workout, you can save them for next time.': 'כשתסיים את האימון, תוכל לשמור אותם לפעם הבאה.',
   'Updated for this workout': 'עודכן לאימון הזה', 'Save changes?': 'לשמור שינויים?',
   'You changed these exercises during the workout. Save them for next time?': 'שינית את התרגילים האלה במהלך האימון. לשמור אותם לפעם הבאה?',
-  'Save changes': 'שמור שינויים', 'Don’t save': 'אל תשמור', 'Changes saved': 'השינויים נשמרו', 'changed': 'שונה',
+  'Save changes': 'שמור שינויים', 'Don’t save': 'אל תשמור', 'Changes saved': 'השינויים נשמרו', '✓ Changes saved': '✓ השינויים נשמרו', 'Changes not saved': 'השינויים לא נשמרו', 'changed': 'שונה',
   'Working sets': 'סטים', 'Drop sets': 'סטי דרופ', 'Rep range': 'טווח חזרות', 'Rest': 'מנוחה', '− / + step': 'קפיצת − / +',
   'Overload rule': 'כלל העומס', 'One side at a time': 'צד אחד בכל פעם', 'Note for this workout': 'הערה לאימון הזה', 'Only for this workout': 'רק לאימון הזה',
   'On': 'פועל',
