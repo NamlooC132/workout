@@ -10,7 +10,7 @@ import { routineSummary } from '../logic/analytics.js';
 import { lastSession } from '../logic/history.js';
 import { evaluateProgression, setGoals, progressionStep } from '../logic/progression.js';
 import { fmtNum } from '../logic/util.js';
-import { activeBlock, blockWeek, isDeloadWeek, plannedRoutineIds } from '../logic/blocks.js';
+import { activeBlock, blockWeek, isDeloadWeek, plannedRoutineIds, PLAN_RUN, PLAN_YOGA } from '../logic/blocks.js';
 import { fmtClock, uid, deepClone } from '../logic/util.js';
 import { REST_STEP, REST_MIN, REST_MAX } from '../logic/restTimer.js';
 import { TEMPLATES } from '../logic/samples.js';
@@ -82,6 +82,11 @@ export function RoutinesScreen() {
   const todayIds = plannedRoutineIds(data.blocks, Date.now());
   const todayRoutines = todayIds.map((id) => data.routines.find((r) => r.id === id)).filter(Boolean);
   const doneTodayIds = new Set(doneWorkouts().filter((w) => new Date(w.startedAt).toDateString() === new Date().toDateString()).map((w) => w.routineId));
+  const isToday = (ms) => new Date(ms).toDateString() === new Date().toDateString();
+  const todayExtras = [
+    todayIds.includes(PLAN_RUN) && { id: PLAN_RUN, name: 'Run', icon: 'run', done: data.workouts.some((w) => w.kind === 'run' && w.status === 'done' && isToday(w.startedAt)), go: () => openSheet({ type: 'logRun' }), goLabel: 'Log a run' },
+    todayIds.includes(PLAN_YOGA) && { id: PLAN_YOGA, name: 'Yoga', icon: 'yoga', done: (data.yogaSessions || []).some((s) => isToday(s.date)), go: () => nav('/yoga/log'), goLabel: 'Log yoga' },
+  ].filter(Boolean);
 
   const reorder = (folder, from, to) => {
     const group = moveItem(byFolder.get(folder), from, to);
@@ -138,8 +143,14 @@ export function RoutinesScreen() {
 
     // 3. Today's routine (from the training plan) – one tap starts it
     block && !st.edit && h(Section, { title: `Today · ${block.name} week ${blockWeek(block)}${isDeloadWeek(block) ? ' · deload' : ''}` },
-      todayRoutines.length
-        ? todayRoutines.map((r) => RoutineRow(r, doneTodayIds.has(r.id) ? 'Done today ✓' : routineLine(r), { st }))
+      todayRoutines.length || todayExtras.length
+        ? [
+          ...todayRoutines.map((r) => RoutineRow(r, doneTodayIds.has(r.id) ? 'Done today ✓' : routineLine(r), { st })),
+          ...todayExtras.map((x) => h('div.rt-row', { key: x.id }, [
+            h('button.rt-main', { onclick: x.go }, [h('div.rt-name', { style: { display: 'flex', alignItems: 'center', gap: '6px' } }, [icon(x.icon, 18), h('span', x.name)]), h('div.rt-sub', x.done ? 'Done today ✓' : 'Planned for today')]),
+            h('button.rt-play', { onclick: x.go, 'aria-label': x.goLabel }, icon('plus', 20)),
+          ])),
+        ]
         : h('div.pad.muted', 'Rest day – recover well. You can still start any routine.')),
 
     routines.length === 0 && h(Empty, {

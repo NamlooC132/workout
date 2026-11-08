@@ -52,7 +52,7 @@ function Overview(st) {
   let adh = null;
   if (block) {
     const r = blockRange(block);
-    adh = adherence(planVsDone(data.blocks, data.workouts, r.from, Math.min(r.to, addDays(startOfDay(now), 1))), now);
+    adh = adherence(planVsDone(data.blocks, data.workouts, r.from, Math.min(r.to, addDays(startOfDay(now), 1)), data.yogaSessions || []), now);
   }
 
   const trend = cached('trend', () => strengthTrend(history(), data.measurements, now));
@@ -155,12 +155,12 @@ function Calendar(st) {
   const ws = data.settings.weekStart;
   const gridStart = startOfWeek(base, ws);
   const monthEnd = addMonths(base, 1);
-  const days = planVsDone(data.blocks, data.workouts, gridStart, addDays(gridStart, 42));
+  const days = planVsDone(data.blocks, data.workouts, gridStart, addDays(gridStart, 42), data.yogaSessions || []);
   const today = dateKey(Date.now());
   const dows = [...Array(7)].map((_, i) => new Date(addDays(gridStart, i)).toLocaleDateString(undefined, { weekday: 'narrow' }));
   const now = Date.now();
   const inMonth = days.filter((d) => d.date >= base && d.date < monthEnd);
-  const doneCount = inMonth.filter((d) => d.done.length).length;
+  const doneCount = inMonth.filter((d) => d.done.length || d.yoga.length).length;
   return h(Section, {
     title: new Date(base).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }),
     right: h('span.hstack', { style: { gap: 0 } }, [
@@ -171,15 +171,15 @@ function Calendar(st) {
   }, h('div.cal', [
     ...dows.map((d, i) => h('div.dow', { key: 'd' + i }, d)),
     ...days.slice(0, days[35] && days[35].date >= monthEnd ? 35 : 42).map((d) => {
-      const isDone = d.done.length > 0;
+      const isDone = d.done.length > 0 || d.yoga.length > 0;
       const planned = d.planned.length > 0;
       const missed = planned && !isDone && d.date < startOfDay(now);
       return h('button', {
         key: d.key,
         class: cx('day', (d.date < base || d.date >= monthEnd) && 'other', d.key === today && 'today', isDone && 'done', !isDone && planned && !missed && 'planned', missed && 'missed'),
-        onclick: isDone ? () => nav('/workout/' + d.done[0].id) : null,
+        onclick: d.done.length ? () => nav('/workout/' + d.done[0].id) : d.yoga.length ? () => nav('/yoga') : null,
         'aria-label': `${d.key}${isDone ? ' trained' : planned ? ' planned' : ''}`,
-      }, [new Date(d.date).getDate(), d.done.length > 1 && h('span.dot')]);
+      }, [new Date(d.date).getDate(), d.done.length + d.yoga.length > 1 && h('span.dot')]);
     }),
   ]));
 }

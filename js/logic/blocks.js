@@ -37,7 +37,19 @@ export function isDeloadWeek(block, ms = Date.now()) {
   return wk !== null && (block.deloadWeeks || []).includes(wk);
 }
 
-/** Routine ids planned on a given day by whichever block covers it. */
+/** Besides routine ids, a day's schedule can hold these two: a run, or a yoga session. */
+export const PLAN_RUN = 'run';
+export const PLAN_YOGA = 'yoga';
+export const planItemName = (id, routinesById) => (id === PLAN_RUN ? 'Run' : id === PLAN_YOGA ? 'Yoga' : routinesById.get(id)?.name || '?');
+
+/** Was this planned item (routine id, run or yoga) done on that day? */
+export function planItemDone(day, id) {
+  if (id === PLAN_RUN) return day.done.some((w) => w.kind === 'run');
+  if (id === PLAN_YOGA) return (day.yoga || []).length > 0;
+  return day.done.some((w) => w.routineId === id);
+}
+
+/** Routine ids (plus 'run' / 'yoga') planned on a given day by whichever block covers it. */
 export function plannedRoutineIds(blocks, ms) {
   const b = activeBlock(blocks, ms);
   if (!b) return [];
@@ -50,12 +62,13 @@ export function plannedRoutineIds(blocks, ms) {
  * A planned routine counts as completed if a finished workout of that routine (or any workout,
  * when the routine isn't found) happened that day.
  */
-export function planVsDone(blocks, workouts, from, to) {
+export function planVsDone(blocks, workouts, from, to, yogaSessions = []) {
   const days = [];
   for (let d = startOfDay(from); d < to; d = addDays(d, 1)) {
     const key = dateKey(d);
     const done = workouts.filter((w) => w.status === 'done' && dateKey(w.startedAt) === key);
-    days.push({ date: d, key, planned: plannedRoutineIds(blocks, d), done });
+    const yoga = yogaSessions.filter((s) => dateKey(s.date) === key);
+    days.push({ date: d, key, planned: plannedRoutineIds(blocks, d), done, yoga });
   }
   return days;
 }
@@ -66,7 +79,7 @@ export function adherence(days, now = Date.now()) {
     if (d.date > now) continue;
     for (const rid of d.planned) {
       planned++;
-      if (d.done.some((w) => w.routineId === rid)) completed++;
+      if (planItemDone(d, rid)) completed++;
     }
   }
   return { planned, completed };

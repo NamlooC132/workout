@@ -198,7 +198,7 @@ export const DICT = {
   'Blocks': 'בלוקים', 'Training block': 'בלוק אימונים', 'Block created': 'הבלוק נוצר', 'Block saved': 'הבלוק נשמר', 'Edit block': 'עריכת בלוק',
   'Block name, e.g. Hypertrophy Block 1': 'שם הבלוק, למשל: היפרטרופיה 1', 'Phase': 'שלב', 'Starts': 'מתחיל', 'Length': 'אורך', 'Deload weeks': 'שבועות דילואוד',
   'In a deload week, weight suggestions pause and workouts offer a one-tap “Apply deload” (half the sets, ~10 % lighter).': 'בשבוע דילואוד הצעות המשקל נעצרות ובאימון יופיע כפתור "החל דילואוד" (חצי מהסטים, ~10% פחות משקל).',
-  'Weekly schedule': 'לו״ז שבועי', 'Tap routines to plan them on a day. Leave a day empty for rest.': 'הקש על תוכניות כדי לשבץ אותן ביום. השאר יום ריק למנוחה.',
+  'Weekly schedule': 'לו״ז שבועי', 'Tap routines to plan them on a day. Leave a day empty for rest.': 'הקש על תוכניות כדי לשבץ אותן ביום. השאר יום ריק למנוחה.', 'Tap a routine, a run or yoga to plan it on a day. Leave a day empty for rest.': 'הקש על תוכנית, ריצה או יוגה כדי לשבץ אותם ביום. השאר יום ריק למנוחה.',
   'Create routines first.': 'צור קודם תוכניות.', 'Goals for this block…': 'מטרות לבלוק הזה…', 'Your workouts are not affected.': 'האימונים שלך לא יושפעו.', 'Delete block': 'מחק בלוק',
 
   // ---------- Progress ----------

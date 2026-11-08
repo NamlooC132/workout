@@ -10,7 +10,7 @@ import { buildHistory, lastSession } from '../js/logic/history.js';
 import { toDisplayWeight, fromDisplayWeight, addInDisplayUnit, displayWeight } from '../js/logic/units.js';
 import { snapRest, startTimer, adjustTimer, remainingMs } from '../js/logic/restTimer.js';
 import { validateBackup, planImport, makeBackup } from '../js/logic/backup.js';
-import { activeBlock, blockWeek, isDeloadWeek, plannedRoutineIds } from '../js/logic/blocks.js';
+import { activeBlock, blockWeek, isDeloadWeek, plannedRoutineIds, planVsDone, adherence } from '../js/logic/blocks.js';
 import { weekStreak, strengthTrend, trendBuckets } from '../js/logic/analytics.js';
 import { buildTemplate } from '../js/logic/samples.js';
 import { parseNum, fmtClock } from '../js/logic/util.js';
@@ -701,4 +701,19 @@ test('all_max with min RIR: needs max reps AND enough RIR on every set', () => {
   assert.equal(evaluateProgression(ex, mk(2), cfg(ex), settings).status, 'increase');
   const plain = newExercise(settings, { repMax: 10, sets: 2, progression: { rule: 'all_max' } });
   assert.equal(evaluateProgression(plain, { workout: workout('w', day(0), []), entry: entry(plain, [S(50, 10), S(50, 10)]) }, cfg(plain), settings).status, 'increase');
+});
+
+test('plan: run and yoga days count as done', () => {
+  const start = new Date(2026, 10, 1, 12).getTime(); // Sunday
+  const key = (ms) => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const block = { id: 'b', startDate: key(start), weeks: 1, schedule: { 0: ['r1', 'run'], 1: ['yoga'] }, deloadWeeks: [] };
+  const D = 86400000;
+  const workouts = [
+    { id: 'a', status: 'done', routineId: 'r1', startedAt: start },
+    { id: 'b', status: 'done', kind: 'run', routineId: null, startedAt: start + 1000 },
+  ];
+  let days = planVsDone([block], workouts, start - 12 * 3600000, start + 2 * D, []);
+  assert.deepEqual(adherence(days, start + 3 * D), { planned: 3, completed: 2 });
+  days = planVsDone([block], workouts, start - 12 * 3600000, start + 2 * D, [{ id: 'y', date: start + D }]);
+  assert.deepEqual(adherence(days, start + 3 * D), { planned: 3, completed: 3 });
 });

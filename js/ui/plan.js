@@ -6,7 +6,7 @@ import { Page, Section, Row, Empty, Button, IconButton, Stepper, Sheet, TextFiel
 import { select } from './exercises.js';
 import { newBlock } from '../logic/model.js';
 import { PHASES } from '../logic/muscles.js';
-import { activeBlock, blockRange, blockWeek, isDeloadWeek } from '../logic/blocks.js';
+import { activeBlock, blockRange, blockWeek, isDeloadWeek, PLAN_RUN, PLAN_YOGA, planItemName } from '../logic/blocks.js';
 import { dateKey, deepClone, addDays, parseDateKey, startOfWeek, plural } from '../logic/util.js';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -24,7 +24,7 @@ export function PlanScreen() {
     blocks.length > 0 && h(Section, { title: 'Blocks' }, blocks.map((b) => {
       const r = blockRange(b);
       const isActive = active && active.id === b.id;
-      const sched = Object.entries(b.schedule || {}).filter(([, ids]) => ids && ids.length).map(([d, ids]) => `${DAYS[d].slice(0, 3)}: ${ids.map((id) => rById.get(id)?.name || '?').join(' + ')}`);
+      const sched = Object.entries(b.schedule || {}).filter(([, ids]) => ids && ids.length).map(([d, ids]) => `${DAYS[d].slice(0, 3)}: ${ids.map((id) => planItemName(id, rById)).join(' + ')}`);
       return h(Row, {
         key: b.id,
         title: [b.name, isActive && h('span.tag.green', { style: { marginLeft: '6px' } }, `WEEK ${blockWeek(b)}`), isActive && isDeloadWeek(b) && h('span.tag.blue', { style: { marginLeft: '4px' } }, 'DELOAD')],
@@ -78,11 +78,21 @@ export function BlockEditorSheet(sheet) {
         const on = (d.deloadWeeks || []).includes(wk);
         return h(Chip, { key: wk, active: on, onClick: () => set({ deloadWeeks: on ? d.deloadWeeks.filter((x) => x !== wk) : [...(d.deloadWeeks || []), wk].sort((a, b) => a - b) }) }, `Week ${wk}`);
       }))),
-    h(Section, { title: 'Weekly schedule', footer: routines.length ? 'Tap routines to plan them on a day. Leave a day empty for rest.' : 'Create routines first.' },
-      order.map((day) => h('div.row', { key: day, style: { display: 'block' } }, [
-        h('div', { style: { fontWeight: 600, marginBottom: '6px' } }, DAYS[day]),
-        h('div.chips', routines.map((r) => h(Chip, { key: r.id, active: (d.schedule[day] || []).includes(r.id), onClick: () => toggleRoutine(day, r.id) }, r.name))),
-      ]))),
+    h(Section, { title: 'Weekly schedule', footer: 'Tap a routine, a run or yoga to plan it on a day. Leave a day empty for rest.' },
+      order.map((day) => {
+        const on = (id) => (d.schedule[day] || []).includes(id);
+        const extra = [
+          { id: PLAN_RUN, label: 'Run', icon: 'run' },
+          (data.settings.showYoga || on(PLAN_YOGA)) && { id: PLAN_YOGA, label: 'Yoga', icon: 'yoga' },
+        ].filter(Boolean);
+        return h('div.row', { key: day, style: { display: 'block' } }, [
+          h('div', { style: { fontWeight: 600, marginBottom: '6px' } }, DAYS[day]),
+          h('div.chips', [
+            ...routines.map((r) => h(Chip, { key: r.id, active: on(r.id), onClick: () => toggleRoutine(day, r.id) }, r.name)),
+            ...extra.map((x) => h(Chip, { key: x.id, active: on(x.id), onClick: () => toggleRoutine(day, x.id) }, [icon(x.icon, 15), x.label])),
+          ]),
+        ]);
+      })),
     h(Section, { title: 'Notes' }, h('div.field-card', h(TextField, { value: d.notes, multiline: true, placeholder: 'Goals for this block…', onChange: (v) => { d.notes = v; } }))),
     !sheet.isNew && h(Button, { kind: 'danger', block: true, onClick: () => confirm({
       title: `Delete “${d.name}”?`, message: 'Your workouts are not affected.', confirmText: 'Delete block', destructive: true,
