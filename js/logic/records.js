@@ -40,7 +40,8 @@ export function tonnage(set, snap, bw) {
   const load = effectiveLoad(set, snap, bw);
   const mult = snap?.type === 'dumbbell' && snap?.loadMode === 'per_hand' ? 2 : 1;
   const reps = snap?.unilateral ? (set.repsL || 0) + (set.repsR || 0) : setReps(set);
-  return load * mult * reps;
+  const mini = (set.mini || []).reduce((t, m) => t + (m.done ? m.reps || 0 : 0), 0); // rest-pause mini-sets
+  return load * mult * (reps + mini);
 }
 
 /** Summary of one session (one workout entry). */

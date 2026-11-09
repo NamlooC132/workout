@@ -165,7 +165,8 @@ function EntryBlock({ w, e, edit, save }) {
       const t = SET_TYPES.find((x) => x.key === s.type);
       const label = warm ? 'W' : `${n}${t?.short || ''}`;
       if (!edit) {
-        const reps = snap.unilateral && (s.repsL !== null || s.repsR !== null) ? `${s.repsL ?? 0} / ${s.repsR ?? 0}` : `${s.reps ?? 0}`;
+        const minis = (s.mini || []).filter((m) => m.done && m.reps).map((m) => ` +${m.reps}`).join('');
+        const reps = (snap.unilateral && (s.repsL !== null || s.repsR !== null) ? `${s.repsL ?? 0} / ${s.repsR ?? 0}` : `${s.reps ?? 0}`) + minis;
         const wt = snap.type === 'bodyweight' ? '' : `${snap.type === 'weighted_bw' ? '+' : snap.type === 'assisted' ? '−' : ''}${fmtW(s.kg ?? 0)} × `;
         return h(Row, {
           key: s.id,

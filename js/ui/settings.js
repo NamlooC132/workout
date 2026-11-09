@@ -14,7 +14,7 @@ import { warmupSteps, DEFAULT_WARMUP_STEPS } from '../logic/warmup.js';
 import { activeWorkout } from '../store.js';
 import * as WS from '../workoutService.js';
 
-export const APP_VERSION = '1.35.0';
+export const APP_VERSION = '1.36.0';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -85,7 +85,7 @@ export function AdvancedSettingsScreen() {
       h(Row, { title: 'Warm-up sets', right: h(Stepper, { value: s.defaultWarmupSets || 0, min: 0, max: 5, onChange: (v) => set({ defaultWarmupSets: v }) }) }),
       h(Row, { title: 'Drop sets', right: h(Stepper, { value: s.defaultDropSets || 0, min: 0, max: 4, onChange: (v) => set({ defaultDropSets: v }) }) }),
       h(Row, { title: 'Superset: switch exercise', subtitle: 'Rest before the next exercise of a round', right: h(Stepper, { value: s.supersetRest || 0, step: 5, min: 0, max: 180, format: (v) => (v ? `${v} s` : 'Off'), onChange: (v) => set({ supersetRest: v }) }) }),
-      h(Row, { title: 'Rest-pause rest', subtitle: 'Before each rest-pause set', right: h(Stepper, { value: s.restPauseRest || 15, step: 5, min: 5, max: 60, format: (v) => `${v} s`, onChange: (v) => set({ restPauseRest: v }) }) }),
+      h(Row, { title: 'Rest-pause rest', subtitle: 'Before each mini set', right: h(Stepper, { value: s.restPauseRest || 15, step: 5, min: 5, max: 60, format: (v) => `${v} s`, onChange: (v) => set({ restPauseRest: v }) }) }),
       h(Row, { title: 'Target RIR', right: select([{ value: '', label: 'None' }, ...[0, 1, 2, 3, 4].map((x) => ({ value: String(x), label: String(x) }))], s.defaultRirTarget === null ? '' : String(s.defaultRirTarget), (v) => set({ defaultRirTarget: v === '' ? null : Number(v) })) }),
       h(Row, { title: 'Default set type', right: select([{ value: 'working', label: 'Working' }, { value: 'failure', label: 'To failure' }], s.defaultSetType, (v) => set({ defaultSetType: v })) }),
     ]),

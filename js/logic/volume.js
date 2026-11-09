@@ -14,7 +14,7 @@ import { addDays, startOfWeek, startOfMonth, addMonths } from './util.js';
 
 export function setWeight(set, settings) {
   if (!set.done || !isWorkSet(set)) return 0;
-  if (set.type === 'drop' || set.type === 'restpause') return settings?.dropSetsCount ?? 1;
+  if (set.type === 'drop') return settings?.dropSetsCount ?? 1;
   return 1;
 }
 

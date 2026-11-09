@@ -39,7 +39,8 @@ export function setsSummary(sets, snap) {
   if (!work.length) return '';
   const groups = [];
   for (const s of work) {
-    const repsText = snap?.unilateral && (s.repsL !== null || s.repsR !== null) ? `${s.repsL ?? 0}/${s.repsR ?? 0}` : String(s.reps ?? 0);
+    const minis = (s.mini || []).filter((m) => m.done && m.reps).map((m) => `+${m.reps}`).join('');
+    const repsText = (snap?.unilateral && (s.repsL !== null || s.repsR !== null) ? `${s.repsL ?? 0}/${s.repsR ?? 0}` : String(s.reps ?? 0)) + minis;
     const kind = s.type === 'drop' ? 'drop' : s.type === 'restpause' ? 'rest-pause' : '';
     const g = groups[groups.length - 1];
     if (g && g.kind === kind && Math.abs((g.kg ?? -1) - (s.kg ?? -1)) < 0.001) g.reps.push(repsText);
@@ -141,7 +142,7 @@ function ExerciseCard({ w, entry, index, st }) {
   const lastNote = ex?.lastNote && ex.lastNote.workoutId !== w.id ? ex.lastNote.text
     : (history().get(entry.exerciseId) || []).map((it) => it.workout.id !== w.id && WS.entryNoteText(it.entry)).find(Boolean);
   const openHistory = () => openSheet({ type: 'exHistory', exerciseId: entry.exerciseId, name: snap.name });
-  const workCount = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.type !== 'restpause').length;
+  const workCount = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length;
   const goals = setGoals(snap, workCount);
   const perSetRule = snap.progression?.rule === 'per_set' && (snap.progression.setGoals || []).length > 0;
   const bw = bodyweightAt(data.measurements, w.startedAt);
@@ -198,14 +199,14 @@ function ExerciseCard({ w, entry, index, st }) {
       ...entry.sets.map((s, si) => {
         const isWarm = s.type === 'warmup';
         const isRp = s.type === 'restpause';
-        if (!isWarm) { if (!isRp) workNo++; nonWarmNo++; }
+        if (!isWarm) { workNo++; nonWarmNo++; }
         const trend = isWarm ? null : compare(s);
         const t = SET_TYPES.find((x) => x.key === s.type);
-        const label = isWarm ? 'W' : isRp ? 'RP' : `${workNo}${t && t.short ? t.short : ''}`;
+        const label = isWarm ? 'W' : isRp ? h('span.rp-num', [String(workNo), h('small', 'RP')]) : `${workNo}${t && t.short ? t.short : ''}`;
         const isCurrent = s === currentSet;
         const hasPrev = si > 0;
         const showRir = rirMode !== 'off' && !isWarm && isCurrent && (rirMode === 'required' || st.rirOpen[s.id]);
-        return h('div', { key: s.id, 'data-set': s.id, class: cx('set-wrap', s.done && 'done', isCurrent && 'current', isRp && 'rp') }, [
+        return [h('div', { key: s.id, 'data-set': s.id, class: cx('set-wrap', s.done && 'done', isCurrent && 'current', isRp && 'rp') }, [
           h('div.set-row', { class: gridCls }, [
             h('button', { class: cx('set-num', s.type), onclick: () => openSheet({ type: 'setMenu', workoutId: w.id, entryId: entry.id, setId: s.id }), 'aria-label': `Set ${label} options` }, [
               s.pr ? h('span.pr-num', ['🏆', h('small', label)]) : label,
@@ -238,7 +239,7 @@ function ExerciseCard({ w, entry, index, st }) {
             s.done && s.rir !== null && s.rir !== undefined && !isWarm && `RIR ${s.rir === 5 ? '5+' : s.rir}`,
             s.note && (s.done && s.rir !== null && s.rir !== undefined ? ' · ' : ''), s.note,
           ]),
-        ]);
+        ]), isRp && !entry.skipped && MiniSets({ w, entry, s, showWeight })];
       }),
       (volNow > 0 || volLast > 0) && h('div.ex-volume', [
         icon('volume', 15),
@@ -248,6 +249,26 @@ function ExerciseCard({ w, entry, index, st }) {
       ]),
       h('button.add-set', { onclick: () => WS.addSet(w, entry) }, [icon('plus', 18), 'Add set']),
     ],
+  ]);
+}
+
+/** Rest-pause mini-sets: small rows under their set – reps only (same weight), as many as you like. */
+function MiniSets({ w, entry, s, showWeight }) {
+  const minis = s.mini || [];
+  const wt = showWeight && s.kg ? fmtW(s.kg) : '';
+  return h('div.mini-list', { key: 'mini-' + s.id }, [
+    ...minis.map((m, i) => h('div', { key: m.id, class: cx('mini-row', m.done && 'done') }, [
+      h('button.mini-label', {
+        onclick: () => WS.undoable(w, 'Mini set removed', () => WS.removeMini(w, entry, s, m.id)),
+        'aria-label': `Remove mini set ${i + 1}`, title: 'Tap to remove',
+      }, [h('span.mini-dot'), h('span', `Mini ${i + 1}`), wt && h('span.mini-wt', wt)]),
+      h('div.pill.mini-pill', h(NumberField, {
+        value: m.reps, decimals: false, placeholder: '–', class: 'pill-input', ariaLabel: `Mini set ${i + 1} reps`,
+        onChange: (v) => { m.reps = v; WS.save(w); },
+      })),
+      h('button', { class: cx('done-btn', 'mini-done', m.done && 'on'), onclick: () => { document.activeElement?.blur?.(); WS.toggleMini(w, entry, s, m); }, 'aria-label': m.done ? 'Mark mini set not done' : 'Mini set done' }, icon('check', 18, { weight: 3 })),
+    ])),
+    h('button.add-mini', { onclick: () => WS.addMini(w, entry, s) }, [icon('plus', 14), 'Mini set']),
   ]);
 }
 
@@ -423,13 +444,12 @@ export function RestSettingsSheet(sheet) {
       inSS
         ? h(Row, { left: icon('timer', 20), title: 'After each round', subtitle: 'Rest after the last exercise', right: h(Stepper, { value: roundRest || data.settings.defaultRest || 90, step: 15, min: 15, max: 600, format: fmtClock, onChange: (v) => setGroup({ rest: v }) }) })
         : h(Row, { left: icon('timer', 20), title: 'Between sets', right: h(Stepper, { value: snap.rest || data.settings.defaultRest || 90, step: 15, min: 15, max: 600, format: fmtClock, onChange: (v) => setSnap({ rest: v }) }) }),
-      h(Row, {
+      hasRp && h(Row, {
         left: h('span.rp-ico', icon('pause', 16)), title: 'Rest-pause',
-        subtitle: hasRp ? 'Short rest before each rest-pause set' : 'Used when you add a rest-pause set',
+        subtitle: 'Short rest before each mini set',
         right: h(Stepper, { value: restPauseSeconds(snap, data.settings), step: 5, min: 5, max: 60, format: (v) => `${v} s`, onChange: (v) => setSnap({ restPause: v }) }),
       }),
     ]),
-    !hasRp && h(Button, { kind: 'secondary', block: true, onClick: () => { WS.addSet(w, entry, 'restpause'); closeSheet(); } }, [icon('plus', 18), 'Add rest-pause set']),
   ]);
 }
 

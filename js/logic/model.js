@@ -152,6 +152,11 @@ export function newBlock(fields = {}) {
   };
 }
 
+/** A rest-pause mini-set: only reps; same weight as its set. */
+export function newMini(fields = {}) {
+  return { id: uid(), reps: null, done: false, doneAt: null, ...fields };
+}
+
 export function newSet(fields = {}) {
   return {
     id: uid(),

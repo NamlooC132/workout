@@ -425,8 +425,8 @@ export function ExerciseEditorSheet(sheet) {
       h(Section, { title: 'Extra sets' }, [
         h(Row, { title: 'Warm-up sets', right: h(Stepper, { value: d.warmupSets || 0, min: 0, max: 6, onChange: (v) => set({ warmupSets: v }) }) }),
         h(Row, { title: 'Drop sets', subtitle: 'After the last working set', right: h(Stepper, { value: d.dropSets || 0, min: 0, max: 4, onChange: (v) => set({ dropSets: v }) }) }),
-        h(Row, { title: 'Rest-pause sets', subtitle: 'Same weight, after a short rest', right: h(Stepper, { value: d.restPauseSets || 0, min: 0, max: 4, onChange: (v) => set({ restPauseSets: v }) }) }),
-        (d.restPauseSets || 0) > 0 && h(Row, { title: 'Rest-pause rest', subtitle: 'Before each rest-pause set', right: h(Stepper, { value: d.restPause || s.restPauseRest || 15, step: 5, min: 5, max: 60, format: (v) => `${v} s`, onChange: (v) => set({ restPause: v }) }) }),
+        h(Row, { title: 'Rest-pause mini-sets', subtitle: 'On the last working set: same weight, short rest', right: h(Stepper, { value: d.restPauseSets || 0, min: 0, max: 4, onChange: (v) => set({ restPauseSets: v }) }) }),
+        (d.restPauseSets || 0) > 0 && h(Row, { title: 'Rest-pause rest', subtitle: 'Before each mini set', right: h(Stepper, { value: d.restPause || s.restPauseRest || 15, step: 5, min: 5, max: 60, format: (v) => `${v} s`, onChange: (v) => set({ restPause: v }) }) }),
         hasWeight && h(Row, { title: '− / + buttons change weight by', subtitle: 'Only for the buttons next to the weight. Automatic increases use “Increase by” below.', right: select(stepOptions.map((x) => ({ value: x, label: `${x} ${unit}` })), d.weightStep, (v) => set({ weightStep: Number(v) })) }),
         h(Row, { title: 'Target RIR', subtitle: 'Reps in reserve you aim for', right: select([{ value: '', label: 'None' }, ...[0, 1, 2, 3, 4].map((x) => ({ value: String(x), label: `${x}` })), { value: '5', label: '5+' }], d.rirTarget === null || d.rirTarget === undefined ? '' : String(d.rirTarget), (v) => set({ rirTarget: v === '' ? null : Number(v) })) }),
       ]),

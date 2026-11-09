@@ -3,7 +3,7 @@
 
 import { data, saveWorkout, saveRoutine, saveExercise, deleteWorkout, history, exercisesById, toast } from './store.js';
 import { uid, deepClone } from './logic/util.js';
-import { newSet, effectiveConfig, withConfig, exerciseSnapshot, newRoutineItem, restPauseSeconds, supersetRestSeconds } from './logic/model.js';
+import { newSet, newMini, effectiveConfig, withConfig, exerciseSnapshot, newRoutineItem, restPauseSeconds, supersetRestSeconds } from './logic/model.js';
 import { lastSession } from './logic/history.js';
 import { evaluateProgression, setGoals } from './logic/progression.js';
 import { activeBlock, blockWeek, isDeloadWeek } from './logic/blocks.js';
@@ -28,7 +28,7 @@ export function makeEntry(exercise, item, workout) {
   const lastSets = last ? (last.entry.sets || []).filter((s) => s.done) : [];
   const lastWarm = lastSets.filter((s) => s.type === 'warmup');
   const lastWork = lastSets.filter((s) => s.type !== 'warmup');
-  const lastMain = lastWork.filter((s) => s.type !== 'drop' && s.type !== 'restpause');
+  const lastMain = lastWork.filter((s) => s.type !== 'drop');
   const sets = [];
   const auto = canAutoWarmup(cfg.type);
   for (let i = 0; i < warmupCount(cfg, data.settings); i++) {
@@ -43,18 +43,14 @@ export function makeEntry(exercise, item, workout) {
       reps: src ? src.reps : null,
       repsL: src ? src.repsL : null,
       repsR: src ? src.repsR : null,
+      ...(src && src.type === 'restpause' ? { mini: (src.mini || []).map((m) => newMini({ reps: m.reps })) } : {}),
     }));
   }
-  // Planned rest-pause mini-sets: same weight as the last working set, reps from last time.
-  const lastRp = lastWork.filter((s) => s.type === 'restpause');
-  const lastMainSet = sets.filter((s) => s.type !== 'warmup').slice(-1)[0];
-  for (let i = 0; i < (cfg.restPauseSets || 0); i++) {
-    const src = lastRp[i] || null;
-    sets.push(newSet({ type: 'restpause', kg: src ? src.kg : lastMainSet?.kg ?? null, reps: src ? src.reps : null }));
-  }
+  // Planned rest-pause: the last working set gets that many mini-sets.
+  if ((cfg.restPauseSets || 0) > 0) setRpMinis({ sets }, Math.max(cfg.restPauseSets, rpMiniCount({ sets })));
   // Planned drop sets after the last working set: last time's drop weights, else ~20 % lighter.
   const lastDrops = lastWork.filter((s) => s.type === 'drop');
-  const mainWork = sets.filter((s) => s.type !== 'warmup' && s.type !== 'restpause');
+  const mainWork = sets.filter((s) => s.type !== 'warmup');
   for (let i = 0; i < (cfg.dropSets || 0); i++) {
     const src = lastDrops[i] || null;
     const base = mainWork[mainWork.length - 1];
@@ -153,8 +149,7 @@ export function refreshExercise(exerciseId, counts = null) {
     entry.routineNotes = cfg.routineNotes;
     const isWarm = (s) => s.type === 'warmup';
     const isDrop = (s) => s.type === 'drop';
-    const isRp = (s) => s.type === 'restpause';
-    const isWork = (s) => !isWarm(s) && !isDrop(s) && !isRp(s);
+    const isWork = (s) => !isWarm(s) && !isDrop(s);
     const delta = counts || {
       warmupSets: (cfg.warmupSets ?? 0) - (old.warmupSets ?? cfg.warmupSets ?? 0),
       sets: old.sets ? (cfg.sets || 0) - old.sets : 0,
@@ -170,7 +165,7 @@ export function refreshExercise(exerciseId, counts = null) {
       const base = entry.sets.filter(isWork).slice(-1)[0];
       entry.sets.push(newSet({ type: 'drop', kg: dropWeight(base?.kg, entry.snapshot.weightStep) }));
     });
-    changeCount(entry, isRp, delta.restPauseSets || 0, () => insertRestPause(entry));
+    if (delta.restPauseSets) setRpMinis(entry, rpMiniCount(entry) + delta.restPauseSets);
     // New suggestion for the new rep range (e.g. a lower goal you already hit → add weight),
     // unless it was already applied. A dismissed banner comes back only if the advice changed.
     const p = entry.progression || {};
@@ -199,27 +194,71 @@ function changeCount(entry, match, delta, add, min = 0) {
 }
 
 function addSetNoSave(entry) {
-  const last = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.type !== 'restpause').slice(-1)[0];
+  const last = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').slice(-1)[0];
   const set = newSet({ type: last ? last.type : data.settings.defaultSetType || 'working', kg: last ? last.kg : null, reps: null });
   let idx = entry.sets.length;
   while (idx > 0 && (entry.sets[idx - 1].type === 'drop' || entry.sets[idx - 1].type === 'restpause')) idx--;
   entry.sets.splice(idx, 0, set);
 }
 
-/** A rest-pause mini-set: same weight as the set before it, placed after the working
- *  sets and earlier rest-pause sets (drop sets stay last). */
+/** A new rest-pause set (same weight as the set before it) with one mini-set; drop sets stay last. */
 function insertRestPause(entry) {
   let idx = entry.sets.length;
   while (idx > 0 && entry.sets[idx - 1].type === 'drop') idx--;
   const prev = entry.sets.slice(0, idx).filter((s) => s.type !== 'warmup').slice(-1)[0];
-  const set = newSet({ type: 'restpause', kg: prev ? prev.kg : null, reps: null });
+  const set = newSet({ type: 'restpause', kg: prev ? prev.kg : null, reps: null, mini: [newMini()] });
   entry.sets.splice(idx, 0, set);
   return set;
 }
 
+// ---------- Rest-pause mini-sets ----------
+const isRpSet = (s) => s.type === 'restpause';
+/** Mini-sets on the last rest-pause set (= the exercise's "rest-pause mini-sets" setting). */
+export function rpMiniCount(entry) {
+  const rp = entry.sets.filter(isRpSet).slice(-1)[0];
+  return rp ? (rp.mini || []).length : 0;
+}
+/** Gives the last rest-pause set (else the last working set) `n` mini-sets; 0 makes it a normal set again. */
+function setRpMinis(entry, n) {
+  n = Math.max(0, n || 0);
+  let rp = entry.sets.filter(isRpSet).slice(-1)[0];
+  if (!rp) {
+    if (!n) return;
+    rp = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').slice(-1)[0];
+    if (!rp) return;
+    rp.type = 'restpause';
+  }
+  rp.mini = rp.mini || [];
+  while (rp.mini.length < n) rp.mini.push(newMini());
+  for (let i = rp.mini.length - 1; i >= 0 && rp.mini.length > n; i--) if (!rp.mini[i].done) rp.mini.splice(i, 1);
+  if (!rp.mini.length) { rp.type = 'working'; delete rp.mini; }
+}
+
+export function addMini(w, entry, set) {
+  set.mini = [...(set.mini || []), newMini()];
+  save(w);
+}
+
+export function removeMini(w, entry, set, miniId) {
+  set.mini = (set.mini || []).filter((m) => m.id !== miniId);
+  save(w);
+}
+
+/** Tick / untick a mini-set. Rest: another rest-pause rest if more mini-sets follow, else the normal rest. */
+export function toggleMini(w, entry, set, mini) {
+  if (mini.done) { mini.done = false; mini.doneAt = null; save(w); return true; }
+  if (!(mini.reps > 0)) { toast('Enter your reps first'); return false; }
+  mini.done = true;
+  mini.doneAt = Date.now();
+  try { navigator.vibrate && navigator.vibrate(15); } catch { /* ignore */ }
+  save(w);
+  if (data.settings.autoRest) restAfter(w, entry, set);
+  return true;
+}
+
 // ---------- Sets ----------
 export function addSet(w, entry, type) {
-  const last = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.type !== 'restpause').slice(-1)[0] || entry.sets.slice(-1)[0];
+  const last = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').slice(-1)[0] || entry.sets.slice(-1)[0];
   const set = newSet({ type: type || (last && last.type !== 'warmup' ? 'working' : data.settings.defaultSetType || 'working'), kg: last ? last.kg : null, reps: last ? last.reps : null, repsL: last?.repsL ?? null, repsR: last?.repsR ?? null });
   if (type === 'warmup') {
     const idx = entry.sets.findIndex((s) => s.type !== 'warmup');
@@ -282,9 +321,9 @@ export function nextUp(w, afterSet = null) {
 /** Tick / untick a set. Returns false (and explains) if the set can't be completed yet. */
 /** The gray rep goal shown in a set's Reps box (null for warm-ups). Ticking an empty set uses it, like Hevy. */
 export function goalReps(entry, set) {
-  if (set.type === 'warmup' || set.type === 'restpause') return null;
+  if (set.type === 'warmup') return null;
   const snap = entry.snapshot;
-  const workCount = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.type !== 'restpause').length;
+  const workCount = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length;
   const goals = setGoals(snap, workCount);
   let workNo = 0;
   for (const s of entry.sets) {
@@ -330,7 +369,13 @@ export function toggleSet(w, entry, set) {
   try { navigator.vibrate && navigator.vibrate(15); } catch { /* ignore */ }
   save(w);
 
-  if (data.settings.autoRest) {
+  if (data.settings.autoRest) restAfter(w, entry, set);
+  return true;
+}
+
+/** Starts the right rest after a set (or its last mini-set) is done. */
+function restAfter(w, entry, set) {
+  {
     // Superset: a short (optional) rest before the next exercise of the same round,
     // and the normal rest after the last exercise of the round.
     const seq = setSequence(w);
@@ -339,8 +384,8 @@ export function toggleSet(w, entry, set) {
     const sameRound = entry.supersetId && following && following.entry.supersetId === entry.supersetId &&
       following.entry !== entry && following.index === seq[pos].index && !following.set.done;
     const next = nextUp(w, set);
-    const nextInEntry = entry.sets.slice(entry.sets.indexOf(set) + 1).find((s) => !s.done);
-    if (nextInEntry && nextInEntry.type === 'restpause' && !sameRound) {
+    const miniLeft = set.type === 'restpause' && set.done && (set.mini || []).some((m) => !m.done);
+    if (miniLeft) {
       startRest(restPauseSeconds(entry.snapshot, data.settings), entry.snapshot.name, next ? next.label : '', 'restpause');
     } else if (sameRound) {
       const sw = supersetRestSeconds(entry.snapshot, data.settings);
@@ -354,7 +399,6 @@ export function toggleSet(w, entry, set) {
       skipRest();
     }
   }
-  return true;
 }
 
 // ---------- Progressive overload ----------
@@ -384,9 +428,9 @@ export function applyDeload(w) {
     let toRemove = Math.max(0, doneWork + work.length - keep);
     for (let i = work.length - 1; i >= 0 && toRemove > 0; i--, toRemove--) e.sets = e.sets.filter((s) => s !== work[i]);
     // Set counts chosen by the app (not the user): liveChanges() won't offer to save them.
-    e.autoWorkSets = e.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.type !== 'restpause').length;
+    e.autoWorkSets = e.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length;
     e.autoDropSets = e.sets.filter((s) => s.type === 'drop').length;
-    e.autoRpSets = e.sets.filter((s) => s.type === 'restpause').length;
+    e.autoRpSets = rpMiniCount(e);
     const step = e.snapshot.weightStep || 2.5;
     for (const s of e.sets) {
       if (s.done || s.type === 'warmup' || !s.kg) continue;
@@ -461,10 +505,10 @@ export function updateRoutineFromWorkout(w) {
   const items = w.entries.filter((e) => e.exerciseId && !e.skipped).map((e) => {
     const base = oldItems.get(e.exerciseId) || newRoutineItem(e.exerciseId);
     const ex = exercisesById().get(e.exerciseId);
-    const working = e.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.type !== 'restpause').length;
+    const working = e.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length;
     const warm = e.sets.filter((s) => s.type === 'warmup').length;
     const drops = e.sets.filter((s) => s.type === 'drop').length;
-    const rps = e.sets.filter((s) => s.type === 'restpause').length;
+    const rps = rpMiniCount(e);
     let ss = null;
     if (e.supersetId) { if (!ssMap.has(e.supersetId)) ssMap.set(e.supersetId, uid()); ss = ssMap.get(e.supersetId); }
     return {
@@ -572,6 +616,8 @@ export function setType(w, entry, set, type) {
   if (set.type === type) return;
   const wasWarm = set.type === 'warmup';
   set.type = type;
+  if (type === 'restpause' && !(set.mini || []).length) set.mini = [newMini()];
+  if (type !== 'restpause' && set.mini) delete set.mini;
   if (type === 'warmup' && !wasWarm) {
     set.auto = true;
     entry.sets = entry.sets.filter((s) => s !== set);
@@ -588,8 +634,7 @@ export function setType(w, entry, set, type) {
 const LIVE_KEYS = ['repMin', 'repMax', 'rest', 'restPause', 'ssRest', 'weightStep', 'rirTarget', 'type', 'loadMode', 'unilateral'];
 const isWarmSet = (s) => s.type === 'warmup';
 const isDropSet = (s) => s.type === 'drop';
-const isRpSet = (s) => s.type === 'restpause';
-const isWorkSet = (s) => !isWarmSet(s) && !isDropSet(s) && !isRpSet(s);
+const isWorkSet = (s) => !isWarmSet(s) && !isDropSet(s);
 
 /** What the editor shows for an exercise in the open workout: the workout's current state. */
 export function liveDraft(entry, exercise) {
@@ -602,7 +647,7 @@ export function liveDraft(entry, exercise) {
     sets: entry.sets.filter(isWorkSet).length,
     warmupSets: entry.sets.filter(isWarmSet).length,
     dropSets: entry.sets.filter(isDropSet).length,
-    restPauseSets: entry.sets.filter(isRpSet).length,
+    restPauseSets: rpMiniCount(entry),
     notes: entry.notes || '',
   };
 }
@@ -638,7 +683,7 @@ export function applyLiveEdit(w, entry, d) {
     const base = entry.sets.filter(isWorkSet).slice(-1)[0];
     entry.sets.push(newSet({ type: 'drop', kg: dropWeight(base?.kg, d.weightStep) }));
   });
-  setCount(entry, isRpSet, d.restPauseSets, () => insertRestPause(entry));
+  setRpMinis(entry, d.restPauseSets);
   const p = entry.progression || {};
   if (!p.applied) {
     const cfg = { ...entry.snapshot, dropSets: d.dropSets || 0 };
@@ -670,7 +715,7 @@ export function liveChanges(w) {
       sets: e.sets.filter(isWorkSet).length,
       warmupSets: e.sets.filter(isWarmSet).length,
       dropSets: e.sets.filter(isDropSet).length,
-      restPauseSets: e.sets.filter(isRpSet).length,
+      restPauseSets: rpMiniCount(e),
       ...Object.fromEntries(LIVE_KEYS.map((k) => [k, k === 'unilateral' ? !!snap[k] : snap[k]])),
       progression: snap.progression || {},
     };
@@ -690,7 +735,7 @@ export function liveChanges(w) {
     if (now.warmupSets !== was.warmupSets) add('Warm-up sets', was.warmupSets, now.warmupSets);
     if (now.sets !== was.sets) add('Working sets', was.sets, now.sets);
     if (now.dropSets !== was.dropSets) add('Drop sets', was.dropSets, now.dropSets);
-    if (now.restPauseSets !== was.restPauseSets) add('Rest-pause sets', was.restPauseSets, now.restPauseSets);
+    if (now.restPauseSets !== was.restPauseSets) add('Rest-pause mini-sets', was.restPauseSets, now.restPauseSets);
     if (now.repMin !== was.repMin || now.repMax !== was.repMax) add('Rep range', `${was.repMin}–${was.repMax}`, `${now.repMin}–${now.repMax}`);
     if (now.rest !== was.rest) add('Rest', fmtSec(was.rest), fmtSec(now.rest));
     if ((now.ssRest ?? null) !== (was.ssRest ?? null)) add('Superset: rest between exercises', fmtSec(supersetRestSeconds(was, data.settings)), fmtSec(supersetRestSeconds(now, data.settings)));

@@ -110,7 +110,7 @@ export function exerciseRole(ex) {
 }
 
 // ---------- Stage 3: the suggested changes (applied only after the user approves) ----------
-const isMain = (s) => s.type !== 'warmup' && s.type !== 'drop' && s.type !== 'restpause';
+const isMain = (s) => s.type !== 'warmup' && s.type !== 'drop';
 
 function canDropSet(e) {
   const main = e.sets.filter(isMain);
@@ -169,7 +169,7 @@ export function applyPlan(w, changes, round, pct = 10) {
       const open = e.sets.filter((s) => isMain(s) && !s.done);
       const last = open[open.length - 1];
       e.sets = e.sets.filter((s) => s !== last);
-      e.autoWorkSets = e.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.type !== 'restpause').length; // set by the app, not the user (no "Save changes?")
+      e.autoWorkSets = e.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length; // set by the app, not the user (no "Save changes?")
       counts.removeSet++;
     }
     if (c.kind === 'lighter') {

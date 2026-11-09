@@ -1000,12 +1000,6 @@ select.select { border-radius: 8px; min-height: 36px; }
 .rest-line .rl-dot { opacity: 0.5; margin: 0 1px; }
 .rest-line .rl-rp, .rest-line b.rl-rp { color: var(--purple); }
 
-/* Rest-pause sets: purple "RP" label, tied to the set above with a short line */
-.set-wrap.rp .set-num { font-size: 12px; letter-spacing: 0.4px; }
-.set-wrap.rp .set-num::before {
-  content: ''; position: absolute; left: 50%; top: -8px; width: 2px; height: 10px; border-radius: 1px;
-  background: color-mix(in srgb, var(--purple) 45%, transparent); transform: translateX(-50%);
-}
 .rp-ico { width: 28px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
   color: var(--purple); background: color-mix(in srgb, var(--purple) 14%, transparent); }
 
@@ -1034,3 +1028,33 @@ select.select { border-radius: 8px; min-height: 36px; }
 .ss-ico { width: 28px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
   color: var(--purple); background: color-mix(in srgb, var(--purple) 14%, transparent); }
 .rest-bar.ssr .rest-fill { background: var(--purple); }
+
+/* 1.36.0: rest-pause = one set + small mini-sets under it (reps only, same weight) */
+.rp-num { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; }
+.rp-num small { font-size: 8.5px; font-weight: 800; letter-spacing: 0.6px; margin-top: 2px; opacity: 0.9; }
+.mini-list { position: relative; margin: 0 0 6px; padding-inline-start: 40px; }
+.mini-list::before {
+  content: ''; position: absolute; inset-inline-start: 15px; top: -2px; bottom: 34px; width: 2px; border-radius: 1px;
+  background: color-mix(in srgb, var(--purple) 40%, transparent);
+}
+.mini-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 76px 34px; gap: 8px; align-items: center; min-height: 38px; margin-top: 4px; }
+.mini-row::before {
+  content: ''; position: absolute; inset-inline-start: -25px; top: 50%; width: 15px; height: 2px; border-radius: 1px;
+  background: color-mix(in srgb, var(--purple) 40%, transparent);
+}
+.mini-label {
+  appearance: none; border: 0; background: none; padding: 0; font: inherit; font-size: 13px; font-weight: 650; color: var(--purple);
+  display: flex; align-items: center; gap: 6px; text-align: start; cursor: pointer; min-height: 34px; -webkit-tap-highlight-color: transparent;
+}
+.mini-dot { display: none; }
+.mini-wt { color: var(--muted); font-weight: 500; }
+.pill.mini-pill { height: 34px; border-radius: 8px; }
+.pill.mini-pill .pill-input { height: 34px; font-size: 15px; font-weight: 650; }
+.done-btn.mini-done { width: 30px; height: 30px; border-radius: 7px; justify-self: center; }
+.mini-row:has(+ .mini-row) .done-btn.mini-done:not(.on) { }
+.mini-row.done .pill.mini-pill { background: var(--green-soft); }
+.mini-row.done .mini-label { opacity: 0.75; }
+.add-mini {
+  appearance: none; border: 0; background: none; padding: 6px 0 2px; font: inherit; font-size: 13px; font-weight: 650;
+  color: var(--purple); display: inline-flex; align-items: center; gap: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
