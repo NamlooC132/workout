@@ -297,7 +297,7 @@ export const DICT = {
   'Skipped': 'דולג', 'Exercise options': 'אפשרויות תרגיל', 'Left': 'שמאל', 'Right': 'ימין', 'Less weight': 'פחות משקל', 'More weight': 'יותר משקל',
   'Reps left': 'חזרות שמאל', 'Reps right': 'חזרות ימין', 'Mark set not done': 'סמן סט כלא בוצע', 'Set done': 'סט בוצע', 'Copy last set': 'העתק את הסט הקודם',
   'Set note': 'הערה לסט', 'e.g. paused reps': 'למשל: חזרות עם עצירה', 'Edit note': 'ערוך הערה', 'Reps in reserve': 'חזרות ברזרבה', 'Add set': 'הוסף סט',
-  'Suggestion hidden': 'ההצעה הוסתרה', 'Hide suggestion': 'הסתר הצעה', 'Add warm-up set': 'הוסף סט חימום', 'Add drop set': 'הוסף דרופ סט', 'Add note': 'הוסף הערה',
+  'Suggestion hidden': 'ההצעה הוסתרה', 'Hide suggestion': 'הסתר הצעה', 'Add warm-up set': 'הוסף סט חימום', 'Add drop set': 'הוסף דרופ סט', 'Add rest-pause set': 'הוסף סט רסט-פאוז', 'Rest-pause sets': 'סטים של רסט-פאוז', 'Rest-pause rest': 'מנוחת רסט-פאוז', 'Same weight, after a short rest': 'אותו משקל, אחרי מנוחה קצרה', 'Before each rest-pause set': 'לפני כל סט רסט-פאוז', 'Between sets': 'בין סטים', 'Short rest before each rest-pause set': 'מנוחה קצרה לפני כל סט רסט-פאוז', 'Used when you add a rest-pause set': 'משמש כשמוסיפים סט רסט-פאוז', 'For this workout. When you finish, you can save it for next time.': 'לאימון הזה. בסיום אפשר לשמור את זה לפעם הבאה.', 'Change rest time': 'שנה זמן מנוחה', 'Next: rest-pause set': 'הבא: סט רסט-פאוז', 'Add note': 'הוסף הערה',
   'Note for this workout': 'הערה לאימון הזה', 'Only for this workout': 'רק לאימון הזה', 'Reorder exercises': 'סדר תרגילים מחדש',
   'Un-skip exercise': 'בטל דילוג', 'Skip exercise': 'דלג על התרגיל', 'Exercise back in': 'התרגיל חזר', 'Exercise skipped': 'דילגת על התרגיל',
   'Edit workout note': 'ערוך הערת אימון', 'Add workout note': 'הוסף הערת אימון', 'Workout note': 'הערת אימון', 'e.g. felt tired today': 'למשל: הרגשתי עייף היום',
@@ -560,8 +560,8 @@ export const PATTERNS = [
   [/^(.+) Copy$/, '$1 עותק'],
   [/^Created “(.+)”$/, 'נוצר "$1"'],
   [/^Add to (.+)$/, 'הוסף ל$1'],
-  [/^(?:(\d+)W \+ )?(\d+) × (\d+)–(\d+)(?: \+ (\d+) drop)? · Rest ([\d:]+)(?: · RIR (.+))?$/, (g) =>
-    `${g[1] ? `${g[1]} חימום + ` : ''}${g[2]} × ${g[3]}–${g[4]}${g[5] ? ` + ${g[5]} דרופ` : ''} · מנוחה ${g[6]}${g[7] ? ` · RIR ${g[7]}` : ''}`],
+  [/^(?:(\d+)W \+ )?(\d+) × (\d+)–(\d+)(?: \+ (\d+) rest-pause)?(?: \+ (\d+) drop)? · Rest ([\d:]+)(?: · RIR (.+))?$/, (g) =>
+    `${g[1] ? `${g[1]} חימום + ` : ''}${g[2]} × ${g[3]}–${g[4]}${g[5] ? ` + ${g[5]} רסט-פאוז` : ''}${g[6] ? ` + ${g[6]} דרופ` : ''} · מנוחה ${g[7]}${g[8] ? ` · RIR ${g[8]}` : ''}`],
   [/^Library: (.+)$/, 'ספרייה: $1'],
   [/^Replace (.+)$/, 'החלף את $1'],
   [/^Replaced with (.+)$/, 'הוחלף ב$1'],

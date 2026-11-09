@@ -79,7 +79,7 @@ function roundKg(kg, e) {
 }
 
 function changeText(c, e) {
-  const main = e.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length;
+  const main = e.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.type !== 'restpause').length;
   if (c.kind === 'skip') return 'Skip today';
   if (c.kind === 'removeSet') return [h('span', 'Sets'), ` ${main} → ${main - 1}`];
   const s = e.sets.find((x) => !x.done && x.type !== 'warmup' && x.kg > 0);

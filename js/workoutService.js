@@ -3,7 +3,7 @@
 
 import { data, saveWorkout, saveRoutine, saveExercise, deleteWorkout, history, exercisesById, toast } from './store.js';
 import { uid, deepClone } from './logic/util.js';
-import { newSet, effectiveConfig, withConfig, exerciseSnapshot, newRoutineItem } from './logic/model.js';
+import { newSet, effectiveConfig, withConfig, exerciseSnapshot, newRoutineItem, restPauseSeconds } from './logic/model.js';
 import { lastSession } from './logic/history.js';
 import { evaluateProgression, setGoals } from './logic/progression.js';
 import { activeBlock, blockWeek, isDeloadWeek } from './logic/blocks.js';
@@ -28,7 +28,7 @@ export function makeEntry(exercise, item, workout) {
   const lastSets = last ? (last.entry.sets || []).filter((s) => s.done) : [];
   const lastWarm = lastSets.filter((s) => s.type === 'warmup');
   const lastWork = lastSets.filter((s) => s.type !== 'warmup');
-  const lastMain = lastWork.filter((s) => s.type !== 'drop');
+  const lastMain = lastWork.filter((s) => s.type !== 'drop' && s.type !== 'restpause');
   const sets = [];
   const auto = canAutoWarmup(cfg.type);
   for (let i = 0; i < warmupCount(cfg, data.settings); i++) {
@@ -45,9 +45,16 @@ export function makeEntry(exercise, item, workout) {
       repsR: src ? src.repsR : null,
     }));
   }
+  // Planned rest-pause mini-sets: same weight as the last working set, reps from last time.
+  const lastRp = lastWork.filter((s) => s.type === 'restpause');
+  const lastMainSet = sets.filter((s) => s.type !== 'warmup').slice(-1)[0];
+  for (let i = 0; i < (cfg.restPauseSets || 0); i++) {
+    const src = lastRp[i] || null;
+    sets.push(newSet({ type: 'restpause', kg: src ? src.kg : lastMainSet?.kg ?? null, reps: src ? src.reps : null }));
+  }
   // Planned drop sets after the last working set: last time's drop weights, else ~20 % lighter.
   const lastDrops = lastWork.filter((s) => s.type === 'drop');
-  const mainWork = sets.filter((s) => s.type !== 'warmup');
+  const mainWork = sets.filter((s) => s.type !== 'warmup' && s.type !== 'restpause');
   for (let i = 0; i < (cfg.dropSets || 0); i++) {
     const src = lastDrops[i] || null;
     const base = mainWork[mainWork.length - 1];
@@ -127,7 +134,7 @@ export function addWarmups(w, entry) {
 /**
  * After an exercise (or its routine settings) is edited, apply the new settings to the
  * active workout right away: rep range, rest, weight step, goals, type, one side …
- * `counts` = how much the editor changed { warmupSets, sets, dropSets } (e.g. +1): that many
+ * `counts` = how much the editor changed { warmupSets, sets, dropSets, restPauseSets } (e.g. +1): that many
  * sets are added to (or unfinished ones removed from) what the workout has now.
  * Returns the number of updated entries.
  */
@@ -146,11 +153,13 @@ export function refreshExercise(exerciseId, counts = null) {
     entry.routineNotes = cfg.routineNotes;
     const isWarm = (s) => s.type === 'warmup';
     const isDrop = (s) => s.type === 'drop';
-    const isWork = (s) => !isWarm(s) && !isDrop(s);
+    const isRp = (s) => s.type === 'restpause';
+    const isWork = (s) => !isWarm(s) && !isDrop(s) && !isRp(s);
     const delta = counts || {
       warmupSets: (cfg.warmupSets ?? 0) - (old.warmupSets ?? cfg.warmupSets ?? 0),
       sets: old.sets ? (cfg.sets || 0) - old.sets : 0,
       dropSets: 0,
+      restPauseSets: 0,
     };
     changeCount(entry, isWarm, delta.warmupSets || 0, () => {
       const idx = entry.sets.findIndex((s) => !isWarm(s));
@@ -161,6 +170,7 @@ export function refreshExercise(exerciseId, counts = null) {
       const base = entry.sets.filter(isWork).slice(-1)[0];
       entry.sets.push(newSet({ type: 'drop', kg: dropWeight(base?.kg, entry.snapshot.weightStep) }));
     });
+    changeCount(entry, isRp, delta.restPauseSets || 0, () => insertRestPause(entry));
     // New suggestion for the new rep range (e.g. a lower goal you already hit → add weight),
     // unless it was already applied. A dismissed banner comes back only if the advice changed.
     const p = entry.progression || {};
@@ -189,20 +199,33 @@ function changeCount(entry, match, delta, add, min = 0) {
 }
 
 function addSetNoSave(entry) {
-  const last = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').slice(-1)[0];
+  const last = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.type !== 'restpause').slice(-1)[0];
   const set = newSet({ type: last ? last.type : data.settings.defaultSetType || 'working', kg: last ? last.kg : null, reps: null });
   let idx = entry.sets.length;
-  while (idx > 0 && entry.sets[idx - 1].type === 'drop') idx--;
+  while (idx > 0 && (entry.sets[idx - 1].type === 'drop' || entry.sets[idx - 1].type === 'restpause')) idx--;
   entry.sets.splice(idx, 0, set);
+}
+
+/** A rest-pause mini-set: same weight as the set before it, placed after the working
+ *  sets and earlier rest-pause sets (drop sets stay last). */
+function insertRestPause(entry) {
+  let idx = entry.sets.length;
+  while (idx > 0 && entry.sets[idx - 1].type === 'drop') idx--;
+  const prev = entry.sets.slice(0, idx).filter((s) => s.type !== 'warmup').slice(-1)[0];
+  const set = newSet({ type: 'restpause', kg: prev ? prev.kg : null, reps: null });
+  entry.sets.splice(idx, 0, set);
+  return set;
 }
 
 // ---------- Sets ----------
 export function addSet(w, entry, type) {
-  const last = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').slice(-1)[0] || entry.sets.slice(-1)[0];
+  const last = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.type !== 'restpause').slice(-1)[0] || entry.sets.slice(-1)[0];
   const set = newSet({ type: type || (last && last.type !== 'warmup' ? 'working' : data.settings.defaultSetType || 'working'), kg: last ? last.kg : null, reps: last ? last.reps : null, repsL: last?.repsL ?? null, repsR: last?.repsR ?? null });
   if (type === 'warmup') {
     const idx = entry.sets.findIndex((s) => s.type !== 'warmup');
     entry.sets.splice(idx < 0 ? entry.sets.length : idx, 0, { ...set, kg: null, reps: null, repsL: null, repsR: null, auto: true });
+  } else if (type === 'restpause') {
+    insertRestPause(entry);
   } else if (type === 'drop') {
     // Drop set: ~20 % lighter than the set before it, rounded to the weight step.
     const prev = entry.sets[entry.sets.length - 1];
@@ -212,7 +235,7 @@ export function addSet(w, entry, type) {
   } else {
     // New working sets go before trailing drop sets.
     let idx = entry.sets.length;
-    while (idx > 0 && entry.sets[idx - 1].type === 'drop' && type !== 'drop') idx--;
+    while (idx > 0 && (entry.sets[idx - 1].type === 'drop' || entry.sets[idx - 1].type === 'restpause')) idx--;
     entry.sets.splice(idx, 0, set);
   }
   save(w);
@@ -259,9 +282,9 @@ export function nextUp(w, afterSet = null) {
 /** Tick / untick a set. Returns false (and explains) if the set can't be completed yet. */
 /** The gray rep goal shown in a set's Reps box (null for warm-ups). Ticking an empty set uses it, like Hevy. */
 export function goalReps(entry, set) {
-  if (set.type === 'warmup') return null;
+  if (set.type === 'warmup' || set.type === 'restpause') return null;
   const snap = entry.snapshot;
-  const workCount = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length;
+  const workCount = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.type !== 'restpause').length;
   const goals = setGoals(snap, workCount);
   let workNo = 0;
   for (const s of entry.sets) {
@@ -314,7 +337,10 @@ export function toggleSet(w, entry, set) {
     const following = seq[pos + 1];
     const inSameSuperset = entry.supersetId && following && following.entry.supersetId === entry.supersetId && following.entry !== entry && !following.set.done;
     const next = nextUp(w, set);
-    if (!inSameSuperset && next) {
+    const nextInEntry = entry.sets.slice(entry.sets.indexOf(set) + 1).find((s) => !s.done);
+    if (nextInEntry && nextInEntry.type === 'restpause') {
+      startRest(restPauseSeconds(entry.snapshot, data.settings), entry.snapshot.name, next ? next.label : '', 'restpause');
+    } else if (!inSameSuperset && next) {
       let rest = entry.snapshot.rest || data.settings.defaultRest;
       if (set.type === 'warmup') rest = Math.max(30, Math.round(rest / 2 / 15) * 15);
       startRest(rest, entry.snapshot.name, next.label);
@@ -352,8 +378,9 @@ export function applyDeload(w) {
     let toRemove = Math.max(0, doneWork + work.length - keep);
     for (let i = work.length - 1; i >= 0 && toRemove > 0; i--, toRemove--) e.sets = e.sets.filter((s) => s !== work[i]);
     // Set counts chosen by the app (not the user): liveChanges() won't offer to save them.
-    e.autoWorkSets = e.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length;
+    e.autoWorkSets = e.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.type !== 'restpause').length;
     e.autoDropSets = e.sets.filter((s) => s.type === 'drop').length;
+    e.autoRpSets = e.sets.filter((s) => s.type === 'restpause').length;
     const step = e.snapshot.weightStep || 2.5;
     for (const s of e.sets) {
       if (s.done || s.type === 'warmup' || !s.kg) continue;
@@ -428,9 +455,10 @@ export function updateRoutineFromWorkout(w) {
   const items = w.entries.filter((e) => e.exerciseId && !e.skipped).map((e) => {
     const base = oldItems.get(e.exerciseId) || newRoutineItem(e.exerciseId);
     const ex = exercisesById().get(e.exerciseId);
-    const working = e.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length;
+    const working = e.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.type !== 'restpause').length;
     const warm = e.sets.filter((s) => s.type === 'warmup').length;
     const drops = e.sets.filter((s) => s.type === 'drop').length;
+    const rps = e.sets.filter((s) => s.type === 'restpause').length;
     let ss = null;
     if (e.supersetId) { if (!ssMap.has(e.supersetId)) ssMap.set(e.supersetId, uid()); ss = ssMap.get(e.supersetId); }
     return {
@@ -438,6 +466,7 @@ export function updateRoutineFromWorkout(w) {
       sets: ex && ex.sets === working ? null : working,
       warmupSets: ex && (ex.warmupSets || 0) === warm ? null : warm,
       dropSets: ex && (ex.dropSets || 0) === drops ? null : drops,
+      restPauseSets: ex && (ex.restPauseSets || 0) === rps ? null : rps,
       supersetId: ss,
     };
   });
@@ -550,10 +579,11 @@ export function setType(w, entry, set, type) {
 
 // ---------- Edit exercise during a workout ----------
 // Changes go to this workout only; when it is finished the app asks whether to keep them.
-const LIVE_KEYS = ['repMin', 'repMax', 'rest', 'weightStep', 'rirTarget', 'type', 'loadMode', 'unilateral'];
+const LIVE_KEYS = ['repMin', 'repMax', 'rest', 'restPause', 'weightStep', 'rirTarget', 'type', 'loadMode', 'unilateral'];
 const isWarmSet = (s) => s.type === 'warmup';
 const isDropSet = (s) => s.type === 'drop';
-const isWorkSet = (s) => !isWarmSet(s) && !isDropSet(s);
+const isRpSet = (s) => s.type === 'restpause';
+const isWorkSet = (s) => !isWarmSet(s) && !isDropSet(s) && !isRpSet(s);
 
 /** What the editor shows for an exercise in the open workout: the workout's current state. */
 export function liveDraft(entry, exercise) {
@@ -566,6 +596,7 @@ export function liveDraft(entry, exercise) {
     sets: entry.sets.filter(isWorkSet).length,
     warmupSets: entry.sets.filter(isWarmSet).length,
     dropSets: entry.sets.filter(isDropSet).length,
+    restPauseSets: entry.sets.filter(isRpSet).length,
     notes: entry.notes || '',
   };
 }
@@ -601,6 +632,7 @@ export function applyLiveEdit(w, entry, d) {
     const base = entry.sets.filter(isWorkSet).slice(-1)[0];
     entry.sets.push(newSet({ type: 'drop', kg: dropWeight(base?.kg, d.weightStep) }));
   });
+  setCount(entry, isRpSet, d.restPauseSets, () => insertRestPause(entry));
   const p = entry.progression || {};
   if (!p.applied) {
     const cfg = { ...entry.snapshot, dropSets: d.dropSets || 0 };
@@ -632,11 +664,12 @@ export function liveChanges(w) {
       sets: e.sets.filter(isWorkSet).length,
       warmupSets: e.sets.filter(isWarmSet).length,
       dropSets: e.sets.filter(isDropSet).length,
+      restPauseSets: e.sets.filter(isRpSet).length,
       ...Object.fromEntries(LIVE_KEYS.map((k) => [k, k === 'unilateral' ? !!snap[k] : snap[k]])),
       progression: snap.progression || {},
     };
     const was = {
-      sets: cfg.sets, warmupSets: warmupCount(cfg, data.settings), dropSets: cfg.dropSets || 0,
+      sets: cfg.sets, warmupSets: warmupCount(cfg, data.settings), dropSets: cfg.dropSets || 0, restPauseSets: cfg.restPauseSets || 0,
       ...Object.fromEntries(LIVE_KEYS.map((k) => [k, k === 'unilateral' ? !!cfg[k] : cfg[k]])),
       progression: cfg.progression || {},
     };
@@ -645,13 +678,16 @@ export function liveChanges(w) {
     // = "3 → 2" (one set less), not "3 → 1".
     if (e.autoWorkSets !== undefined) now.sets = Math.max(1, was.sets + (now.sets - e.autoWorkSets));
     if (e.autoDropSets !== undefined) now.dropSets = Math.max(0, was.dropSets + (now.dropSets - e.autoDropSets));
+    if (e.autoRpSets !== undefined) now.restPauseSets = Math.max(0, was.restPauseSets + (now.restPauseSets - e.autoRpSets));
     const lines = [];
     const add = (label, a, b) => lines.push({ label, from: a, to: b });
     if (now.warmupSets !== was.warmupSets) add('Warm-up sets', was.warmupSets, now.warmupSets);
     if (now.sets !== was.sets) add('Working sets', was.sets, now.sets);
     if (now.dropSets !== was.dropSets) add('Drop sets', was.dropSets, now.dropSets);
+    if (now.restPauseSets !== was.restPauseSets) add('Rest-pause sets', was.restPauseSets, now.restPauseSets);
     if (now.repMin !== was.repMin || now.repMax !== was.repMax) add('Rep range', `${was.repMin}–${was.repMax}`, `${now.repMin}–${now.repMax}`);
     if (now.rest !== was.rest) add('Rest', fmtSec(was.rest), fmtSec(now.rest));
+    if ((now.restPause ?? null) !== (was.restPause ?? null)) add('Rest-pause rest', fmtSec(restPauseSeconds(was, data.settings)), fmtSec(restPauseSeconds(now, data.settings)));
     if (now.weightStep !== was.weightStep) add('− / + step', was.weightStep, now.weightStep);
     if ((now.rirTarget ?? null) !== (was.rirTarget ?? null)) add('Target RIR', was.rirTarget ?? '–', now.rirTarget ?? '–');
     if (now.type !== was.type || (now.type === 'dumbbell' && now.loadMode !== was.loadMode)) add('Type', was.type, now.type);
@@ -669,7 +705,7 @@ const normProg = (p) => Object.fromEntries(Object.entries(p || {}).filter(([, v]
 /** Saves the changes; returns what is needed to undo them (see undoLiveChanges). */
 export function saveLiveChanges(w, changes) {
   const routine = w.routineId ? data.routines.find((r) => r.id === w.routineId) : null;
-  const keys = ['sets', 'warmupSets', 'dropSets', ...LIVE_KEYS, 'progression'];
+  const keys = ['sets', 'warmupSets', 'dropSets', 'restPauseSets', ...LIVE_KEYS, 'progression'];
   const backup = routine
     ? { routine: deepClone(routine) }
     : { exercises: changes.map((c) => data.exercises.find((x) => x.id === c.exerciseId)).filter(Boolean).map(deepClone) };
@@ -681,7 +717,7 @@ export function saveLiveChanges(w, changes) {
       const next = { ...it };
       for (const k of keys) {
         const v = c.values[k];
-        const lib = k === 'warmupSets' || k === 'dropSets' ? ex[k] || 0 : k === 'unilateral' ? !!ex[k] : ex[k];
+        const lib = k === 'warmupSets' || k === 'dropSets' || k === 'restPauseSets' ? ex[k] || 0 : k === 'unilateral' ? !!ex[k] : ex[k];
         next[k] = JSON.stringify(k === 'progression' ? normProg(v) : v) === JSON.stringify(k === 'progression' ? normProg(lib) : lib) ? null : deepClone(v);
       }
       return next;

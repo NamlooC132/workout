@@ -987,6 +987,30 @@ select.select { border-radius: 8px; min-height: 36px; }
 :root[data-theme="dark"] { --helper: color-mix(in srgb, var(--accent) 55%, #ffffff); }
 .tbar-indirect { background: var(--helper); box-shadow: inset 2px 0 0 rgba(0, 0, 0, 0.18); }
 
-/* 1.32.3: rest time under each exercise name */
-.rest-line { display: flex; align-items: center; gap: 4px; }
-.rest-line svg { flex: none; opacity: 0.8; }
+/* 1.34.0: rest line under each exercise name – a quiet button that opens the rest settings */
+.rest-line {
+  display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; padding: 3px 9px 3px 7px; min-height: 26px;
+  border: 0; border-radius: 999px; background: var(--fill, rgba(127, 127, 127, 0.1)); color: var(--muted);
+  font: inherit; font-size: 13px; font-weight: 550; cursor: pointer; -webkit-tap-highlight-color: transparent; white-space: nowrap; max-width: 100%;
+  transition: background 0.15s ease;
+}
+.rest-line:active { background: var(--fill2, rgba(127, 127, 127, 0.18)); }
+.rest-line svg { flex: none; opacity: 0.85; }
+.rest-line b { color: var(--text); font-weight: 650; font-variant-numeric: tabular-nums; }
+.rest-line .rl-dot { opacity: 0.5; margin: 0 1px; }
+.rest-line .rl-rp, .rest-line b.rl-rp { color: var(--purple); }
+
+/* Rest-pause sets: purple "RP" label, tied to the set above with a short line */
+.set-wrap.rp .set-num { font-size: 12px; letter-spacing: 0.4px; }
+.set-wrap.rp .set-num::before {
+  content: ''; position: absolute; left: 50%; top: -8px; width: 2px; height: 10px; border-radius: 1px;
+  background: color-mix(in srgb, var(--purple) 45%, transparent); transform: translateX(-50%);
+}
+.rp-ico { width: 28px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
+  color: var(--purple); background: color-mix(in srgb, var(--purple) 14%, transparent); }
+
+/* Rest bar during a rest-pause: purple fill, small tag */
+.rest-bar.rp .rest-fill { background: var(--purple); }
+.rest-bar.rp .rest-clock { color: var(--purple); }
+.rp-tag { display: inline-block; font-size: 10.5px; font-weight: 750; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1;
+  color: var(--purple); background: color-mix(in srgb, var(--purple) 14%, transparent); padding: 3px 6px; border-radius: 6px; vertical-align: 1px; }

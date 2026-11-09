@@ -314,7 +314,7 @@ export function RoutineScreen({ id }) {
         left: h(Thumb, { image: ex.image, name: ex.name, muscles: ex.muscles }),
         title: ex.name,
         subtitle: [
-          `${cfg.warmupSets ? cfg.warmupSets + 'W + ' : ''}${cfg.sets} × ${cfg.repMin}–${cfg.repMax}${cfg.dropSets ? ` + ${cfg.dropSets} drop` : ''} · Rest ${fmtClock(cfg.rest)}${cfg.rirTarget !== null && cfg.rirTarget !== undefined ? ` · RIR ${cfg.rirTarget}` : ''}`,
+          `${cfg.warmupSets ? cfg.warmupSets + 'W + ' : ''}${cfg.sets} × ${cfg.repMin}–${cfg.repMax}${cfg.restPauseSets ? ` + ${cfg.restPauseSets} rest-pause` : ''}${cfg.dropSets ? ` + ${cfg.dropSets} drop` : ''} · Rest ${fmtClock(cfg.rest)}${cfg.rirTarget !== null && cfg.rirTarget !== undefined ? ` · RIR ${cfg.rirTarget}` : ''}`,
           item.notes && h('div', ['📝 ', item.notes]),
           ex.notes && h('div', ['📌 ', ex.notes]),
         ],

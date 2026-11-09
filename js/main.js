@@ -6,7 +6,7 @@ import { data, ui, update, setRenderer, load, activeWorkout, toast } from './sto
 import { Dialog, Toast, nav } from './ui/components.js';
 import { RoutinesScreen, RoutineScreen, NewRoutineSheet, RoutineMetaSheet } from './ui/routines.js';
 import { LibraryScreen, PickerSheet, ExerciseEditorSheet } from './ui/exercises.js';
-import { WorkoutView, RestPanel, ManualRestSheet, SetMenuSheet, TextInputSheet, FinishSummarySheet, ExHistorySheet, SaveWorkoutChangesSheet } from './ui/workout.js';
+import { WorkoutView, RestPanel, ManualRestSheet, RestSettingsSheet, SetMenuSheet, TextInputSheet, FinishSummarySheet, ExHistorySheet, SaveWorkoutChangesSheet } from './ui/workout.js';
 import { HistoryScreen, WorkoutDetailScreen, ExerciseScreen } from './ui/history.js';
 import { ProgressScreen, MeasurementSheet } from './ui/progress.js';
 import { PlanScreen, BlockEditorSheet } from './ui/plan.js';
@@ -28,6 +28,7 @@ const SHEETS = {
   newRoutine: NewRoutineSheet,
   routineMeta: RoutineMetaSheet,
   manualRest: ManualRestSheet,
+  restSettings: RestSettingsSheet,
   setMenu: SetMenuSheet,
   exHistory: ExHistorySheet,
   howTo: HowToSheet,

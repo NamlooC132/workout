@@ -56,8 +56,8 @@ export function buzz(pattern = [200, 100, 200]) {
   try { navigator.vibrate && navigator.vibrate(pattern); } catch { /* ignore */ }
 }
 
-export function startRest(seconds, label = '', next = '') {
-  saveTimer(startTimer(seconds, Date.now(), label, next));
+export function startRest(seconds, label = '', next = '', kind = '') {
+  saveTimer({ ...startTimer(seconds, Date.now(), label, next), kind });
   ensureTicking();
 }
 

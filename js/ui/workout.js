@@ -8,7 +8,7 @@
 import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
 import { data, ui, update, openSheet, closeSheet, confirm, toast, exercisesById, saveWorkout, history } from '../store.js';
-import { Page, Section, Row, Button, IconButton, Sheet, TextField, Thumb, Chip, NumberField, WeightField, DragHandle, ExercisePhoto, fmtW, nav } from './components.js';
+import { Page, Section, Row, Button, IconButton, Sheet, TextField, Thumb, Chip, NumberField, Stepper, WeightField, DragHandle, ExercisePhoto, fmtW, nav } from './components.js';
 import { fmtClock, fmtDuration, fmtNum, plural } from '../logic/util.js';
 import { SET_TYPES, muscleName } from '../logic/muscles.js';
 import { displayWeight, fromDisplayWeight } from '../logic/units.js';
@@ -21,7 +21,7 @@ import { guideFor, photoFor } from '../logic/catalog.js';
 import { HealthBox } from './health.js';
 import { setGoals } from '../logic/progression.js';
 import { e1rm } from '../logic/records.js';
-import { setReps } from '../logic/model.js';
+import { setReps, restPauseSeconds } from '../logic/model.js';
 
 /** Volume (weight × reps) of completed sets, warm-ups excluded. Sets without a `done` flag count (last-time summaries). */
 function volumeOf(sets, snap, bw) {
@@ -135,7 +135,7 @@ function ExerciseCard({ w, entry, index, st }) {
   const lastNote = ex?.lastNote && ex.lastNote.workoutId !== w.id ? ex.lastNote.text
     : (history().get(entry.exerciseId) || []).map((it) => it.workout.id !== w.id && WS.entryNoteText(it.entry)).find(Boolean);
   const openHistory = () => openSheet({ type: 'exHistory', exerciseId: entry.exerciseId, name: snap.name });
-  const workCount = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop').length;
+  const workCount = entry.sets.filter((s) => s.type !== 'warmup' && s.type !== 'drop' && s.type !== 'restpause').length;
   const goals = setGoals(snap, workCount);
   const perSetRule = snap.progression?.rule === 'per_set' && (snap.progression.setGoals || []).length > 0;
   const bw = bodyweightAt(data.measurements, w.startedAt);
@@ -165,7 +165,11 @@ function ExerciseCard({ w, entry, index, st }) {
         h('div.last-time', entry.lastSummary ? `Last: ${setsSummary(entry.lastSummary.sets, snap)}` : `First time · aim for ${snap.repMin}–${snap.repMax} reps`),
         entry.lastSummary && h('div.last-time.goal-line', perSetRule ? `Goal: ${goals.join(', ')} reps` : `Goal: ${snap.repMin}–${snap.repMax} reps`),
         !entry.lastSummary && perSetRule && h('div.last-time.goal-line', `Goal: ${goals.join(', ')} reps`),
-        h('div.last-time.rest-line', [icon('timer', 13), h('span', 'Rest'), h('span', fmtClock(snap.rest || data.settings.defaultRest || 90))]),
+        h('button.rest-line', { onclick: () => openSheet({ type: 'restSettings', workoutId: w.id, entryId: entry.id }), 'aria-label': 'Change rest time' }, [
+          icon('timer', 13),
+          h('span', 'Rest'), h('b', fmtClock(snap.rest || data.settings.defaultRest || 90)),
+          entry.sets.some((x) => x.type === 'restpause') && [h('span.rl-dot', '·'), h('span.rl-rp', 'Rest-pause'), h('b.rl-rp', `${restPauseSeconds(snap, data.settings)}s`)],
+        ]),
       ]),
       h(IconButton, { name: 'info', label: `How to do ${snap.name}`, class: 'howto-btn', onClick: () => openSheet({ type: 'howTo', name: snap.name, exerciseId: entry.exerciseId }) }),
       h(IconButton, { name: 'more', label: 'Exercise options', onClick: () => entryMenu(w, entry) }),
@@ -184,14 +188,15 @@ function ExerciseCard({ w, entry, index, st }) {
       ]),
       ...entry.sets.map((s, si) => {
         const isWarm = s.type === 'warmup';
-        if (!isWarm) { workNo++; nonWarmNo++; }
+        const isRp = s.type === 'restpause';
+        if (!isWarm) { if (!isRp) workNo++; nonWarmNo++; }
         const trend = isWarm ? null : compare(s);
         const t = SET_TYPES.find((x) => x.key === s.type);
-        const label = isWarm ? 'W' : `${workNo}${t && t.short ? t.short : ''}`;
+        const label = isWarm ? 'W' : isRp ? 'RP' : `${workNo}${t && t.short ? t.short : ''}`;
         const isCurrent = s === currentSet;
         const hasPrev = si > 0;
         const showRir = rirMode !== 'off' && !isWarm && isCurrent && (rirMode === 'required' || st.rirOpen[s.id]);
-        return h('div', { key: s.id, 'data-set': s.id, class: cx('set-wrap', s.done && 'done', isCurrent && 'current') }, [
+        return h('div', { key: s.id, 'data-set': s.id, class: cx('set-wrap', s.done && 'done', isCurrent && 'current', isRp && 'rp') }, [
           h('div.set-row', { class: gridCls }, [
             h('button', { class: cx('set-num', s.type), onclick: () => openSheet({ type: 'setMenu', workoutId: w.id, entryId: entry.id, setId: s.id }), 'aria-label': `Set ${label} options` }, [
               s.pr ? h('span.pr-num', ['🏆', h('small', label)]) : label,
@@ -302,6 +307,7 @@ function entryMenu(w, entry) {
       { text: 'How to do it', icon: 'info', onClick: () => openSheet({ type: 'howTo', name: entry.snapshot.name, exerciseId: entry.exerciseId }) },
       { text: 'Add warm-up set', icon: 'flame', onClick: () => WS.addSet(w, entry, 'warmup') },
       { text: 'Add drop set', icon: 'chevronDown', onClick: () => WS.addSet(w, entry, 'drop') },
+      { text: 'Add rest-pause set', icon: 'pause', onClick: () => WS.addSet(w, entry, 'restpause') },
       { text: entry.notes ? 'Edit note' : 'Add note', icon: 'note', onClick: () => openSheet({ type: 'textInput', title: 'Note for this workout', value: entry.notes, placeholder: 'Only for this workout', onSave: (v) => { entry.notes = v; WS.save(w); } }) },
       { text: 'Replace exercise', icon: 'swap', onClick: () => openSheet({ type: 'picker', multi: false, title: `Replace ${entry.snapshot.name}`, context: { workoutId: w.id }, onPick: ([nx]) => WS.undoable(w, `Replaced with ${nx.name}`, () => WS.replaceEntry(w, entry, nx)) }) },
       { text: 'Reorder exercises', icon: 'grip', onClick: () => { ui.tabState.workout.reorder = true; update(); } },
@@ -360,23 +366,47 @@ function askFinish(w) {
 }
 
 // ---------- Rest timer (compact bar) ----------
-const restStep = () => data.settings.restAdjustStep || 15;
+const restStep = () => (data.timer?.kind === 'restpause' ? 5 : data.settings.restAdjustStep || 15);
 export function RestPanel({ inWorkout }) {
   const t = data.timer;
   if (!t) return null;
   const left = restRemaining();
   const pct = t.total ? Math.max(0, Math.min(100, (left / 1000 / t.total) * 100)) : 0;
-  return h('div', { class: cx('rest-bar', !inWorkout && 'on-tabs') }, [
+  return h('div', { class: cx('rest-bar', !inWorkout && 'on-tabs', t.kind === 'restpause' && 'rp') }, [
     h('div.rest-fill', { style: { width: pct + '%' } }),
     h('div.rest-main', [
       h('div.rest-info', [
         h('div.rest-clock', { 'aria-live': 'polite' }, fmtClock(Math.ceil(left / 1000))),
-        h('div.rest-next', t.next ? `Next: ${t.next}` : 'Rest timer'),
+        t.kind === 'restpause'
+          ? h('div.rest-next', h('span.rp-tag', 'Rest-pause'))
+          : h('div.rest-next', t.next ? `Next: ${t.next}` : 'Rest timer'),
       ]),
       h('button.btn.btn-secondary.btn-sm.rest-btn', { onclick: () => adjustRest(-restStep()), 'aria-label': `Remove ${restStep()} seconds` }, `−${restStep()}s`),
       h('button.btn.btn-secondary.btn-sm.rest-btn', { onclick: () => adjustRest(restStep()), 'aria-label': `Add ${restStep()} seconds` }, `+${restStep()}s`),
       h('button.btn.btn-primary.btn-sm.rest-btn', { onclick: skipRest }, 'Skip'),
     ]),
+  ]);
+}
+
+// sheet: { type: 'restSettings', workoutId, entryId } – rest for one exercise in this workout
+export function RestSettingsSheet(sheet) {
+  const w = data.workouts.find((x) => x.id === sheet.workoutId);
+  const entry = w && w.entries.find((e) => e.id === sheet.entryId);
+  if (!entry) return null;
+  const snap = entry.snapshot;
+  const setSnap = (patch) => { entry.snapshot = { ...snap, ...patch }; entry.changedAt = Date.now(); WS.save(w); };
+  const hasRp = entry.sets.some((x) => x.type === 'restpause');
+  return h(Sheet, { title: 'Rest', left: h('button.link-btn', { onclick: closeSheet }, 'Done') }, [
+    h('div.pad.small.muted', { style: { paddingTop: 0 } }, snap.name),
+    h(Section, { footer: 'For this workout. When you finish, you can save it for next time.' }, [
+      h(Row, { left: icon('timer', 20), title: 'Between sets', right: h(Stepper, { value: snap.rest || data.settings.defaultRest || 90, step: 15, min: 15, max: 600, format: fmtClock, onChange: (v) => setSnap({ rest: v }) }) }),
+      h(Row, {
+        left: h('span.rp-ico', icon('pause', 16)), title: 'Rest-pause',
+        subtitle: hasRp ? 'Short rest before each rest-pause set' : 'Used when you add a rest-pause set',
+        right: h(Stepper, { value: restPauseSeconds(snap, data.settings), step: 5, min: 5, max: 60, format: (v) => `${v} s`, onChange: (v) => setSnap({ restPause: v }) }),
+      }),
+    ]),
+    !hasRp && h(Button, { kind: 'secondary', block: true, onClick: () => { WS.addSet(w, entry, 'restpause'); closeSheet(); } }, [icon('plus', 18), 'Add rest-pause set']),
   ]);
 }
 

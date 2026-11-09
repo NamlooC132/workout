@@ -25,6 +25,7 @@ export function defaultSettings() {
     unit: 'kg',
     lengthUnit: 'cm',
     defaultRest: 90,
+    restPauseRest: 15,               // seconds between rest-pause mini-sets
     defaultWeightStep: 2.5,          // −/+ buttons, display unit
     defaultProgressionStep: null,    // null = 2.5 kg / 5 lbs
     defaultRule: 'descending',
@@ -79,6 +80,8 @@ export function newExercise(settings, fields = {}) {
     rirTarget: settings?.defaultRirTarget ?? null,
     warmupSets: settings?.defaultWarmupSets ?? 0,
     dropSets: settings?.defaultDropSets ?? 0,   // drop sets after the last working set
+    restPauseSets: 0,          // rest-pause mini-sets after the last working set
+    restPause: null,           // seconds between them; null = settings.restPauseRest
     progression: {
       rule: settings?.defaultRule ?? 'descending', // 'descending' | 'all_max' | 'avg' | 'custom'
       avgTarget: null,         // 'avg' rule: average reps needed (default = repMax)
@@ -102,6 +105,8 @@ export function newRoutineItem(exerciseId, fields = {}) {
     sets: null,
     warmupSets: null,
     dropSets: null,
+    restPauseSets: null,
+    restPause: null,
     repMin: null,
     repMax: null,
     rest: null,
@@ -168,6 +173,8 @@ export function effectiveConfig(exercise, item) {
     sets: pick('sets'),
     warmupSets: pick('warmupSets') ?? 0,
     dropSets: pick('dropSets') ?? 0,
+    restPauseSets: pick('restPauseSets') ?? 0,
+    restPause: pick('restPause') ?? null,
     repMin: pick('repMin'),
     repMax: pick('repMax'),
     rest: pick('rest'),
@@ -198,12 +205,16 @@ export function exerciseSnapshot(exercise, cfg) {
     repMax: cfg.repMax,
     sets: cfg.sets,
     rest: cfg.rest,
+    restPause: cfg.restPause ?? null,
     weightStep: cfg.weightStep,
     rirTarget: cfg.rirTarget,
     warmupSets: cfg.warmupSets ?? 0,
     progression: { ...(cfg.progression || exercise.progression || {}) },
   };
 }
+
+/** Seconds between rest-pause mini-sets for an exercise snapshot. */
+export const restPauseSeconds = (snap, settings) => snap?.restPause || settings?.restPauseRest || 15;
 
 /** Reps used for progression/records: unilateral sets count the weaker side. */
 export function setReps(set) {

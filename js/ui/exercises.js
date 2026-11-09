@@ -270,18 +270,19 @@ export function ExerciseEditorSheet(sheet) {
     } else if (inRoutine && existing) {
       const cfg = effectiveConfig(existing, item);
       Object.assign(sheet.draft, deepClone(withConfig(existing, cfg)), {
-        sets: cfg.sets, warmupSets: cfg.warmupSets, dropSets: cfg.dropSets, repMin: cfg.repMin, repMax: cfg.repMax,
+        sets: cfg.sets, warmupSets: cfg.warmupSets, dropSets: cfg.dropSets, restPauseSets: cfg.restPauseSets, restPause: cfg.restPause, repMin: cfg.repMin, repMax: cfg.repMax,
         rest: cfg.rest, weightStep: cfg.weightStep, rirTarget: cfg.rirTarget, notes: item.notes || '',
       });
     }
     sheet.isNew = !existing;
     // Remember the set counts, so a live workout can add / remove exactly what changed.
-    sheet.orig = { sets: sheet.draft.sets || 0, warmupSets: sheet.draft.warmupSets || 0, dropSets: sheet.draft.dropSets || 0 };
+    sheet.orig = { sets: sheet.draft.sets || 0, warmupSets: sheet.draft.warmupSets || 0, dropSets: sheet.draft.dropSets || 0, restPauseSets: sheet.draft.restPauseSets || 0 };
   }
   const countChanges = () => sheet.orig && {
     sets: (sheet.draft.sets || 0) - sheet.orig.sets,
     warmupSets: (sheet.draft.warmupSets || 0) - sheet.orig.warmupSets,
     dropSets: (sheet.draft.dropSets || 0) - sheet.orig.dropSets,
+    restPauseSets: (sheet.draft.restPauseSets || 0) - sheet.orig.restPauseSets,
   };
   const d = sheet.draft;
   const set = (patch) => { Object.assign(d, patch); update(); };
@@ -424,6 +425,8 @@ export function ExerciseEditorSheet(sheet) {
       h(Section, { title: 'Extra sets' }, [
         h(Row, { title: 'Warm-up sets', right: h(Stepper, { value: d.warmupSets || 0, min: 0, max: 6, onChange: (v) => set({ warmupSets: v }) }) }),
         h(Row, { title: 'Drop sets', subtitle: 'After the last working set', right: h(Stepper, { value: d.dropSets || 0, min: 0, max: 4, onChange: (v) => set({ dropSets: v }) }) }),
+        h(Row, { title: 'Rest-pause sets', subtitle: 'Same weight, after a short rest', right: h(Stepper, { value: d.restPauseSets || 0, min: 0, max: 4, onChange: (v) => set({ restPauseSets: v }) }) }),
+        (d.restPauseSets || 0) > 0 && h(Row, { title: 'Rest-pause rest', subtitle: 'Before each rest-pause set', right: h(Stepper, { value: d.restPause || s.restPauseRest || 15, step: 5, min: 5, max: 60, format: (v) => `${v} s`, onChange: (v) => set({ restPause: v }) }) }),
         hasWeight && h(Row, { title: '− / + buttons change weight by', subtitle: 'Only for the buttons next to the weight. Automatic increases use “Increase by” below.', right: select(stepOptions.map((x) => ({ value: x, label: `${x} ${unit}` })), d.weightStep, (v) => set({ weightStep: Number(v) })) }),
         h(Row, { title: 'Target RIR', subtitle: 'Reps in reserve you aim for', right: select([{ value: '', label: 'None' }, ...[0, 1, 2, 3, 4].map((x) => ({ value: String(x), label: `${x}` })), { value: '5', label: '5+' }], d.rirTarget === null || d.rirTarget === undefined ? '' : String(d.rirTarget), (v) => set({ rirTarget: v === '' ? null : Number(v) })) }),
       ]),
@@ -487,7 +490,7 @@ export function ExerciseEditorSheet(sheet) {
 }
 
 // Fields a routine can override (null = use the library value).
-const ROUTINE_KEYS = ['sets', 'warmupSets', 'dropSets', 'repMin', 'repMax', 'rest', 'weightStep', 'rirTarget', 'type', 'loadMode', 'unilateral', 'progression'];
+const ROUTINE_KEYS = ['sets', 'warmupSets', 'dropSets', 'restPauseSets', 'restPause', 'repMin', 'repMax', 'rest', 'weightStep', 'rirTarget', 'type', 'loadMode', 'unilateral', 'progression'];
 const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 /** Differences between the edited draft and the library exercise, as routine overrides. */
 function routineOverrides(ex, d) {
