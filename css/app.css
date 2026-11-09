@@ -1058,3 +1058,9 @@ select.select { border-radius: 8px; min-height: 36px; }
   appearance: none; border: 0; background: none; padding: 6px 0 2px; font: inherit; font-size: 13px; font-weight: 650;
   color: var(--purple); display: inline-flex; align-items: center; gap: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
+
+/* 1.38.0: Progress → Volume (weight × reps) – simple bars per muscle */
+.lift-bar { height: 8px; border-radius: 4px; background: var(--fill); margin-top: 7px; overflow: hidden; }
+.lift-bar i { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+/* 5 options (Progress tabs) – tighter so the words never touch */
+.segmented:has(> .seg:nth-child(5)) .seg { font-size: 13px; padding: 0 2px; letter-spacing: -0.1px; }

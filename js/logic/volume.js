@@ -88,3 +88,47 @@ export function targetStatus(value, target) {
   if (target.max && value > target.max) return 'high';
   return 'ok';
 }
+
+// ---------- Lifted volume (weight × reps) ----------
+// Separate from the set counts above: this is the total weight moved in completed,
+// non-warm-up sets (rest-pause mini-sets included). Bodyweight exercises use the body
+// weight logged closest to the workout.
+
+/**
+ * { total, workouts, sets, reps, byMuscle: {m: kg}, byExercise: [{ id, name, kg, sets }] }
+ * for finished workouts with startedAt in [from, to). A muscle gets the volume of the
+ * exercises where it is a main muscle (contribution ≥ 1).
+ * `tonnageOf(set, snap, bw)` and `bodyweightAt(ms)` are passed in (records.js).
+ */
+export function liftedBetween(workouts, from, to, tonnageOf, bodyweightAt) {
+  const out = { total: 0, workouts: 0, sets: 0, reps: 0, byMuscle: {}, byExercise: [] };
+  const exMap = new Map();
+  for (const w of workouts) {
+    if (w.status !== 'done' || w.kind === 'run' || w.startedAt < from || w.startedAt >= to) continue;
+    const bw = bodyweightAt(w.startedAt);
+    let any = false;
+    for (const e of w.entries || []) {
+      if (e.skipped) continue;
+      let kg = 0, sets = 0;
+      for (const s of e.sets || []) {
+        if (!s.done || s.type === 'warmup') continue;
+        kg += tonnageOf(s, e.snapshot, bw);
+        sets++;
+        const reps = e.snapshot?.unilateral ? (s.repsL || 0) + (s.repsR || 0) : s.reps || 0;
+        out.reps += reps + (s.mini || []).reduce((t, m) => t + (m.done ? m.reps || 0 : 0), 0);
+      }
+      if (!sets) continue;
+      any = true;
+      out.total += kg;
+      out.sets += sets;
+      for (const [m, c] of Object.entries(e.snapshot?.muscles || {})) if (c >= 1) out.byMuscle[m] = (out.byMuscle[m] || 0) + kg;
+      const key = e.exerciseId || e.snapshot?.name;
+      const x = exMap.get(key) || { id: e.exerciseId, name: e.snapshot?.name || '?', kg: 0, sets: 0 };
+      x.kg += kg; x.sets += sets;
+      exMap.set(key, x);
+    }
+    if (any) out.workouts++;
+  }
+  out.byExercise = [...exMap.values()].sort((a, b) => b.kg - a.kg);
+  return out;
+}

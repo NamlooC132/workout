@@ -717,3 +717,25 @@ test('plan: run and yoga days count as done', () => {
   days = planVsDone([block], workouts, start - 12 * 3600000, start + 2 * D, [{ id: 'y', date: start + D }]);
   assert.deepEqual(adherence(days, start + 3 * D), { planned: 3, completed: 3 });
 });
+
+test('lifted volume: weight × reps per period, warm-ups out, mini-sets in', async () => {
+  const { liftedBetween } = await import('../js/logic/volume.js');
+  const { tonnage } = await import('../js/logic/records.js');
+  const snap = { name: 'Bench', type: 'weighted', muscles: { chest: 1, triceps: 0.5 } };
+  const w = {
+    status: 'done', startedAt: 1000, entries: [{ exerciseId: 'b', snapshot: snap, sets: [
+      { type: 'warmup', done: true, kg: 40, reps: 10 },
+      { type: 'working', done: true, kg: 100, reps: 5 },
+      { type: 'restpause', done: true, kg: 80, reps: 6, mini: [{ reps: 3, done: true }, { reps: 2, done: false }] },
+      { type: 'working', done: false, kg: 100, reps: 5 },
+    ] }],
+  };
+  const r = liftedBetween([w, { ...w, startedAt: 5000 }], 0, 2000, tonnage, () => 80);
+  assert.equal(r.total, 100 * 5 + 80 * 9);
+  assert.equal(r.sets, 2);
+  assert.equal(r.reps, 5 + 9);
+  assert.equal(r.workouts, 1);
+  assert.equal(r.byMuscle.chest, 1220);
+  assert.equal(r.byMuscle.triceps, undefined);
+  assert.equal(r.byExercise[0].kg, 1220);
+});
