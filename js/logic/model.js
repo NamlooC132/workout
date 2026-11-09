@@ -26,6 +26,7 @@ export function defaultSettings() {
     lengthUnit: 'cm',
     defaultRest: 90,
     restPauseRest: 15,               // seconds between rest-pause mini-sets
+    supersetRest: 0,                 // seconds between exercises of a superset round (0 = go straight on)
     defaultWeightStep: 2.5,          // −/+ buttons, display unit
     defaultProgressionStep: null,    // null = 2.5 kg / 5 lbs
     defaultRule: 'descending',
@@ -107,6 +108,7 @@ export function newRoutineItem(exerciseId, fields = {}) {
     dropSets: null,
     restPauseSets: null,
     restPause: null,
+    ssRest: null,              // superset: rest before the next exercise of the round
     repMin: null,
     repMax: null,
     rest: null,
@@ -175,6 +177,7 @@ export function effectiveConfig(exercise, item) {
     dropSets: pick('dropSets') ?? 0,
     restPauseSets: pick('restPauseSets') ?? 0,
     restPause: pick('restPause') ?? null,
+    ssRest: pick('ssRest') ?? null,
     repMin: pick('repMin'),
     repMax: pick('repMax'),
     rest: pick('rest'),
@@ -206,6 +209,7 @@ export function exerciseSnapshot(exercise, cfg) {
     sets: cfg.sets,
     rest: cfg.rest,
     restPause: cfg.restPause ?? null,
+    ssRest: cfg.ssRest ?? null,
     weightStep: cfg.weightStep,
     rirTarget: cfg.rirTarget,
     warmupSets: cfg.warmupSets ?? 0,
@@ -215,6 +219,9 @@ export function exerciseSnapshot(exercise, cfg) {
 
 /** Seconds between rest-pause mini-sets for an exercise snapshot. */
 export const restPauseSeconds = (snap, settings) => snap?.restPause || settings?.restPauseRest || 15;
+
+/** Seconds between the exercises of one superset round (0 = no timer). */
+export const supersetRestSeconds = (snap, settings) => snap?.ssRest ?? settings?.supersetRest ?? 0;
 
 /** Reps used for progression/records: unilateral sets count the weaker side. */
 export function setReps(set) {

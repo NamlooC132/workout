@@ -21,7 +21,7 @@ import { guideFor, photoFor } from '../logic/catalog.js';
 import { HealthBox } from './health.js';
 import { setGoals } from '../logic/progression.js';
 import { e1rm } from '../logic/records.js';
-import { setReps, restPauseSeconds } from '../logic/model.js';
+import { setReps, restPauseSeconds, supersetRestSeconds } from '../logic/model.js';
 
 /** Volume (weight × reps) of completed sets, warm-ups excluded. Sets without a `done` flag count (last-time summaries). */
 function volumeOf(sets, snap, bw) {
@@ -124,6 +124,12 @@ function ExerciseCard({ w, entry, index, st }) {
   const prev = w.entries[index - 1], next = w.entries[index + 1];
   const inSS = !!entry.supersetId && ((prev && prev.supersetId === entry.supersetId) || (next && next.supersetId === entry.supersetId));
   const ssStart = inSS && (!prev || prev.supersetId !== entry.supersetId);
+  const ssEnd = inSS && (!next || next.supersetId !== entry.supersetId);
+  const ssGroup = inSS ? w.entries.filter((e) => e.supersetId === entry.supersetId) : null;
+  const ssLetter = inSS ? String.fromCharCode(65 + [...new Set(w.entries.filter((e) => e.supersetId).map((e) => e.supersetId))].indexOf(entry.supersetId)) : '';
+  const ssPos = inSS ? ssGroup.indexOf(entry) + 1 : 0;
+  // In a superset the "rest" is the rest after a round = the last exercise's rest.
+  const roundRest = inSS ? ssGroup[ssGroup.length - 1].snapshot.rest : snap.rest;
   const showWeight = snap.type !== 'bodyweight';
   const uni = !!snap.unilateral;
   const gridCls = cx(!showWeight && 'noweight', uni && 'uni');
@@ -156,8 +162,8 @@ function ExerciseCard({ w, entry, index, st }) {
     return a > b ? 'up' : 'down';
   };
 
-  return h('div', { key: entry.id, class: cx('ex-card', entry.skipped && 'skipped', inSS && 'in-ss', entry.changedAt && Date.now() - entry.changedAt < 2500 && 'just-changed') }, [
-    ssStart && h('div.ss-label', 'Superset · alternate sets'),
+  return h('div', { key: entry.id, class: cx('ex-card', entry.skipped && 'skipped', inSS && 'in-ss', ssStart && 'ss-start', ssEnd && 'ss-end', entry.changedAt && Date.now() - entry.changedAt < 2500 && 'just-changed') }, [
+    ssStart && h('div.ss-label', [h('span.ss-letter', ssLetter), h('span', 'Superset · alternate sets')]),
     h('div.ex-head', [
       h(Thumb, { image: ex?.image, name: snap.name, muscles: ex?.muscles || snap.muscles, size: 52 }),
       h('div.grow', [
@@ -167,7 +173,10 @@ function ExerciseCard({ w, entry, index, st }) {
         !entry.lastSummary && perSetRule && h('div.last-time.goal-line', `Goal: ${goals.join(', ')} reps`),
         h('button.rest-line', { onclick: () => openSheet({ type: 'restSettings', workoutId: w.id, entryId: entry.id }), 'aria-label': 'Change rest time' }, [
           icon('timer', 13),
-          h('span', 'Rest'), h('b', fmtClock(snap.rest || data.settings.defaultRest || 90)),
+          inSS
+            ? [h('span', 'Round'), h('b', fmtClock(roundRest || data.settings.defaultRest || 90)), h('span.rl-dot', '·'), h('span', 'Switch'),
+              h('b', supersetRestSeconds(snap, data.settings) ? `${supersetRestSeconds(snap, data.settings)}s` : 'off')]
+            : [h('span', 'Rest'), h('b', fmtClock(snap.rest || data.settings.defaultRest || 90))],
           entry.sets.some((x) => x.type === 'restpause') && [h('span.rl-dot', '·'), h('span.rl-rp', 'Rest-pause'), h('b.rl-rp', `${restPauseSeconds(snap, data.settings)}s`)],
         ]),
       ]),
@@ -366,19 +375,21 @@ function askFinish(w) {
 }
 
 // ---------- Rest timer (compact bar) ----------
-const restStep = () => (data.timer?.kind === 'restpause' ? 5 : data.settings.restAdjustStep || 15);
+const restStep = () => (data.timer?.kind === 'restpause' || data.timer?.kind === 'superset' ? 5 : data.settings.restAdjustStep || 15);
 export function RestPanel({ inWorkout }) {
   const t = data.timer;
   if (!t) return null;
   const left = restRemaining();
   const pct = t.total ? Math.max(0, Math.min(100, (left / 1000 / t.total) * 100)) : 0;
-  return h('div', { class: cx('rest-bar', !inWorkout && 'on-tabs', t.kind === 'restpause' && 'rp') }, [
+  return h('div', { class: cx('rest-bar', !inWorkout && 'on-tabs', t.kind === 'restpause' && 'rp', t.kind === 'superset' && 'ssr') }, [
     h('div.rest-fill', { style: { width: pct + '%' } }),
     h('div.rest-main', [
       h('div.rest-info', [
         h('div.rest-clock', { 'aria-live': 'polite' }, fmtClock(Math.ceil(left / 1000))),
         t.kind === 'restpause'
           ? h('div.rest-next', h('span.rp-tag', 'Rest-pause'))
+          : t.kind === 'superset'
+          ? h('div.rest-next', [h('span.rp-tag', 'Switch'), ' ', t.next ? `Next: ${t.next}` : ''])
           : h('div.rest-next', t.next ? `Next: ${t.next}` : 'Rest timer'),
       ]),
       h('button.btn.btn-secondary.btn-sm.rest-btn', { onclick: () => adjustRest(-restStep()), 'aria-label': `Remove ${restStep()} seconds` }, `−${restStep()}s`),
@@ -396,10 +407,22 @@ export function RestSettingsSheet(sheet) {
   const snap = entry.snapshot;
   const setSnap = (patch) => { entry.snapshot = { ...snap, ...patch }; entry.changedAt = Date.now(); WS.save(w); };
   const hasRp = entry.sets.some((x) => x.type === 'restpause');
+  const group = entry.supersetId ? w.entries.filter((e) => e.supersetId === entry.supersetId) : null;
+  const inSS = group && group.length > 1;
+  // Superset times belong to the whole superset: change them on every exercise in it.
+  const setGroup = (patch) => { for (const e of group) { e.snapshot = { ...e.snapshot, ...patch }; e.changedAt = Date.now(); } WS.save(w); };
+  const roundRest = inSS ? group[group.length - 1].snapshot.rest : snap.rest;
   return h(Sheet, { title: 'Rest', left: h('button.link-btn', { onclick: closeSheet }, 'Done') }, [
-    h('div.pad.small.muted', { style: { paddingTop: 0 } }, snap.name),
-    h(Section, { footer: 'For this workout. When you finish, you can save it for next time.' }, [
-      h(Row, { left: icon('timer', 20), title: 'Between sets', right: h(Stepper, { value: snap.rest || data.settings.defaultRest || 90, step: 15, min: 15, max: 600, format: fmtClock, onChange: (v) => setSnap({ rest: v }) }) }),
+    h('div.pad.small.muted', { style: { paddingTop: 0 } }, inSS ? group.map((e) => e.snapshot.name).join(' + ') : snap.name),
+    h(Section, { title: inSS ? 'Superset' : null, footer: 'For this workout. When you finish, you can save it for next time.' }, [
+      inSS && h(Row, {
+        left: h('span.ss-ico', icon('link', 16)), title: 'Switch exercise',
+        subtitle: 'Rest before the next exercise of the round',
+        right: h(Stepper, { value: supersetRestSeconds(snap, data.settings), step: 5, min: 0, max: 180, format: (v) => (v ? (v >= 60 ? fmtClock(v) : `${v} s`) : 'Off'), onChange: (v) => setGroup({ ssRest: v }) }),
+      }),
+      inSS
+        ? h(Row, { left: icon('timer', 20), title: 'After each round', subtitle: 'Rest after the last exercise', right: h(Stepper, { value: roundRest || data.settings.defaultRest || 90, step: 15, min: 15, max: 600, format: fmtClock, onChange: (v) => setGroup({ rest: v }) }) })
+        : h(Row, { left: icon('timer', 20), title: 'Between sets', right: h(Stepper, { value: snap.rest || data.settings.defaultRest || 90, step: 15, min: 15, max: 600, format: fmtClock, onChange: (v) => setSnap({ rest: v }) }) }),
       h(Row, {
         left: h('span.rp-ico', icon('pause', 16)), title: 'Rest-pause',
         subtitle: hasRp ? 'Short rest before each rest-pause set' : 'Used when you add a rest-pause set',

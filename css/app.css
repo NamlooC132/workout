@@ -1014,3 +1014,23 @@ select.select { border-radius: 8px; min-height: 36px; }
 .rest-bar.rp .rest-clock { color: var(--purple); }
 .rp-tag { display: inline-block; font-size: 10.5px; font-weight: 750; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1;
   color: var(--purple); background: color-mix(in srgb, var(--purple) 14%, transparent); padding: 3px 6px; border-radius: 6px; vertical-align: 1px; }
+
+/* 1.35.0: each superset is its own group – bar with rounded ends, gap between groups, letter badge */
+.ex-card.in-ss { position: relative; border-inline-start: 0; padding-inline-start: 14px; }
+.ex-card.in-ss::before {
+  content: ''; position: absolute; inset-inline-start: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--purple); opacity: 0.85;
+}
+.ex-card.in-ss.ss-start { margin-top: 10px; }
+.ex-card.in-ss.ss-start::before { top: 12px; border-start-start-radius: 3px; border-start-end-radius: 3px; }
+.ex-card.in-ss.ss-end { margin-bottom: 10px; }
+.ex-card.in-ss.ss-end::before { bottom: 12px; border-end-start-radius: 3px; border-end-end-radius: 3px; }
+.ex-card.in-ss:not(.ss-end) { border-bottom-style: dashed; }
+.ss-label { display: flex; align-items: center; gap: 7px; }
+.ss-letter {
+  width: 20px; height: 20px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: #fff; background: var(--purple); letter-spacing: 0;
+}
+.ss-ico { width: 28px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
+  color: var(--purple); background: color-mix(in srgb, var(--purple) 14%, transparent); }
+.rest-bar.ssr .rest-fill { background: var(--purple); }

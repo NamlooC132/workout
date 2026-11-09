@@ -3,7 +3,7 @@
 
 import { data, saveWorkout, saveRoutine, saveExercise, deleteWorkout, history, exercisesById, toast } from './store.js';
 import { uid, deepClone } from './logic/util.js';
-import { newSet, effectiveConfig, withConfig, exerciseSnapshot, newRoutineItem, restPauseSeconds } from './logic/model.js';
+import { newSet, effectiveConfig, withConfig, exerciseSnapshot, newRoutineItem, restPauseSeconds, supersetRestSeconds } from './logic/model.js';
 import { lastSession } from './logic/history.js';
 import { evaluateProgression, setGoals } from './logic/progression.js';
 import { activeBlock, blockWeek, isDeloadWeek } from './logic/blocks.js';
@@ -331,16 +331,22 @@ export function toggleSet(w, entry, set) {
   save(w);
 
   if (data.settings.autoRest) {
-    // In a superset, rest only after the last exercise of the round.
+    // Superset: a short (optional) rest before the next exercise of the same round,
+    // and the normal rest after the last exercise of the round.
     const seq = setSequence(w);
     const pos = seq.findIndex((x) => x.set === set);
     const following = seq[pos + 1];
-    const inSameSuperset = entry.supersetId && following && following.entry.supersetId === entry.supersetId && following.entry !== entry && !following.set.done;
+    const sameRound = entry.supersetId && following && following.entry.supersetId === entry.supersetId &&
+      following.entry !== entry && following.index === seq[pos].index && !following.set.done;
     const next = nextUp(w, set);
     const nextInEntry = entry.sets.slice(entry.sets.indexOf(set) + 1).find((s) => !s.done);
-    if (nextInEntry && nextInEntry.type === 'restpause') {
+    if (nextInEntry && nextInEntry.type === 'restpause' && !sameRound) {
       startRest(restPauseSeconds(entry.snapshot, data.settings), entry.snapshot.name, next ? next.label : '', 'restpause');
-    } else if (!inSameSuperset && next) {
+    } else if (sameRound) {
+      const sw = supersetRestSeconds(entry.snapshot, data.settings);
+      if (sw > 0) startRest(sw, entry.snapshot.name, next ? next.label : '', 'superset');
+      else skipRest();
+    } else if (next) {
       let rest = entry.snapshot.rest || data.settings.defaultRest;
       if (set.type === 'warmup') rest = Math.max(30, Math.round(rest / 2 / 15) * 15);
       startRest(rest, entry.snapshot.name, next.label);
@@ -579,7 +585,7 @@ export function setType(w, entry, set, type) {
 
 // ---------- Edit exercise during a workout ----------
 // Changes go to this workout only; when it is finished the app asks whether to keep them.
-const LIVE_KEYS = ['repMin', 'repMax', 'rest', 'restPause', 'weightStep', 'rirTarget', 'type', 'loadMode', 'unilateral'];
+const LIVE_KEYS = ['repMin', 'repMax', 'rest', 'restPause', 'ssRest', 'weightStep', 'rirTarget', 'type', 'loadMode', 'unilateral'];
 const isWarmSet = (s) => s.type === 'warmup';
 const isDropSet = (s) => s.type === 'drop';
 const isRpSet = (s) => s.type === 'restpause';
@@ -687,6 +693,7 @@ export function liveChanges(w) {
     if (now.restPauseSets !== was.restPauseSets) add('Rest-pause sets', was.restPauseSets, now.restPauseSets);
     if (now.repMin !== was.repMin || now.repMax !== was.repMax) add('Rep range', `${was.repMin}–${was.repMax}`, `${now.repMin}–${now.repMax}`);
     if (now.rest !== was.rest) add('Rest', fmtSec(was.rest), fmtSec(now.rest));
+    if ((now.ssRest ?? null) !== (was.ssRest ?? null)) add('Superset: rest between exercises', fmtSec(supersetRestSeconds(was, data.settings)), fmtSec(supersetRestSeconds(now, data.settings)));
     if ((now.restPause ?? null) !== (was.restPause ?? null)) add('Rest-pause rest', fmtSec(restPauseSeconds(was, data.settings)), fmtSec(restPauseSeconds(now, data.settings)));
     if (now.weightStep !== was.weightStep) add('− / + step', was.weightStep, now.weightStep);
     if ((now.rirTarget ?? null) !== (was.rirTarget ?? null)) add('Target RIR', was.rirTarget ?? '–', now.rirTarget ?? '–');
@@ -698,7 +705,7 @@ export function liveChanges(w) {
   return out;
 }
 
-const fmtSec = (s) => (s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : `${s}s`);
+const fmtSec = (s) => (!s ? 'off' : s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : `${s}s`);
 const normProg = (p) => Object.fromEntries(Object.entries(p || {}).filter(([, v]) => v !== null && v !== undefined).sort(([a], [b]) => a.localeCompare(b)));
 
 /** Saves workout changes for next time: into the routine (this routine only) or the library exercise. */
