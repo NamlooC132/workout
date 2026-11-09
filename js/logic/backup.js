@@ -64,7 +64,7 @@ export function validateBackup(raw) {
     data.exercises.push({
       ...base, ...e,
       muscles: splitBack(sanitizeMuscles(e.muscles), e.name),
-      sets: Math.max(1, Math.round(numOr(e.sets, 3))),
+      sets: Math.max(0, Math.round(numOr(e.sets, 3))),
       repMin: Math.max(1, Math.round(numOr(e.repMin, 8))),
       repMax: Math.max(Math.round(numOr(e.repMin, 8)), Math.round(numOr(e.repMax, 12))),
       rest: numOr(e.rest, 90),
