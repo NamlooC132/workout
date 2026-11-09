@@ -95,7 +95,12 @@ export function Toggle({ checked, onChange, label }) {
   ]);
 }
 
-export function Segmented({ options, value, onChange, small }) {
+export function Segmented({ options, value, onChange, small, tabs }) {
+  // tabs: page-level sections – plain words with an underline under the active one.
+  if (tabs) {
+    return h('div.tabs-u', { role: 'tablist' }, options.map((o) =>
+      h('button', { key: String(o.value), role: 'tab', 'aria-selected': o.value === value ? 'true' : 'false', class: cx('tab-u', o.value === value && 'active'), onclick: () => onChange(o.value) }, o.label)));
+  }
   return h('div.segmented', { class: small ? 'small' : '' }, options.map((o) =>
     h('button', { key: String(o.value), class: cx('seg', o.value === value && 'active'), onclick: () => onChange(o.value) }, o.label)));
 }

@@ -1062,5 +1062,21 @@ select.select { border-radius: 8px; min-height: 36px; }
 /* 1.38.0: Progress → Volume (weight × reps) – simple bars per muscle */
 .lift-bar { height: 8px; border-radius: 4px; background: var(--fill); margin-top: 7px; overflow: hidden; }
 .lift-bar i { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
-/* 5 options (Progress tabs) – tighter so the words never touch */
-.segmented:has(> .seg:nth-child(5)) .seg { font-size: 13px; padding: 0 2px; letter-spacing: -0.1px; }
+/* 1.38.1: page-level tabs (Progress) – words at their own width, evenly spaced, green underline */
+.tabs-u {
+  display: flex; justify-content: space-between; gap: 6px; margin: 2px 0 16px; padding: 0 4px;
+  border-bottom: 1px solid var(--sep);
+}
+.tab-u {
+  position: relative; appearance: none; border: 0; background: none; padding: 10px 2px 11px; min-height: 42px;
+  font: inherit; font-size: 15px; font-weight: 600; letter-spacing: -0.1px; color: var(--muted);
+  white-space: nowrap; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: color 0.15s ease;
+}
+.tab-u::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2.5px; border-radius: 2px 2px 0 0;
+  background: var(--accent); transform: scaleX(0); transition: transform 0.2s ease;
+}
+.tab-u.active { color: var(--text); }
+.tab-u.active::after { transform: scaleX(1); }
+.tab-u:active { opacity: 0.7; }
+@media (max-width: 350px) { .tab-u { font-size: 14px; } }

@@ -18,7 +18,7 @@ export function ProgressScreen() {
   const st = (ui.tabState.progress = ui.tabState.progress || { seg: 'overview', weekOffset: 0, mode: 'week', muscle: 'chest', monthOffset: 0, bodyKind: 'bodyweight' });
   return h(Page, { title: 'Progress' }, [
     h(Segmented, {
-      value: st.seg, onChange: (v) => { st.seg = v; update(); },
+      tabs: true, value: st.seg, onChange: (v) => { st.seg = v; update(); },
       options: [{ value: 'overview', label: 'Overview' }, { value: 'volume', label: 'Sets' }, { value: 'lifted', label: 'Volume' }, { value: 'exercises', label: 'Exercises' }, { value: 'body', label: 'Body' }],
     }),
     st.seg === 'overview' && Overview(st),
