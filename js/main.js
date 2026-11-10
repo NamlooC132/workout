@@ -13,7 +13,7 @@ import { PlanScreen, BlockEditorSheet } from './ui/plan.js';
 import { MuscleViewSheet } from './ui/muscleview.js';
 import { HowToSheet } from './ui/howto.js';
 import { DataInfoSheet } from './ui/datainfo.js';
-import { LogActivitySheet, ActivitySheet, activeActivity } from './ui/activity.js';
+import { LogActivitySheet, ActivitySheet, ActivityView, ActivityResumeBar, ActivityDetailScreen, activeActivity } from './ui/activity.js';
 import { LogRunSheet } from './ui/health.js';
 import { YogaScreen, YogaPoseScreen, YogaAddPoseSheet } from './ui/yoga.js';
 import { ReadinessSheet } from './ui/readiness.js';
@@ -59,6 +59,7 @@ const ROUTES = [
   [/^\/exercise\/(.+)$/, (m) => h(ExerciseScreen, { id: m[1] }), null],
   [/^\/history$/, () => h(HistoryScreen), 'history'],
   [/^\/workout\/(.+)$/, (m) => h(WorkoutDetailScreen, { id: m[1] }), 'history'],
+  [/^\/activity\/(.+)$/, (m) => h(ActivityDetailScreen, { id: m[1] }), 'history'],
   [/^\/progress$/, () => h(ProgressScreen), 'progress'],
   [/^\/settings$/, () => h(SettingsScreen), 'settings'],
   [/^\/settings\/advanced$/, () => h(AdvancedSettingsScreen), 'settings'],
@@ -109,18 +110,23 @@ function ResumeBar({ w }) {
 function App() {
   const w = activeWorkout();
   if (!w && ui.workoutOpen) ui.workoutOpen = false;
+  const act = activeActivity();
+  if (!act && ui.activityOpen) ui.activityOpen = false;
+  const full = ui.workoutOpen || ui.activityOpen;
   const { view, tab } = currentRoute();
   const sheet = ui.sheets[ui.sheets.length - 1];
   const SheetView = sheet && SHEETS[sheet.type];
-  return h('div', { class: ui.workoutOpen ? 'wk-open' : '' }, [
-    h('div.app-shell', { class: w && !ui.workoutOpen ? 'with-resume' : '' }, [
+  return h('div', { class: full ? 'wk-open' : '' }, [
+    h('div.app-shell', { class: (w || act) && !full ? 'with-resume' : '' }, [
       !ui.storageOk && h('div.callout.yellow', { style: { margin: '8px 16px 0' } }, [icon('info', 18), 'Storage is not available, so changes may not be saved. Avoid private browsing.']),
       view,
     ]),
-    !ui.workoutOpen && h(TabBar, { tab }),
-    w && !ui.workoutOpen && h(ResumeBar, { w }),
+    !full && h(TabBar, { tab }),
+    w && !full && h(ResumeBar, { w }),
+    act && !w && !full && h(ActivityResumeBar, { a: act }),
     w && !ui.workoutOpen && data.timer && RestPanel({ inWorkout: false }),
     w && ui.workoutOpen && h(WorkoutView, { w }),
+    act && ui.activityOpen && h(ActivityView, { a: act }),
     // Only the top sheet is rendered (sheets are a stack).
     SheetView && h('div', { key: 'sheet-' + ui.sheets.length + sheet.type }, SheetView(sheet)),
     h(Dialog),
@@ -146,9 +152,9 @@ setRenderer(() => {
   // Scroll to top when the screen changes.
   if (location.hash !== lastHash) {
     lastHash = location.hash;
-    if (!ui.workoutOpen) window.scrollTo(0, 0);
+    if (!ui.workoutOpen && !ui.activityOpen) window.scrollTo(0, 0);
   }
-  document.body.style.overflow = ui.workoutOpen || ui.sheets.length ? 'hidden' : '';
+  document.body.style.overflow = ui.workoutOpen || ui.activityOpen || ui.sheets.length ? 'hidden' : '';
 });
 
 // ---------- Start-up ----------

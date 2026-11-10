@@ -63,7 +63,7 @@ export function HistoryScreen() {
         if (w.entries === undefined) return h(Row, {
           key: w.id, left: h('span.run-ico', icon('timer', 22)),
           title: w.name, subtitle: [h('div', fmtDateTime(w.startedAt)), h('div', [fmtDuration(Math.max(activityMs(w), 60000)), w.notes ? ` · ${w.notes}` : ''].join(''))],
-          chevron: true, onClick: () => openSheet({ type: 'activity', activityId: w.id }),
+          chevron: true, onClick: () => nav('/activity/' + w.id),
         });
         if (isRun(w)) return h(Row, {
           key: w.id, left: h('span.run-ico', icon('run', 22)),

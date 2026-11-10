@@ -2,8 +2,8 @@
 // Stop saves the duration to History. A running activity is saved straight away, so it survives a closed app.
 import { h } from '../vdom.js';
 import { icon } from './icons.js';
-import { data, update, openSheet, closeSheet, confirm, toast, saveActivity, deleteActivity } from '../store.js';
-import { Sheet, Section, Button, TextField, NumberField, Chip, fmtDateTime } from './components.js';
+import { data, ui, update, openSheet, closeSheet, confirm, toast, saveActivity, deleteActivity } from '../store.js';
+import { Page, Sheet, Section, Button, IconButton, TextField, NumberField, Chip, fmtDateTime, nav } from './components.js';
 import { uid, fmtDuration, deepClone } from '../logic/util.js';
 
 const DEFAULT_NAMES = ['Boxing', 'Swimming', 'Cycling', 'Walking', 'Football', 'Basketball'];
@@ -31,7 +31,7 @@ function suggestions() {
   return out;
 }
 
-// sheet: { type: 'logActivity' } – ask for the name, then start the timer
+// sheet: { type: 'logActivity' } – ask for the name, then start the timer and open the activity page
 export function LogActivitySheet(sheet) {
   if (sheet.name === undefined) sheet.name = '';
   const start = () => {
@@ -40,6 +40,8 @@ export function LogActivitySheet(sheet) {
     if (activeActivity()) { toast('An activity is already running'); return; }
     saveActivity({ id: uid(), name, status: 'running', startedAt: Date.now(), endedAt: null, notes: '' });
     closeSheet();
+    ui.activityOpen = true;
+    update();
   };
   return h(Sheet, { title: 'Log an activity' }, [
     h(Section, { title: 'What activity?' }, h('div.field-card', h(TextField, { value: sheet.name, placeholder: 'e.g. Boxing', autofocus: true, onChange: (v) => { sheet.name = v; } }))),
@@ -48,53 +50,100 @@ export function LogActivitySheet(sheet) {
   ]);
 }
 
-/** Card on the Workout tab while an activity is running. */
+/** "Continue" card on the Workout tab while an activity is running (like a workout in progress). */
 export function ActivityCard() {
   const a = activeActivity();
   if (!a) return null;
-  const stop = () => {
-    a.status = 'done';
-    a.endedAt = Date.now();
-    saveActivity(a);
-    openSheet({ type: 'activity', activityId: a.id, saved: true });
-  };
-  const discard = () => confirm({
-    title: 'Discard this activity?', message: `${a.name} · ${clock(Date.now() - a.startedAt)}`, confirmText: 'Discard', destructive: true,
-    onConfirm: () => deleteActivity(a.id),
+  return h('button.continue-card', { onclick: () => { ui.activityOpen = true; update(); } }, [
+    h('div.grow', [h('div.k', 'Activity in progress'), h('div.t', a.name), h('div.small', clock(Date.now() - a.startedAt))]),
+    h('span.continue-go', ['Continue activity', icon('chevronRight', 18)]),
+  ]);
+}
+
+/** Bar above the tab bar while an activity is running and its page is minimized. */
+export function ActivityResumeBar({ a }) {
+  return h('button.resume-bar', { onclick: () => { ui.activityOpen = true; update(); } }, [
+    icon('timer', 24),
+    h('div.grow', { style: { textAlign: 'left' } }, [h('div.title', a.name), h('div.sub', 'Activity in progress')]),
+    h('b.mono', clock(Date.now() - a.startedAt)),
+    icon('chevronUp', 20),
+  ]);
+}
+
+function finish(a) {
+  a.status = 'done';
+  a.endedAt = Date.now();
+  saveActivity(a);
+  ui.activityOpen = false;
+  openSheet({ type: 'activity', activityId: a.id });
+}
+
+/** Full page while the activity runs – opens like a regular workout. */
+export function ActivityView({ a }) {
+  const menu = () => openSheet({
+    type: 'actions', title: a.name, actions: [
+      { text: 'Rename activity', icon: 'edit', onClick: () => openSheet({ type: 'textInput', title: 'Activity name', value: a.name, single: true, onSave: (v) => { a.name = v.trim() || a.name; saveActivity(a); } }) },
+      { text: 'Minimize', icon: 'chevronDown', onClick: () => { ui.activityOpen = false; update(); } },
+      { text: 'Discard activity', icon: 'trash', destructive: true, onClick: () => confirm({
+        title: 'Discard this activity?', message: `${a.name} · ${clock(Date.now() - a.startedAt)}`, confirmText: 'Discard activity', destructive: true,
+        onConfirm: () => { deleteActivity(a.id); ui.activityOpen = false; update(); },
+      }) },
+    ],
   });
-  return h('div.activity-card', [
-    h('div.k', 'Activity in progress'),
-    h('div.t', a.name),
-    h('div.act-time', clock(Date.now() - a.startedAt)),
-    h('div.act-btns', [
-      h(Button, { size: 'lg', onClick: stop }, [icon('check', 20), 'Stop & save']),
-      h('button.link-btn', { onclick: discard }, 'Discard'),
+  return h('div.workout', [
+    h(Page, {
+      title: a.name, large: false,
+      left: h('button.icon-btn.back', { onclick: () => { ui.activityOpen = false; update(); }, 'aria-label': 'Minimize activity' }, icon('chevronDown', 28)),
+      actions: [
+        h(IconButton, { name: 'more', label: 'Activity options', onClick: menu }),
+        h('button.btn.btn-green.btn-sm', { onclick: () => finish(a) }, 'Finish activity'),
+      ],
+    }, [
+      h('div.act-hero', [
+        h('div.k', 'Activity in progress'),
+        h('div.act-time', clock(Date.now() - a.startedAt)),
+        h('div.small.muted', `Started ${fmtDateTime(a.startedAt)}`),
+      ]),
+      h(Section, { title: 'Note' }, h('div.field-card', h(TextField, { value: a.notes, placeholder: 'e.g. sparring, felt strong', multiline: true, onChange: (v) => { a.notes = v; saveActivity(a); } }))),
+      h('div.mt', h(Button, { block: true, size: 'lg', onClick: () => finish(a) }, [icon('check', 20), 'Finish activity'])),
     ]),
   ]);
 }
 
-// sheet: { type: 'activity', activityId, saved? } – name, minutes, note (also used to edit from History)
+// sheet: { type: 'activity', activityId } – "Activity complete" summary (like Workout complete)
 export function ActivitySheet(sheet) {
   const a = data.activities.find((x) => x.id === sheet.activityId);
   if (!a) return null;
-  if (!sheet.draft) { sheet.draft = deepClone(a); sheet.min = Math.max(1, Math.round(activityMs(a) / 60000)); sheet.min0 = sheet.min; }
-  const d = sheet.draft;
-  const save = () => {
-    d.name = d.name.trim() || 'Activity';
-    if (sheet.min !== sheet.min0 && sheet.min > 0) d.endedAt = d.startedAt + sheet.min * 60000;
-    saveActivity(d);
-    closeSheet();
-  };
+  const done = () => { closeSheet(); nav('/history'); };
+  return h(Sheet, { title: 'Activity complete', left: h('button.link-btn', { onclick: closeSheet }, 'Back') }, [
+    h('div.center', { style: { fontSize: '42px', margin: '6px 0 2px' } }, '💪'),
+    h('div.center', { style: { fontSize: '21px', fontWeight: 800, marginBottom: '14px' } }, a.name),
+    h('div.summary-strip', { style: { gridTemplateColumns: 'repeat(2, 1fr)' } }, [
+      h('div.stat', [h('div.v', fmtDuration(Math.max(activityMs(a), 60000))), h('div.k', 'Duration')]),
+      h('div.stat', [h('div.v', new Date(a.startedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })), h('div.k', 'Date')]),
+    ]),
+    a.notes && h('div.callout', { style: { marginBottom: '12px' } }, [icon('note', 18), a.notes]),
+    h('div.mt', h(Button, { block: true, size: 'lg', onClick: done }, 'Done')),
+  ]);
+}
+
+/** History page of one activity (like a finished workout): numbers + editable name, minutes, note. */
+export function ActivityDetailScreen({ id }) {
+  const a = data.activities.find((x) => x.id === id && x.status === 'done');
+  if (!a) return h(Page, { title: 'Activity', backTo: '/history' }, h('div.empty', 'Activity not found'));
+  const mins = Math.max(1, Math.round(activityMs(a) / 60000));
   const del = () => confirm({
     title: 'Delete this activity?', message: `${a.name} · ${fmtDateTime(a.startedAt)}`, confirmText: 'Delete activity', destructive: true,
-    onConfirm: () => { deleteActivity(a.id); closeSheet(); },
+    onConfirm: () => { deleteActivity(a.id); nav('/history'); },
   });
-  return h(Sheet, { title: sheet.saved ? 'Activity saved' : 'Activity', actions: [h('button.link-btn.strong', { onclick: save }, 'Done')] }, [
-    h('div.center', { style: { fontSize: '34px', fontWeight: 800, margin: '4px 0' } }, fmtDuration(sheet.min * 60000)),
-    h('div.center.muted.small', { style: { marginBottom: '12px' } }, fmtDateTime(a.startedAt)),
-    h(Section, { title: 'Activity' }, h('div.field-card', h(TextField, { value: d.name, placeholder: 'Activity name', onChange: (v) => { d.name = v; } }))),
-    h(Section, { title: 'Minutes' }, h('div.field-card', h(NumberField, { value: sheet.min, decimals: false, placeholder: '0', ariaLabel: 'Minutes', onChange: (v) => { sheet.min = v || 0; } }))),
-    h(Section, { title: 'Note' }, h('div.field-card', h(TextField, { value: d.notes, placeholder: 'e.g. sparring, felt strong', multiline: true, onChange: (v) => { d.notes = v; } }))),
+  return h(Page, { title: a.name, backTo: '/history', large: false }, [
+    h('div.stat-grid.two', [
+      h('div.stat', [h('div.k', 'Date'), h('div.v', new Date(a.startedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })), h('div.s', new Date(a.startedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }))]),
+      h('div.stat', [h('div.k', 'Duration'), h('div.v', fmtDuration(mins * 60000))]),
+    ]),
+    h(Section, { title: 'Activity' }, h('div.field-card', h(TextField, { value: a.name, placeholder: 'Activity name', onChange: (v) => { a.name = v.trim() || a.name; saveActivity(a); } }))),
+    h(Section, { title: 'Minutes' }, h('div.field-card', h(NumberField, { value: mins, decimals: false, placeholder: '0', ariaLabel: 'Minutes', onChange: (v) => { if (v > 0) { a.endedAt = a.startedAt + v * 60000; saveActivity(a); } } }))),
+    h(Section, { title: 'Note' }, h('div.field-card', h(TextField, { value: a.notes, placeholder: 'e.g. sparring, felt strong', multiline: true, onChange: (v) => { a.notes = v; saveActivity(a); } }))),
     h('div.mt', h(Button, { block: true, kind: 'danger', onClick: del }, 'Delete activity')),
   ]);
 }

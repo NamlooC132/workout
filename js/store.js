@@ -31,6 +31,7 @@ export const ui = {
   dialog: null,        // confirm dialog
   toast: null,
   workoutOpen: false,
+  activityOpen: false,
   storageOk: true,
   persisted: null,
   tabState: {},        // per-screen UI bits (selected segment, week offset…)
