@@ -6,9 +6,10 @@ import { data, ui, update, openSheet, confirm, toast, history, exercisesById, do
 import { Page, Section, Row, Empty, Button, IconButton, Thumb, Segmented, NumberField, WeightField, LineChart, ExercisePhoto, nav, fmtW, fmtDate, fmtDateTime, relDay } from './components.js';
 import { setsSummary } from './workout.js';
 import { select } from './exercises.js';
-import { fmtDuration, fmtNum, deepClone, plural } from '../logic/util.js';
+import { fmtDuration, fmtNum, deepClone, plural, addDays } from '../logic/util.js';
+import { activityMs } from './activity.js';
 import { displayWeight } from '../logic/units.js';
-import { workoutVolume } from '../logic/volume.js';
+import { workoutVolume, weekRange } from '../logic/volume.js';
 import { prsInWorkout, personalRecords, exerciseSeries, isStalled, progressionHistory, tonnage, bodyweightAt } from '../logic/records.js';
 import { muscleName, contributions, SET_TYPES } from '../logic/muscles.js';
 import { newSet } from '../logic/model.js';
@@ -29,22 +30,41 @@ const workSetCount = (w) => w.entries.reduce((t, e) => t + e.sets.filter((s) => 
 
 // ---------- History list ----------
 export function HistoryScreen() {
-  const list = doneWorkouts();
+  const workouts = doneWorkouts();
+  const acts = (data.activities || []).filter((a) => a.status === 'done');
+  const list = [...workouts, ...acts].sort((a, b) => b.startedAt - a.startedAt);
   const hist = history();
   const groups = [];
+  const thisYear = new Date().getFullYear();
+  const dm = (ms) => new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
   for (const w of list) {
-    const key = new Date(w.startedAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    const r = weekRange(w.startedAt, data.settings);
+    const key = String(r.from);
     let g = groups[groups.length - 1];
-    if (!g || g.key !== key) groups.push((g = { key, items: [] }));
+    if (!g || g.key !== key) {
+      const last = addDays(r.from, 6);
+      const yr = (ms) => (new Date(ms).getFullYear() === thisYear ? '' : ` ${new Date(ms).getFullYear()}`);
+      groups.push((g = { key, label: `${dm(r.from)}${yr(r.from)} – ${dm(last)}${yr(last)}`, items: [] }));
+    }
     g.items.push(w);
   }
+  const countText = (g) => {
+    const a = g.items.filter((x) => x.entries === undefined).length;
+    const wk = g.items.length - a;
+    return [wk > 0 && plural(wk, 'workout'), a > 0 && plural(a, 'activity', 'activities')].filter(Boolean).join(' · ');
+  };
   return h(Page, {
     title: 'History',
     actions: [h(IconButton, { name: 'chart', label: 'Exercise progress', onClick: () => nav('/library') })],
   }, [
     list.length === 0 && h(Empty, { iconName: 'history', title: 'No workouts yet', text: 'Finished workouts show up here.' }),
-    ...groups.map((g) => h(Section, { key: g.key, title: `${g.key} · ${g.items.length} workout${g.items.length === 1 ? '' : 's'}` },
+    ...groups.map((g) => h(Section, { key: g.key, title: `${g.label} · ${countText(g)}` },
       g.items.map((w) => {
+        if (w.entries === undefined) return h(Row, {
+          key: w.id, left: h('span.run-ico', icon('timer', 22)),
+          title: w.name, subtitle: [h('div', fmtDateTime(w.startedAt)), h('div', [fmtDuration(Math.max(activityMs(w), 60000)), w.notes ? ` · ${w.notes}` : ''].join(''))],
+          chevron: true, onClick: () => openSheet({ type: 'activity', activityId: w.id }),
+        });
         if (isRun(w)) return h(Row, {
           key: w.id, left: h('span.run-ico', icon('run', 22)),
           title: w.routineName || 'Run', subtitle: [h('div', fmtDateTime(w.startedAt)), h('div', runSummary(w))],

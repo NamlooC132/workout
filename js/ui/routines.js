@@ -17,6 +17,7 @@ import { TEMPLATES } from '../logic/samples.js';
 import { startWorkout, discardWorkout } from '../workoutService.js';
 import { exportFile } from './settings.js';
 import { saveSettings } from '../store.js';
+import { ActivityCard } from './activity.js';
 
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
@@ -131,9 +132,12 @@ export function RoutinesScreen() {
         routines.length > 1 && h('button', { onclick: () => document.getElementById('routine-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, 'Choose another routine'),
         h('button', { onclick: () => beginRoutine(null) }, 'Start empty workout'),
         h('button', { onclick: () => openSheet({ type: 'logRun' }) }, 'Log a run'),
+        h('button', { onclick: () => openSheet({ type: 'logActivity' }) }, 'Log an activity'),
         data.settings.showYoga && h('button', { onclick: () => nav('/yoga/log') }, 'Log yoga'),
       ]),
     ]),
+
+    !st.edit && ActivityCard(),
 
     // 2. Continue workout
     running && !st.edit && h('button.continue-card', { onclick: () => { ui.workoutOpen = true; update(); } }, [

@@ -14,7 +14,7 @@ import { warmupSteps, DEFAULT_WARMUP_STEPS } from '../logic/warmup.js';
 import { activeWorkout } from '../store.js';
 import * as WS from '../workoutService.js';
 
-export const APP_VERSION = '1.40.2';
+export const APP_VERSION = '1.41.0';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -212,6 +212,7 @@ export function ImportPreviewSheet(sheet) {
       h(Row, { title: 'Measurements', right: h('b', p.measurements.length) }),
       h(Row, { title: 'Training blocks', right: h('b', p.blocks.length) }),
       (p.yogaSessions?.length || p.yogaPoses?.length || p.yogaEntries?.length) > 0 && h(Row, { title: 'Yoga sessions', right: h('b', p.yogaSessions.length) }),
+      p.activities?.length > 0 && h(Row, { title: 'Activities', right: h('b', p.activities.length) }),
       (p.yogaPoses?.length || p.yogaEntries?.length) > 0 && h(Row, { title: 'Pose results', right: h('b', p.yogaEntries.length) }),
     ]),
     (p.skipped || p.reused || p.renamed) > 0 && h(Section, { title: 'Duplicates' }, [

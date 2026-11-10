@@ -38,6 +38,7 @@ export function makeBackup(db, { kind = 'full', routineIds = null } = {}) {
     yogaSessions: kind === 'full' ? db.yogaSessions || [] : [],
     yogaPoses: kind === 'full' ? db.yogaPoses || [] : [],
     yogaEntries: kind === 'full' ? db.yogaEntries || [] : [],
+    activities: kind === 'full' ? (db.activities || []).filter((a) => a.status === 'done') : [],
   };
 }
 
@@ -56,7 +57,7 @@ export function validateBackup(raw) {
     return { ok: false, error: 'This backup was made by a newer version of the app. Update the app first.', warnings };
   }
   const arr = (k) => (Array.isArray(raw[k]) ? raw[k] : []);
-  const data = { kind: raw.kind === 'routines' ? 'routines' : 'full', exercises: [], routines: [], workouts: [], measurements: [], blocks: [], yogaSessions: [], yogaPoses: [], yogaEntries: [], settings: null };
+  const data = { kind: raw.kind === 'routines' ? 'routines' : 'full', exercises: [], routines: [], workouts: [], measurements: [], blocks: [], yogaSessions: [], yogaPoses: [], yogaEntries: [], activities: [], settings: null };
 
   for (const e of arr('exercises')) {
     if (!e || !isStr(e.id) || !isStr(e.name) || !e.name.trim()) { warnings.push('Skipped an exercise without a name.'); continue; }
@@ -106,6 +107,10 @@ export function validateBackup(raw) {
   for (const s of arr('yogaSessions')) {
     if (!s || !isStr(s.id) || !isNum(s.date)) { warnings.push('Skipped a damaged yoga session.'); continue; }
     data.yogaSessions.push({ ...s, style: isStr(s.style) ? s.style : 'other', minutes: Math.max(0, numOr(s.minutes, 0)), difficulty: rating(s.difficulty), feel: rating(s.feel), notes: isStr(s.notes) ? s.notes : '' });
+  }
+  for (const a of arr('activities')) {
+    if (!a || !isStr(a.id) || !isStr(a.name) || !isNum(a.startedAt) || !isNum(a.endedAt)) { warnings.push('Skipped a damaged activity.'); continue; }
+    data.activities.push({ ...a, status: 'done', notes: isStr(a.notes) ? a.notes : '' });
   }
   for (const p of arr('yogaPoses')) {
     if (!p || !isStr(p.id) || !isStr(p.name) || !p.name.trim()) { warnings.push('Skipped a yoga pose without a name.'); continue; }
@@ -171,7 +176,7 @@ const nameKey = (s) => String(s || '').trim().toLowerCase();
  *  • workouts, measurements, blocks: same id → skip
  */
 export function planImport(data, db) {
-  const plan = { exercises: [], routines: [], workouts: [], measurements: [], blocks: [], yogaSessions: [], yogaPoses: [], yogaEntries: [], skipped: 0, reused: 0, renamed: 0 };
+  const plan = { exercises: [], routines: [], workouts: [], measurements: [], blocks: [], yogaSessions: [], yogaPoses: [], yogaEntries: [], activities: [], skipped: 0, reused: 0, renamed: 0 };
   const byId = new Map(db.exercises.map((e) => [e.id, e]));
   const byName = new Map(db.exercises.map((e) => [nameKey(e.name), e]));
   const idMap = new Map();
@@ -206,6 +211,8 @@ export function planImport(data, db) {
   // Yoga: sessions by id; poses by id or name (results join the pose already here).
   const ysIds = has(db.yogaSessions || []), yeIds = has(db.yogaEntries || []);
   for (const s of data.yogaSessions || []) { if (ysIds.has(s.id)) plan.skipped++; else plan.yogaSessions.push(s); }
+  const acIds = has(db.activities || []);
+  for (const a of data.activities || []) { if (acIds.has(a.id)) plan.skipped++; else plan.activities.push(a); }
   const poseById = new Map((db.yogaPoses || []).map((p) => [p.id, p]));
   const poseByName = new Map((db.yogaPoses || []).map((p) => [nameKey(p.name), p]));
   const poseMap = new Map();

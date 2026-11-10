@@ -22,6 +22,7 @@ export const data = {
   yogaSessions: [],
   yogaPoses: [],
   yogaEntries: [],
+  activities: [],
   timer: null,
 };
 
@@ -112,6 +113,8 @@ export const deleteRoutine = (id) => remove('routines', id);
 export const deleteWorkout = (id) => remove('workouts', id);
 export const deleteMeasurement = (id) => remove('measurements', id);
 export const deleteBlock = (id) => remove('blocks', id);
+export const saveActivity = (r) => upsert('activities', r);
+export const deleteActivity = (id) => remove('activities', id);
 export const saveYogaSession = (r) => upsert('yogaSessions', r);
 export const deleteYogaSession = (id) => remove('yogaSessions', id);
 export const saveYogaPose = (r) => upsert('yogaPoses', r);
@@ -149,6 +152,7 @@ export async function applyImport(plan, { includeSettings = false } = {}) {
     exercises: plan.exercises, routines: plan.routines, workouts: plan.workouts,
     measurements: plan.measurements, blocks: plan.blocks,
     yogaSessions: plan.yogaSessions || [], yogaPoses: plan.yogaPoses || [], yogaEntries: plan.yogaEntries || [],
+    activities: plan.activities || [],
   };
   const meta = includeSettings && plan.settings ? { settings: plan.settings } : {};
   await idb.putMany(records, meta);
@@ -160,7 +164,7 @@ export async function applyImport(plan, { includeSettings = false } = {}) {
 export async function eraseAll() {
   await idb.clearAll();
   data.exercises = []; data.routines = []; data.workouts = []; data.measurements = []; data.blocks = [];
-  data.yogaSessions = []; data.yogaPoses = []; data.yogaEntries = [];
+  data.yogaSessions = []; data.yogaPoses = []; data.yogaEntries = []; data.activities = [];
   data.settings = defaultSettings();
   data.timer = null;
   await idb.putMeta('seeded', true);

@@ -13,6 +13,7 @@ import { PlanScreen, BlockEditorSheet } from './ui/plan.js';
 import { MuscleViewSheet } from './ui/muscleview.js';
 import { HowToSheet } from './ui/howto.js';
 import { DataInfoSheet } from './ui/datainfo.js';
+import { LogActivitySheet, ActivitySheet, activeActivity } from './ui/activity.js';
 import { LogRunSheet } from './ui/health.js';
 import { YogaScreen, YogaPoseScreen, YogaAddPoseSheet } from './ui/yoga.js';
 import { ReadinessSheet } from './ui/readiness.js';
@@ -23,6 +24,8 @@ import { fmtDuration } from './logic/util.js';
 const SHEETS = {
   muscleView: MuscleViewSheet,
   logRun: LogRunSheet,
+  logActivity: LogActivitySheet,
+  activity: ActivitySheet,
   picker: PickerSheet,
   exerciseEditor: ExerciseEditorSheet,
   newRoutine: NewRoutineSheet,
@@ -183,7 +186,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', (
 document.addEventListener('pointerdown', unlockAudio, { once: true, capture: true });
 
 // Live clocks (workout duration) – once a second while a workout runs.
-setInterval(() => { if (activeWorkout()) update(); }, 1000);
+setInterval(() => { if (activeWorkout() || activeActivity()) update(); }, 1000);
 
 // Keep-screen-on follows the workout state.
 setInterval(() => syncWakeLock(), 5000);

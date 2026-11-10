@@ -587,6 +587,11 @@ input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
 .freddy-card img { display: block; width: 100%; aspect-ratio: 1 / 1; border-radius: 10px; object-fit: cover; }
 .freddy-t { font-size: 20px; font-weight: 700; margin-top: 10px; }
 .freddy-t b { color: var(--accent); }
+.activity-card { background: var(--card); border: 2px solid var(--accent); border-radius: 14px; padding: 14px; margin: 10px 0; text-align: center; }
+.activity-card .k { font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.4px; }
+.activity-card .t { font-size: 20px; font-weight: 750; margin-top: 2px; }
+.act-time { font-size: 44px; font-weight: 800; font-variant-numeric: tabular-nums; margin: 6px 0 10px; }
+.act-btns { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .rest-chips .chip { font-size: 17px; padding: 8px 14px; font-weight: 650; }
 .rest-big { font-size: 20px; font-weight: 700; line-height: 1.25; margin-top: 12px; }
 .rest-sub { font-size: 16px; color: var(--muted); margin-top: 6px; }
