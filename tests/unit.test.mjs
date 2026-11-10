@@ -739,3 +739,19 @@ test('lifted volume: weight × reps per period, warm-ups out, mini-sets in', asy
   assert.equal(r.byMuscle.triceps, undefined);
   assert.equal(r.byExercise[0].kg, 1220);
 });
+
+import { analyzePixels, wallpaperVars } from '../js/logic/wallpaper.js';
+test('wallpaper: finds the main color of a picture and builds theme colors', () => {
+  const px = []; // mostly blue picture with a little grey
+  for (let i = 0; i < 400; i++) px.push(30, 90, 220, 255);
+  for (let i = 0; i < 50; i++) px.push(128, 128, 128, 255);
+  const st = analyzePixels(Uint8ClampedArray.from(px));
+  assert.ok(st.hue > 200 && st.hue < 230, `hue ${st.hue}`);
+  const dark = wallpaperVars(st, true), light = wallpaperVars(st, false);
+  assert.match(dark['--accent'], /^hsla\(2\d\d,/);
+  assert.notEqual(dark['--card'], light['--card']);
+  // a grey picture keeps the normal accent
+  const grey = analyzePixels(Uint8ClampedArray.from(new Array(400).fill(0).flatMap(() => [120, 120, 120, 255])));
+  assert.equal(grey.hue, null);
+  assert.equal(wallpaperVars(grey, true)['--accent'], undefined);
+});

@@ -13,9 +13,10 @@ import { wakeLockSupported } from '../timer.js';
 import { warmupSteps, DEFAULT_WARMUP_STEPS } from '../logic/warmup.js';
 import { activeWorkout } from '../store.js';
 import { blobToDataUrl } from './photos.js';
+import { BackgroundRow } from './wallpaper.js';
 import * as WS from '../workoutService.js';
 
-export const APP_VERSION = '1.43.0';
+export const APP_VERSION = '1.44.0';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -55,7 +56,9 @@ export function SettingsScreen() {
 
     h(Section, { title: 'Language · שפה' }, h(Row, { title: 'App language', right: h(Segmented, { small: true, value: s.language || 'en', onChange: (v) => set({ language: v }), options: [{ value: 'en', label: 'English' }, { value: 'he', label: 'עברית' }] }) })),
 
-    h(Section, { title: 'Appearance' }, h(Row, { title: 'Theme', right: h(Segmented, { small: true, value: s.theme, onChange: (v) => set({ theme: v }), options: [{ value: 'system', label: 'Auto' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }] }) })),
+    h(Section, { title: 'Appearance' }, [h(Row, { title: 'Theme', right: h(Segmented, { small: true, value: s.theme, onChange: (v) => set({ theme: v }), options: [{ value: 'system', label: 'Auto' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }] }) }),
+      BackgroundRow(),
+    ]),
 
     h(Section, {
       title: 'Backup & sharing',

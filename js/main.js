@@ -13,6 +13,7 @@ import { PlanScreen, BlockEditorSheet } from './ui/plan.js';
 import { MuscleViewSheet } from './ui/muscleview.js';
 import { HowToSheet } from './ui/howto.js';
 import { DataInfoSheet } from './ui/datainfo.js';
+import { wallpaperVars } from './logic/wallpaper.js';
 import { LogActivitySheet, ActivitySheet, ActivityView, ActivityResumeBar, ActivityDetailScreen, activeActivity } from './ui/activity.js';
 import { LogRunSheet } from './ui/health.js';
 import { YogaScreen, YogaPoseScreen, YogaAddPoseSheet } from './ui/yoga.js';
@@ -134,12 +135,34 @@ function App() {
   ]);
 }
 
+let wallApplied = null, wallKeys = [];
+function applyWallpaper(dark) {
+  const el = document.documentElement;
+  const { bgImage, bgStats } = data.settings;
+  if (bgImage && bgStats) {
+    el.classList.add('has-wall');
+    if (wallApplied !== bgImage) { el.style.setProperty('--wall', `url("${bgImage}")`); wallApplied = bgImage; }
+    const vars = wallpaperVars(bgStats, dark);
+    for (const k of wallKeys) if (!(k in vars)) el.style.removeProperty(k);
+    for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v);
+    wallKeys = Object.keys(vars);
+    return vars['--bg'];
+  }
+  if (wallApplied !== null || wallKeys.length) {
+    el.classList.remove('has-wall');
+    for (const k of [...wallKeys, '--wall']) el.style.removeProperty(k);
+    wallApplied = null; wallKeys = [];
+  }
+  return null;
+}
+
 function applyTheme() {
   const t = data.settings.theme;
   if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
   else document.documentElement.removeAttribute('data-theme');
   const dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0d0e10' : '#f2f3f5');
+  const wallBg = applyWallpaper(dark);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', wallBg || (dark ? '#0d0e10' : '#f2f3f5'));
 }
 
 const root = document.getElementById('app');

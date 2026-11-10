@@ -52,6 +52,8 @@ export function defaultSettings() {
     restVibrate: true,
     keepAwake: true,
     theme: 'system',                 // 'system' | 'light' | 'dark'
+    bgImage: null,                   // background picture (data URL, resized) – colors follow it
+    bgStats: null,                   // its colors { hue, sat, avgHue, avgSat, light }
     language: 'en',                  // 'en' | 'he'
     rirDisplay: 'current',           // 'current' (only on the set you're doing) | 'all'
     backupReminder: true,            // weekly 'back up your workouts' card
