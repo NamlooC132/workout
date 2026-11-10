@@ -31,6 +31,7 @@ function workoutVolumeKg(w) {
   const bw = bodyweightAt(data.measurements, w.startedAt);
   return w.entries.reduce((t, e) => t + (e.skipped ? 0 : volumeOf(e.sets.filter((s) => s.done), e.snapshot, bw)), 0);
 }
+const FREDDY_KG = 75; // 1 "Freddy" = Freddy's body weight
 const fmtVol = (kg) => `${Math.round(displayWeight(kg, data.settings.unit)).toLocaleString('en-US')} ${data.settings.unit}`;
 
 // ---------- "Last time" text ----------
@@ -502,6 +503,10 @@ export function FinishSummarySheet(sheet) {
       h('div.stat', [h('div.v', String(sets)), h('div.k', 'Sets done')]),
       h('div.stat', [h('div.v', fmtVol(workoutVolumeKg(w))), h('div.k', 'Volume')]),
       h('div.stat', { style: prs.length ? { background: 'var(--yellow-soft)' } : null }, [h('div.v', String(prs.length)), h('div.k', 'New records')]),
+    ]),
+    workoutVolumeKg(w) > 0 && h('div.freddy-card', [
+      h('img', { src: 'images/freddy-v1.jpg', alt: 'Freddy', width: 56, height: 56 }),
+      h('div', [h('div.freddy-t', ['You lifted ', h('b', `${fmtNum(workoutVolumeKg(w) / FREDDY_KG, 1)} ${fmtNum(workoutVolumeKg(w) / FREDDY_KG, 1) === '1' ? 'Freddy' : 'Freddys'}`)]), h('div.small.muted', `1 Freddy = ${FREDDY_KG} kg`)]),
     ]),
     restMuscles.length > 0 && h(Section, { title: 'Rest' }, h('div.pad', [
       h('div.chips', restMuscles.map((k) => h('span.chip.chip-static', { key: k }, muscleName(k, data.settings)))),
