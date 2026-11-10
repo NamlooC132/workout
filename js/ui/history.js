@@ -8,6 +8,7 @@ import { setsSummary } from './workout.js';
 import { select } from './exercises.js';
 import { fmtDuration, fmtNum, deepClone, plural, addDays } from '../logic/util.js';
 import { activityMs } from './activity.js';
+import { workoutPhotos, PhotoCarousel, AddPhotoButton } from './photos.js';
 import { displayWeight } from '../logic/units.js';
 import { workoutVolume, weekRange } from '../logic/volume.js';
 import { prsInWorkout, personalRecords, exerciseSeries, isStalled, progressionHistory, tonnage, bodyweightAt } from '../logic/records.js';
@@ -71,8 +72,10 @@ export function HistoryScreen() {
           chevron: true, onClick: () => nav('/workout/' + w.id),
         });
         const prs = cachedPrs(w, hist);
+        const firstPhoto = workoutPhotos(w.id)[0];
         return h(Row, {
           key: w.id,
+          left: firstPhoto ? h('img.hist-photo', { src: firstPhoto.thumb, alt: '' }) : null,
           title: [w.routineName, w.deload && h('span.tag.blue', { style: { marginLeft: '6px' } }, 'DELOAD'), prs > 0 && h('span.pr', { style: { marginLeft: '6px' } }, `🏆${prs > 1 ? '×' + prs : ''}`)],
           subtitle: [
             h('div', fmtDateTime(w.startedAt)),
@@ -114,6 +117,7 @@ export function WorkoutDetailScreen({ id }) {
     title: w.routineName, backTo: '/history', large: false,
     actions: [h('button.link-btn.strong', { onclick: () => { document.activeElement?.blur?.(); st.edit = !edit; update(); } }, edit ? 'Done' : 'Edit')],
   }, [
+    !edit && PhotoCarousel({ workoutId: w.id }),
     edit
       ? h(Section, { title: 'Workout' }, [
         h(Row, { title: 'Name', right: h('input.text-field', { style: { textAlign: 'right', maxWidth: '60%' }, value: w.routineName, oninput: (e) => { w.routineName = e.target.value; save(); } }) }),
@@ -127,6 +131,7 @@ export function WorkoutDetailScreen({ id }) {
         stat('Sets', workSetCount(w)),
         stat('Volume', fmtNum(displayWeight(workoutTonnage(w), data.settings.unit), 0), data.settings.unit),
       ]),
+    h('div', { style: { margin: '8px 0 4px' } }, AddPhotoButton({ workoutId: w.id })),
     !edit && (w.health?.hr || w.health?.kcal) && h('div.stat-grid.two', { style: { margin: '0 0 4px' } }, [
       stat('Avg heart rate', w.health.hr ? `${w.health.hr}` : '–', 'bpm'),
       stat('Calories', w.health.kcal ? `${w.health.kcal}` : '–', 'kcal'),

@@ -57,7 +57,7 @@ export function validateBackup(raw) {
     return { ok: false, error: 'This backup was made by a newer version of the app. Update the app first.', warnings };
   }
   const arr = (k) => (Array.isArray(raw[k]) ? raw[k] : []);
-  const data = { kind: raw.kind === 'routines' ? 'routines' : 'full', exercises: [], routines: [], workouts: [], measurements: [], blocks: [], yogaSessions: [], yogaPoses: [], yogaEntries: [], activities: [], settings: null };
+  const data = { kind: raw.kind === 'routines' ? 'routines' : 'full', exercises: [], routines: [], workouts: [], measurements: [], blocks: [], yogaSessions: [], yogaPoses: [], yogaEntries: [], activities: [], photos: [], settings: null };
 
   for (const e of arr('exercises')) {
     if (!e || !isStr(e.id) || !isStr(e.name) || !e.name.trim()) { warnings.push('Skipped an exercise without a name.'); continue; }
@@ -111,6 +111,10 @@ export function validateBackup(raw) {
   for (const a of arr('activities')) {
     if (!a || !isStr(a.id) || !isStr(a.name) || !isNum(a.startedAt) || !isNum(a.endedAt)) { warnings.push('Skipped a damaged activity.'); continue; }
     data.activities.push({ ...a, status: 'done', notes: isStr(a.notes) ? a.notes : '' });
+  }
+  for (const p of arr('photos')) {
+    if (!p || !isStr(p.id) || !isStr(p.workoutId) || !isStr(p.dataUrl) || !p.dataUrl.startsWith('data:image/')) { warnings.push('Skipped a damaged photo.'); continue; }
+    data.photos.push({ id: p.id, workoutId: p.workoutId, addedAt: numOr(p.addedAt, Date.now()), thumb: isStr(p.thumb) ? p.thumb : p.dataUrl, dataUrl: p.dataUrl });
   }
   for (const p of arr('yogaPoses')) {
     if (!p || !isStr(p.id) || !isStr(p.name) || !p.name.trim()) { warnings.push('Skipped a yoga pose without a name.'); continue; }
@@ -176,7 +180,7 @@ const nameKey = (s) => String(s || '').trim().toLowerCase();
  *  • workouts, measurements, blocks: same id → skip
  */
 export function planImport(data, db) {
-  const plan = { exercises: [], routines: [], workouts: [], measurements: [], blocks: [], yogaSessions: [], yogaPoses: [], yogaEntries: [], activities: [], skipped: 0, reused: 0, renamed: 0 };
+  const plan = { exercises: [], routines: [], workouts: [], measurements: [], blocks: [], yogaSessions: [], yogaPoses: [], yogaEntries: [], activities: [], photos: [], skipped: 0, reused: 0, renamed: 0 };
   const byId = new Map(db.exercises.map((e) => [e.id, e]));
   const byName = new Map(db.exercises.map((e) => [nameKey(e.name), e]));
   const idMap = new Map();
@@ -211,6 +215,9 @@ export function planImport(data, db) {
   // Yoga: sessions by id; poses by id or name (results join the pose already here).
   const ysIds = has(db.yogaSessions || []), yeIds = has(db.yogaEntries || []);
   for (const s of data.yogaSessions || []) { if (ysIds.has(s.id)) plan.skipped++; else plan.yogaSessions.push(s); }
+  const phIds = has(db.photos || []);
+  const wAll = new Set([...db.workouts.map((w) => w.id), ...plan.workouts.map((w) => w.id)]);
+  for (const p of data.photos || []) { if (phIds.has(p.id) || !wAll.has(p.workoutId)) plan.skipped++; else plan.photos.push(p); }
   const acIds = has(db.activities || []);
   for (const a of data.activities || []) { if (acIds.has(a.id)) plan.skipped++; else plan.activities.push(a); }
   const poseById = new Map((db.yogaPoses || []).map((p) => [p.id, p]));

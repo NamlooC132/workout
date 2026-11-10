@@ -23,6 +23,7 @@ export const data = {
   yogaPoses: [],
   yogaEntries: [],
   activities: [],
+  photos: [],
   timer: null,
 };
 
@@ -114,6 +115,8 @@ export const deleteRoutine = (id) => remove('routines', id);
 export const deleteWorkout = (id) => remove('workouts', id);
 export const deleteMeasurement = (id) => remove('measurements', id);
 export const deleteBlock = (id) => remove('blocks', id);
+export const savePhoto = (r) => upsert('photos', r);
+export const deletePhoto = (id) => remove('photos', id);
 export const saveActivity = (r) => upsert('activities', r);
 export const deleteActivity = (id) => remove('activities', id);
 export const saveYogaSession = (r) => upsert('yogaSessions', r);
@@ -154,7 +157,9 @@ export async function applyImport(plan, { includeSettings = false } = {}) {
     measurements: plan.measurements, blocks: plan.blocks,
     yogaSessions: plan.yogaSessions || [], yogaPoses: plan.yogaPoses || [], yogaEntries: plan.yogaEntries || [],
     activities: plan.activities || [],
+    photos: plan.photos || [],
   };
+  records.photos = await Promise.all(records.photos.map(async (p) => ({ id: p.id, workoutId: p.workoutId, addedAt: p.addedAt, thumb: p.thumb, blob: await (await fetch(p.dataUrl)).blob() })));
   const meta = includeSettings && plan.settings ? { settings: plan.settings } : {};
   await idb.putMany(records, meta);
   for (const [k, list] of Object.entries(records)) data[k].push(...list);
@@ -165,7 +170,7 @@ export async function applyImport(plan, { includeSettings = false } = {}) {
 export async function eraseAll() {
   await idb.clearAll();
   data.exercises = []; data.routines = []; data.workouts = []; data.measurements = []; data.blocks = [];
-  data.yogaSessions = []; data.yogaPoses = []; data.yogaEntries = []; data.activities = [];
+  data.yogaSessions = []; data.yogaPoses = []; data.yogaEntries = []; data.activities = []; data.photos = [];
   data.settings = defaultSettings();
   data.timer = null;
   await idb.putMeta('seeded', true);
@@ -208,6 +213,10 @@ export async function load() {
   try {
     const lists = await Promise.all(idb.STORES.map((s) => idb.getAll(s)));
     idb.STORES.forEach((s, i) => { data[s] = lists[i]; });
+    // Photos of workouts that no longer exist (deleted earlier) are cleaned up here, so Undo still works in the same session.
+    const wIds = new Set(data.workouts.map((w) => w.id));
+    for (const p of data.photos.filter((p) => !wIds.has(p.workoutId))) idb.del('photos', p.id);
+    data.photos = data.photos.filter((p) => wIds.has(p.workoutId));
     const settings = await idb.getMeta('settings');
     data.settings = { ...defaultSettings(), ...(settings || {}) };
     data.timer = (await idb.getMeta('timer')) || null;

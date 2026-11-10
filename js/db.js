@@ -2,8 +2,8 @@
 // if the phone locks, the browser is closed or the app is swiped away.
 
 const DB_NAME = 'workoutlog';
-const DB_VERSION = 3; // bump + add a case below to migrate the database structure
-export const STORES = ['exercises', 'routines', 'workouts', 'measurements', 'blocks', 'yogaSessions', 'yogaPoses', 'yogaEntries', 'activities'];
+const DB_VERSION = 4; // bump + add a case below to migrate the database structure
+export const STORES = ['exercises', 'routines', 'workouts', 'measurements', 'blocks', 'yogaSessions', 'yogaPoses', 'yogaEntries', 'activities', 'photos'];
 const STORES_V1 = ['exercises', 'routines', 'workouts', 'measurements', 'blocks'];
 
 let dbPromise = null;
@@ -29,7 +29,11 @@ export function openDB() {
         // Custom activities with a timer (1.41): boxing, swimming…
         if (!db.objectStoreNames.contains('activities')) db.createObjectStore('activities', { keyPath: 'id' });
       }
-      // if (old < 4) { …future changes… }
+      if (old < 4) {
+        // Workout photos (1.43): full-size Blob + thumbnail per photo.
+        if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos', { keyPath: 'id' });
+      }
+      // if (old < 5) { …future changes… }
     };
     req.onsuccess = () => {
       const db = req.result;

@@ -12,9 +12,10 @@ import { makeBackup, validateBackup, planImport } from '../logic/backup.js';
 import { wakeLockSupported } from '../timer.js';
 import { warmupSteps, DEFAULT_WARMUP_STEPS } from '../logic/warmup.js';
 import { activeWorkout } from '../store.js';
+import { blobToDataUrl } from './photos.js';
 import * as WS from '../workoutService.js';
 
-export const APP_VERSION = '1.42.0';
+export const APP_VERSION = '1.43.0';
 
 export function SettingsScreen() {
   const s = data.settings;
@@ -128,8 +129,11 @@ export function AdvancedSettingsScreen() {
 }
 
 // ---------- Export ----------
-export function exportFile(kind, routineIds = null) {
+export async function exportFile(kind, routineIds = null) {
   const backup = makeBackup(data, { kind, routineIds });
+  if (kind === 'full' && data.photos.length) {
+    backup.photos = await Promise.all(data.photos.map(async (p) => ({ id: p.id, workoutId: p.workoutId, addedAt: p.addedAt, thumb: p.thumb, dataUrl: await blobToDataUrl(p.blob) })));
+  }
   const json = JSON.stringify(backup, null, 2);
   const date = new Date().toISOString().slice(0, 10);
   const name = kind === 'full' ? `WorkoutLog-Backup-${date}.json` : `WorkoutLog-Routines-${date}.json`;
@@ -213,6 +217,7 @@ export function ImportPreviewSheet(sheet) {
       h(Row, { title: 'Training blocks', right: h('b', p.blocks.length) }),
       (p.yogaSessions?.length || p.yogaPoses?.length || p.yogaEntries?.length) > 0 && h(Row, { title: 'Yoga sessions', right: h('b', p.yogaSessions.length) }),
       p.activities?.length > 0 && h(Row, { title: 'Activities', right: h('b', p.activities.length) }),
+      p.photos?.length > 0 && h(Row, { title: 'Photos', right: h('b', p.photos.length) }),
       (p.yogaPoses?.length || p.yogaEntries?.length) > 0 && h(Row, { title: 'Pose results', right: h('b', p.yogaEntries.length) }),
     ]),
     (p.skipped || p.reused || p.renamed) > 0 && h(Section, { title: 'Duplicates' }, [
