@@ -158,6 +158,7 @@ export const DICT = {
   'No run found in the last 2 days – pick when you started': 'לא נמצאה ריצה ביומיים האחרונים – בחר מתי התחלת',
   'Pick your run': 'בחר את הריצה', 'Log a run': 'רשום ריצה', 'Edit run': 'עריכת ריצה', 'Distance': 'מרחק', 'Distance in km': 'מרחק בק״מ',
   ' /km average pace': ' לק״מ קצב ממוצע', 'Pace appears when you add distance and time': 'הקצב יופיע כשתוסיף מרחק וזמן',
+  'These muscles need about 48 hours of rest.': 'השרירים האלה צריכים כ-48 שעות מנוחה.', 'Ready again': 'מוכנים שוב',
   'Heart rate & calories': 'דופק וקלוריות', 'e.g. easy run, hills, felt great': 'למשל: ריצה קלה, עליות, הרגשתי מצוין',
   'Pick a time': 'בחר זמן', 'When did you start?': 'מתי התחלת?', 'The run ends when you tap Get from Health': 'הריצה מסתיימת כשתקיש "קבל מ-Health"',
   'Hours ago': 'לפני כמה שעות', 'Minutes ago': 'לפני כמה דקות', 'Start date and time': 'תאריך ושעת התחלה',

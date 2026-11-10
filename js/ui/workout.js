@@ -8,7 +8,7 @@
 import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
 import { data, ui, update, openSheet, closeSheet, confirm, toast, exercisesById, saveWorkout, history } from '../store.js';
-import { Page, Section, Row, Button, IconButton, Sheet, TextField, Thumb, Chip, NumberField, Stepper, WeightField, DragHandle, ExercisePhoto, fmtW, nav } from './components.js';
+import { Page, Section, Row, Button, IconButton, Sheet, TextField, Thumb, Chip, NumberField, Stepper, WeightField, DragHandle, ExercisePhoto, fmtW, fmtDateTime, nav } from './components.js';
 import { fmtClock, fmtDuration, fmtNum, plural } from '../logic/util.js';
 import { SET_TYPES, muscleName } from '../logic/muscles.js';
 import { displayWeight, fromDisplayWeight } from '../logic/units.js';
@@ -492,6 +492,8 @@ export function FinishSummarySheet(sheet) {
   if (!w) return null;
   const sets = w.entries.reduce((t, e) => t + e.sets.filter((s) => s.done && s.type !== 'warmup').length, 0);
   const prs = sheet.prs || [];
+  // Main muscles that did work this session (helpers not counted), most sets first.
+  const restMuscles = Object.entries(workoutVolume(w, data.settings)).filter(([, v]) => v.direct > 0).sort((a, b) => b[1].direct - a[1].direct).map(([k]) => k);
   return h(Sheet, { title: 'Workout complete', left: h('button.link-btn', { onclick: closeSheet }, 'Back') }, [
     h('div.center', { style: { fontSize: '42px', margin: '6px 0 2px' } }, prs.length ? '🏆' : '💪'),
     h('div.center', { style: { fontSize: '21px', fontWeight: 800, marginBottom: '14px' } }, w.routineName),
@@ -501,6 +503,11 @@ export function FinishSummarySheet(sheet) {
       h('div.stat', [h('div.v', fmtVol(workoutVolumeKg(w))), h('div.k', 'Volume')]),
       h('div.stat', { style: prs.length ? { background: 'var(--yellow-soft)' } : null }, [h('div.v', String(prs.length)), h('div.k', 'New records')]),
     ]),
+    restMuscles.length > 0 && h(Section, { title: 'Rest' }, h('div.pad', [
+      h('div.chips', restMuscles.map((k) => h('span.chip.chip-static', { key: k }, muscleName(k, data.settings)))),
+      h('div.small', { style: { marginTop: '8px' } }, 'These muscles need about 48 hours of rest.'),
+      h('div.small.muted', [h('span', 'Ready again'), ' ', h('b', fmtDateTime(w.endedAt + 48 * 3600000))]),
+    ])),
     h(Section, { title: 'Heart rate & calories' }, h('div.pad', HealthBox({ health: (w.health = w.health || { hr: null, kcal: null }), from: w.startedAt, to: w.endedAt, onChange: () => saveWorkout(w) }))),
     prs.length > 0 && h(Section, {}, prs.map((p, i) => h(Row, {
       key: i, left: h('span.pr', icon('trophy', 20)), title: p.name, subtitle: p.kind,
