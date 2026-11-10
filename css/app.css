@@ -583,9 +583,9 @@ input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
 .di-actions { display: grid; gap: 6px; margin-top: 16px; }
 .di-note { display: flex; gap: 8px; align-items: center; width: 100%; text-align: start; padding: 10px 12px; margin: 10px 0; border-radius: 12px; background: var(--blue-soft); color: var(--text); font-size: 14px; }
 .di-note b { color: var(--accent); }
-.freddy-card { display: flex; align-items: center; gap: 12px; background: var(--card); border-radius: 14px; padding: 10px 12px; margin: 0 0 10px; }
-.freddy-card img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex: none; }
-.freddy-t { font-size: 16px; }
+.freddy-card { background: var(--card); border-radius: 14px; padding: 10px; margin: 0 0 10px; text-align: center; }
+.freddy-card img { display: block; width: 100%; aspect-ratio: 1 / 1; border-radius: 10px; object-fit: cover; }
+.freddy-t { font-size: 20px; font-weight: 700; margin-top: 10px; }
 .freddy-t b { color: var(--accent); }
 .inline-link { display: inline; min-height: auto; padding: 0; font-size: inherit; }
 
