@@ -587,6 +587,10 @@ input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
 .freddy-card img { display: block; width: 100%; aspect-ratio: 1 / 1; border-radius: 10px; object-fit: cover; }
 .freddy-t { font-size: 20px; font-weight: 700; margin-top: 10px; }
 .freddy-t b { color: var(--accent); }
+.rest-chips .chip { font-size: 17px; padding: 8px 14px; font-weight: 650; }
+.rest-big { font-size: 20px; font-weight: 700; line-height: 1.25; margin-top: 12px; }
+.rest-sub { font-size: 16px; color: var(--muted); margin-top: 6px; }
+.rest-sub b { color: var(--accent); }
 .inline-link { display: inline; min-height: auto; padding: 0; font-size: inherit; }
 
 /* ---------- Right-to-left (Hebrew) ---------- */

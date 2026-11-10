@@ -509,9 +509,9 @@ export function FinishSummarySheet(sheet) {
       h('div.freddy-t', ['You lifted ', h('b', `${fmtNum(workoutVolumeKg(w) / FREDDY_KG, 1)} ${fmtNum(workoutVolumeKg(w) / FREDDY_KG, 1) === '1' ? 'Freddy' : 'Freddys'}`)]),
     ]),
     restMuscles.length > 0 && h(Section, { title: 'Rest' }, h('div.pad', [
-      h('div.chips', restMuscles.map((k) => h('span.chip.chip-static', { key: k }, muscleName(k, data.settings)))),
-      h('div.small', { style: { marginTop: '8px' } }, 'These muscles need about 48 hours of rest.'),
-      h('div.small.muted', [h('span', 'Ready again'), ' ', h('b', fmtDateTime(w.endedAt + 48 * 3600000))]),
+      h('div.chips.rest-chips', restMuscles.map((k) => h('span.chip.chip-static', { key: k }, muscleName(k, data.settings)))),
+      h('div.rest-big', 'These muscles need about 48 hours of rest.'),
+      h('div.rest-sub', [h('span', 'Ready again'), ' ', h('b', fmtDateTime(w.endedAt + 48 * 3600000))]),
     ])),
     h(Section, { title: 'Heart rate & calories' }, h('div.pad', HealthBox({ health: (w.health = w.health || { hr: null, kcal: null }), from: w.startedAt, to: w.endedAt, onChange: () => saveWorkout(w) }))),
     prs.length > 0 && h(Section, {}, prs.map((p, i) => h(Row, {
