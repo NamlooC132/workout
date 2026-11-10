@@ -102,6 +102,13 @@ export function fmtNum(v, maxDecimals = 2) {
   return String(r);
 }
 
+/** Display-only number with thousands comma ("3,120"). Never use in input fields (parseNum would misread it). */
+export function fmtGroup(v, maxDecimals = 2) {
+  if (v === null || v === undefined || Number.isNaN(v)) return '';
+  const r = Math.round(v * 10 ** maxDecimals) / 10 ** maxDecimals;
+  return r.toLocaleString('en-US', { maximumFractionDigits: maxDecimals });
+}
+
 /** Parses user input accepting "," or "." as decimal separator. */
 export function parseNum(text) {
   if (text === null || text === undefined) return null;

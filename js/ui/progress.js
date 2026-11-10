@@ -5,7 +5,7 @@ import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
 import { data, ui, update, openSheet, closeSheet, saveMeasurement, deleteMeasurement, saveSettings, confirm, toast, history, doneWorkouts, cached } from '../store.js';
 import { Page, Section, Row, Empty, Button, IconButton, Segmented, Sheet, NumberField, Thumb, Chip, LineChart, BarChart, TargetBar, SpiderChart, nav, fmtW, fmtDate, relDay } from './components.js';
-import { fmtNum, addDays, startOfWeek, startOfMonth, addMonths, dateKey, uid, parseDateKey, startOfDay, plural } from '../logic/util.js';
+import { fmtNum, fmtGroup, addDays, startOfWeek, startOfMonth, addMonths, dateKey, uid, parseDateKey, startOfDay, plural } from '../logic/util.js';
 import { allMuscles, muscleName } from '../logic/muscles.js';
 import { volumeBetween, weekRange, weeklySeries, monthRange, targetStatus, liftedBetween } from '../logic/volume.js';
 import { weeklyFrequency, weekStreak, strengthTrend, trendBuckets } from '../logic/analytics.js';
@@ -223,7 +223,7 @@ function Volume(st) {
     h(Segmented, { small: true, value: st.mode, onChange: (v) => { st.mode = v; update(); }, options: [{ value: 'week', label: 'Weekly' }, { value: 'month', label: 'Monthly' }] }),
     h('div.hstack', { style: { justifyContent: 'space-between' } }, [
       h(IconButton, { name: 'chevronLeft', label: 'Earlier', onClick: () => shift(-1) }),
-      h('div.center', [h('div', { style: { fontWeight: 700 } }, label), h('div.muted.small', `${fmtNum(total, 1)} sets total${isWeek ? '' : ` · ${fmtNum(total / weeks, 1)} / week`}`)]),
+      h('div.center', [h('div', { style: { fontWeight: 700 } }, label), h('div.muted.small', `${fmtNum(total, 1)} muscle sets${isWeek ? '' : ` · ${fmtNum(total / weeks, 1)} / week`}`), h('div.muted.small', 'Helper muscles count too, so this is more than your real sets.')]),
       h(IconButton, { name: 'chevronRight', label: 'Later', onClick: () => shift(1), disabled: isWeek ? st.weekOffset >= 0 : (st.monthOffsetV || 0) >= 0 }),
     ]),
     h('div.legend', { style: { margin: '6px 4px' } }, [
@@ -283,8 +283,8 @@ function Lifted(st) {
     ? (off === 0 ? 'This week' : off === -1 ? 'Last week' : `Week of ${fmtDate(range.from, { day: 'numeric', month: 'short' })}`)
     : new Date(range.from).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   const shift = (d) => { const v = Math.min(0, off + d); if (isWeek) st.liftWeekOffset = v; else st.liftMonthOffset = v; update(); };
-  const kg = (v) => `${fmtNum(displayWeight(v, unit), 0)} ${unit}`;
-  const big = (v) => { const x = displayWeight(v, unit); return x >= 10000 ? `${fmtNum(x / 1000, 1)}k` : fmtNum(x, 0); };
+  const kg = (v) => `${fmtGroup(displayWeight(v, unit), 0)} ${unit}`;
+  const big = (v) => { const x = displayWeight(v, unit); return x >= 10000 ? `${fmtNum(x / 1000, 1)}k` : fmtGroup(x, 0); };
   const pct = prev.total ? Math.round(((cur.total - prev.total) / prev.total) * 100) : null;
   const prevName = isWeek ? 'week' : 'month';
   const it = cur.total ? `${kg(cur.total)} ${isWeek ? (off === 0 ? 'this week' : 'that week') : (off === 0 ? 'this month' : 'that month')}` : 'Nothing lifted in this period';
@@ -313,7 +313,7 @@ function Lifted(st) {
       statBox('Sets', cur.sets, 'warm-ups not counted'),
       statBox('Reps', cur.reps, 'mini sets included'),
     ]),
-    h(Section, { title: isWeek ? 'Volume per week' : 'Volume per month' }, h(BarChart, { bars, formatY: (v) => (v >= 10000 ? `${fmtNum(v / 1000, 0)}k` : fmtNum(v, 0)) })),
+    h(Section, { title: isWeek ? 'Volume per week' : 'Volume per month' }, h(BarChart, { bars, formatY: (v) => (v >= 10000 ? `${fmtNum(v / 1000, 0)}k` : fmtGroup(v, 0)) })),
     muscles.length > 0 && h(Section, { title: 'By muscle', footer: 'Weight × reps of exercises where this is a main muscle.' }, muscles.map(({ m, v }) =>
       h('div.row', { key: m.key, style: { display: 'block' } }, [
         h('div.hstack', [h('span.grow', { style: { fontWeight: 600 } }, m.name), h('b.mono', kg(v))]),
