@@ -21,7 +21,17 @@ export function shortcutDate(ms) {
 export const HEALTH_WRITE_SHORTCUT = 'Workout to Health';
 
 /** Health type word for an item: 'strength' | 'run' | 'boxing' | 'swimming' | 'cycling' | 'walking' | 'soccer' | 'basketball' | 'yoga' | 'other'. */
-export function healthTypeFor(item) {
+export function healthTypeFor(item, known = null) {
+  const t = rawHealthType(item);
+  // `known` = the type words the user's Shortcut has a branch for; anything else is sent as 'other'.
+  if (known && t !== 'other' && !known.includes(t)) return 'other';
+  return t;
+}
+
+/** "strength, run" → ['strength', 'run'] */
+export const parseKnownTypes = (text) => String(text ?? '').toLowerCase().split(/[,\s|]+/).filter(Boolean);
+
+function rawHealthType(item) {
   if (!item) return 'other';
   if (item.kind === 'run') return 'run';
   if (Array.isArray(item.entries)) return 'strength';        // a normal workout
@@ -34,12 +44,12 @@ export function healthTypeFor(item) {
 /** Minutes of a finished workout or activity (at least 1). */
 export const healthMinutes = (item) => Math.max(1, Math.round(((item.endedAt || item.startedAt) - item.startedAt) / 60000));
 
-export function healthWorkoutText(item) {
-  return `${healthTypeFor(item)}|${shortcutDate(item.startedAt)}|${healthMinutes(item)}`;
+export function healthWorkoutText(item, known = null) {
+  return `${healthTypeFor(item, known)}|${shortcutDate(item.startedAt)}|${healthMinutes(item)}`;
 }
 
-export function healthWorkoutUrl(item) {
-  return `shortcuts://run-shortcut?name=${encodeURIComponent(HEALTH_WRITE_SHORTCUT)}&input=text&text=${encodeURIComponent(healthWorkoutText(item))}`;
+export function healthWorkoutUrl(item, known = null) {
+  return `shortcuts://run-shortcut?name=${encodeURIComponent(HEALTH_WRITE_SHORTCUT)}&input=text&text=${encodeURIComponent(healthWorkoutText(item, known))}`;
 }
 
 export function shortcutUrl(from, to) {

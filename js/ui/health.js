@@ -1,18 +1,19 @@
 // Heart rate & calories box (with "Get from Health" via an Apple Shortcut) and runs.
 import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
-import { data, update, closeSheet, openSheet, saveWorkout, deleteWorkout, confirm, toast } from '../store.js';
+import { data, update, closeSheet, openSheet, saveWorkout, deleteWorkout, confirm, toast, saveSettings } from '../store.js';
 import { Page, Section, Row, Empty, Button, Sheet, NumberField, TextField, Chip, nav, fmtDate, fmtDateTime } from './components.js';
 import { uid, deepClone } from '../logic/util.js';
-import { healthWorkoutUrl, healthTypeFor, healthMinutes, shortcutUrl, parseHealthText, detectRuns, paceS, fmtPace, fmtRunTime, fmtKm, runDurationS } from '../logic/health.js';
+import { healthWorkoutUrl, healthTypeFor, parseKnownTypes, healthMinutes, shortcutUrl, parseHealthText, detectRuns, paceS, fmtPace, fmtRunTime, fmtKm, runDurationS } from '../logic/health.js';
 
 /** "Send to Health" button (+ a small one-time setup link). item = workout, run or activity that is finished. */
 export function SendToHealth({ item }) {
-  const go = () => { window.location.href = healthWorkoutUrl(item); };
+  const known = parseKnownTypes(data.settings.healthTypes);
+  const go = () => { window.location.href = healthWorkoutUrl(item, known); };
   return h('div.send-health', [
     h('button.btn.btn-secondary.btn-block', { onclick: go }, [icon('heart', 18), 'Send to Apple Health']),
     h('div.small.muted', { style: { textAlign: 'center', marginTop: '6px' } }, [
-      h('span', healthTypeLabel(healthTypeFor(item))), ' · ', h('span', `${healthMinutes(item)} min`), ' · ',
+      h('span', healthTypeLabel(healthTypeFor(item, known))), ' · ', h('span', `${healthMinutes(item)} min`), ' · ',
       h('button.link-btn.inline-link', { onclick: () => openSheet({ type: 'healthSetup' }) }, 'One-time setup'),
     ]),
   ]);
@@ -24,15 +25,12 @@ const healthTypeLabel = (t) => HEALTH_TYPE_LABELS[t] || 'Other workout';
 // sheet: { type: 'healthSetup' } – how to make the Shortcut that saves a workout in Apple Health (once)
 export function HealthSetupSheet() {
   const steps = [
-    ['Make the shortcut', 'Open the Shortcuts app → tap + → tap the name at the top and call it exactly: Workout to Health'],
-    ['Action 1: Split Text', 'Add “Split Text”. Text = Shortcut Input. Separator = Custom, and type the | character.'],
-    ['Action 2: Kind', 'Add “Get Item from List” → First Item (of Split Text). Then add “Set Variable” and name it Kind.'],
-    ['Action 3: Start', 'Add “Get Item from List” → Item At Index 2 (of Split Text). Add “Get Dates from Input”. Add “Set Variable”, name it Start.'],
-    ['Action 4: Minutes', 'Add “Get Item from List” → Last Item (of Split Text). Add “Get Numbers from Input”. Add “Set Variable”, name it Minutes.'],
-    ['Action 5: Strength', 'Add “If” → Kind → is → strength. Inside, add “Log Workout”, tap its blue type and choose Traditional Strength Training. Set Date = Start, Duration = Minutes (unit: minutes).'],
-    ['Action 6: Other types', 'Tap “Otherwise If” for each type you use (run, boxing, swimming, cycling, walking, soccer, basketball, yoga): Kind is that word → Log Workout of that type, same Date and Duration. Last, under “Otherwise”, add Log Workout → Other.'],
-    ['Allow Health', 'The first time, Shortcuts asks to write workouts to Health: tap Allow. If you missed it: Settings → Health → Data Access & Devices → Shortcuts → turn on Workouts.'],
-    ['Try it', 'Finish a workout in this app → tap “Send to Apple Health”. Open the Health app → Browse → Activity → Workouts to see it.'],
+    ['Make the shortcut', 'Open the Shortcuts app → tap + (top right) → tap the name at the top → Rename → type exactly: Workout to Health'],
+    ['Split the text', 'Add the action “Split Text”. Tap Text and choose Shortcut Input. Tap “New Lines” and choose Custom, then type the | character (keyboard: 123 → #+= → |).'],
+    ['Get the 3 parts', 'Add “Get Item from List” (First Item) then “Set Variable” named Kind. Add “Get Item from List” (Item At Index 2) → “Get Dates from Input” → “Set Variable” named Start. Add “Get Item from List” (Last Item) → “Get Numbers from Input” → “Set Variable” named Minutes. Every “Get Item from List” must read its List from Split Text: tap List and choose Split Text.'],
+    ['Strength branch', 'Add “If”: Kind → is → strength. Under it add “Log Workout”, choose the type Traditional Strength Training, tap the small arrow to show more, then Date = Start and Duration = Minutes with the unit set to minutes.'],
+    ['Allow Health', 'Run it once: Shortcuts asks to write workouts to Health → tap Allow. If you missed it: Settings → Health → Data Access & Devices → Shortcuts → turn on Workouts.'],
+    ['More types (later)', 'Add one more “If” block for each other word, with its own Log Workout. Write the words your shortcut knows in the box below. Anything else is sent as other.'],
   ];
   return h(Sheet, { title: 'Send to Apple Health' }, [
     h('div.di-lead', 'The app cannot write to Health by itself. A Shortcut on your iPhone does it. You make it once (about 5 minutes).'),
@@ -40,6 +38,8 @@ export function HealthSetupSheet() {
     h('div.di-text', 'Type of training, start time and duration. Health ends it at start + duration. Calories, sets, reps and weights are not sent.'),
     h('div.di-h', 'Steps:'),
     ...steps.map(([t, d], i) => h('div.hs-step', { key: i }, [h('div.hs-n', String(i + 1)), h('div', [h('div.hs-t', t), h('div.small.muted', d)])])),
+    h('div.di-h', 'Types my shortcut knows:'),
+    h('div.field-card', h(TextField, { value: data.settings.healthTypes || '', placeholder: 'strength, other', onChange: (v) => saveSettings({ healthTypes: v }) })),
     h('div.small.muted', { style: { margin: '10px 0' } }, 'If Health shows 0 minutes, delete the shortcut and make it again, and check that Workouts is allowed in the Health setting above.'),
     h(Button, { block: true, kind: 'plain', onClick: closeSheet }, 'Got it'),
   ]);

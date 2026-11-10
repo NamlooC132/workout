@@ -756,7 +756,7 @@ test('wallpaper: finds the main color of a picture and builds theme colors', () 
   assert.equal(wallpaperVars(grey, true)['--accent'], undefined);
 });
 
-import { healthTypeFor, healthWorkoutText, healthWorkoutUrl, healthMinutes } from '../js/logic/health.js';
+import { healthTypeFor, healthWorkoutText, healthWorkoutUrl, healthMinutes, parseKnownTypes } from '../js/logic/health.js';
 test('Send to Health: type word, start and minutes', () => {
   assert.equal(healthTypeFor({ entries: [], startedAt: 0, endedAt: 1 }), 'strength');
   assert.equal(healthTypeFor({ kind: 'run', entries: [] }), 'run');
@@ -769,4 +769,13 @@ test('Send to Health: type word, start and minutes', () => {
   assert.equal(healthWorkoutText(w), 'strength|2026-11-11 18:30:00|47');
   assert.match(healthWorkoutUrl(w), /^shortcuts:\/\/run-shortcut\?name=Workout%20to%20Health&input=text&text=strength%7C2026-11-11/);
   assert.equal(healthMinutes({ startedAt: 5, endedAt: 6 }), 1);
+});
+
+test('Send to Health: types the Shortcut does not know are sent as other', () => {
+  const known = parseKnownTypes('strength, Run , other');
+  assert.deepEqual(known, ['strength', 'run', 'other']);
+  assert.equal(healthTypeFor({ name: 'Boxing' }, known), 'other');
+  assert.equal(healthTypeFor({ name: 'Boxing' }, [...known, 'boxing']), 'boxing');
+  assert.equal(healthTypeFor({ entries: [] }, known), 'strength');
+  assert.equal(healthTypeFor({ name: 'Boxing' }), 'boxing');
 });

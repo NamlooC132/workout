@@ -16,7 +16,7 @@ import { blobToDataUrl } from './photos.js';
 import { BackgroundRow } from './wallpaper.js';
 import * as WS from '../workoutService.js';
 
-export const APP_VERSION = '1.45.0';
+export const APP_VERSION = '1.45.1';
 
 export function SettingsScreen() {
   const s = data.settings;
