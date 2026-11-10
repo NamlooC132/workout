@@ -739,11 +739,3 @@ test('lifted volume: weight × reps per period, warm-ups out, mini-sets in', asy
   assert.equal(r.byMuscle.triceps, undefined);
   assert.equal(r.byExercise[0].kg, 1220);
 });
-
-import { fmtGroup } from '../js/logic/util.js';
-test('fmtGroup: thousands comma for display, rounds, handles empty', () => {
-  assert.equal(fmtGroup(3120, 0), '3,120');
-  assert.equal(fmtGroup(1234567.891, 1), '1,234,567.9');
-  assert.equal(fmtGroup(62.5), '62.5');
-  assert.equal(fmtGroup(null), '');
-});

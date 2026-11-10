@@ -6,7 +6,7 @@ import { data, ui, update, openSheet, confirm, toast, history, exercisesById, do
 import { Page, Section, Row, Empty, Button, IconButton, Thumb, Segmented, NumberField, WeightField, LineChart, ExercisePhoto, nav, fmtW, fmtDate, fmtDateTime, relDay } from './components.js';
 import { setsSummary } from './workout.js';
 import { select } from './exercises.js';
-import { fmtDuration, fmtNum, fmtGroup, deepClone, plural } from '../logic/util.js';
+import { fmtDuration, fmtNum, deepClone, plural } from '../logic/util.js';
 import { displayWeight } from '../logic/units.js';
 import { workoutVolume } from '../logic/volume.js';
 import { prsInWorkout, personalRecords, exerciseSeries, isStalled, progressionHistory, tonnage, bodyweightAt } from '../logic/records.js';
@@ -105,7 +105,7 @@ export function WorkoutDetailScreen({ id }) {
         stat('Date', fmtDate(w.startedAt, { day: 'numeric', month: 'short' }), new Date(w.startedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })),
         stat('Duration', fmtDuration(w.endedAt - w.startedAt)),
         stat('Sets', workSetCount(w)),
-        stat('Volume', fmtGroup(displayWeight(workoutTonnage(w), data.settings.unit), 0), data.settings.unit),
+        stat('Volume', fmtNum(displayWeight(workoutTonnage(w), data.settings.unit), 0), data.settings.unit),
       ]),
     !edit && (w.health?.hr || w.health?.kcal) && h('div.stat-grid.two', { style: { margin: '0 0 4px' } }, [
       stat('Avg heart rate', w.health.hr ? `${w.health.hr}` : '–', 'bpm'),
@@ -279,7 +279,7 @@ export function ExerciseScreen({ id }) {
 
     h(Section, { title: 'Progress' }, [
       h('div', { style: { padding: '8px 12px 0' } }, h(Segmented, { small: true, value: st.metric, options: metrics, onChange: (v) => { st.metric = v; ui.tabState['chartSel_ex' + id] = undefined; update(); } })),
-      h(LineChart, { id: 'ex' + id, points: pts, formatY: (v) => fmtGroup(v, st.metric === 'reps' ? 0 : 1) }),
+      h(LineChart, { id: 'ex' + id, points: pts, formatY: (v) => fmtNum(v, st.metric === 'reps' ? 0 : 1) }),
     ]),
 
     series.length >= 2 && h(Section, { title: 'Compared with' }, [

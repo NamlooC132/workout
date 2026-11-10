@@ -7,9 +7,9 @@
 //  • The rest timer is a slim bar at the bottom; the next set is scrolled into view above it.
 import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
-import { data, ui, update, openSheet, closeSheet, confirm, toast, exercisesById, saveWorkout, saveSettings, history } from '../store.js';
+import { data, ui, update, openSheet, closeSheet, confirm, toast, exercisesById, saveWorkout, history } from '../store.js';
 import { Page, Section, Row, Button, IconButton, Sheet, TextField, Thumb, Chip, NumberField, Stepper, WeightField, DragHandle, ExercisePhoto, fmtW, nav } from './components.js';
-import { fmtClock, fmtDuration, fmtNum, fmtGroup, plural } from '../logic/util.js';
+import { fmtClock, fmtDuration, fmtNum, plural } from '../logic/util.js';
 import { SET_TYPES, muscleName } from '../logic/muscles.js';
 import { displayWeight, fromDisplayWeight } from '../logic/units.js';
 import { workoutVolume } from '../logic/volume.js';
@@ -31,7 +31,7 @@ function workoutVolumeKg(w) {
   const bw = bodyweightAt(data.measurements, w.startedAt);
   return w.entries.reduce((t, e) => t + (e.skipped ? 0 : volumeOf(e.sets.filter((s) => s.done), e.snapshot, bw)), 0);
 }
-const fmtVol = (kg) => `${fmtGroup(displayWeight(kg, data.settings.unit), 0)} ${data.settings.unit}`;
+const fmtVol = (kg) => `${Math.round(displayWeight(kg, data.settings.unit)).toLocaleString('en-US')} ${data.settings.unit}`;
 
 // ---------- "Last time" text ----------
 export function setsSummary(sets, snap) {
@@ -492,8 +492,7 @@ export function FinishSummarySheet(sheet) {
   if (!w) return null;
   const sets = w.entries.reduce((t, e) => t + e.sets.filter((s) => s.done && s.type !== 'warmup').length, 0);
   const prs = sheet.prs || [];
-  const noteSeen = () => { if (!data.settings.dataInfoSeen) saveSettings({ dataInfoSeen: true }); };
-  return h(Sheet, { title: 'Workout complete', left: h('button.link-btn', { onclick: () => { noteSeen(); closeSheet(); } }, 'Back') }, [
+  return h(Sheet, { title: 'Workout complete', left: h('button.link-btn', { onclick: closeSheet }, 'Back') }, [
     h('div.center', { style: { fontSize: '42px', margin: '6px 0 2px' } }, prs.length ? '🏆' : '💪'),
     h('div.center', { style: { fontSize: '21px', fontWeight: 800, marginBottom: '14px' } }, w.routineName),
     h('div.summary-strip', { style: { gridTemplateColumns: 'repeat(2, 1fr)' } }, [
@@ -507,9 +506,9 @@ export function FinishSummarySheet(sheet) {
       key: i, left: h('span.pr', icon('trophy', 20)), title: p.name, subtitle: p.kind,
       right: h('b', p.key === 'bestE1rm' || p.key === 'bestSessionVolume' ? fmtW(p.value) : p.key === 'bestReps' ? `${p.value} reps` : `${fmtW(p.detail?.kg)} × ${p.detail?.reps}`),
     }))),
+    !data.settings.dataInfoSeen && h('button.di-note', { onclick: () => openSheet({ type: 'dataInfo' }) }, [icon('info', 18), h('span', ['Saved on this phone only. ', h('b', 'How to keep it safe ›')])]),
     sheet.more ? Details(w) : h('button.link-btn', { style: { display: 'block', margin: '0 auto' }, onclick: () => { sheet.more = true; update(); } }, 'More details'),
-    h('div.mt', h(Button, { block: true, size: 'lg', onClick: () => { noteSeen(); closeSheet(); nav('/history'); } }, 'Done')),
-    !data.settings.dataInfoSeen && h('button.di-note', { onclick: () => { noteSeen(); openSheet({ type: 'dataInfo' }); } }, [icon('info', 14), h('span', ['Saved on this phone only. ', h('b', 'How to keep it safe ›')])]),
+    h('div.mt', h(Button, { block: true, size: 'lg', onClick: () => { closeSheet(); nav('/history'); } }, 'Done')),
   ]);
 }
 
@@ -521,7 +520,7 @@ function Details(w) {
   const changed = routine && w.entries.some((e) => e.exerciseId && !routine.items.some((it) => it.exerciseId === e.exerciseId));
   return h('div', [
     h(Section, { title: 'Details' }, [
-      h(Row, { title: 'Total volume', right: h('b', `${fmtGroup(displayWeight(tons, data.settings.unit), 0)} ${data.settings.unit}`) }),
+      h(Row, { title: 'Total volume', right: h('b', `${fmtNum(displayWeight(tons, data.settings.unit), 0)} ${data.settings.unit}`) }),
       h(Row, { title: 'Exercises', right: h('b', String(w.entries.length)) }),
     ]),
     Object.keys(vol).length > 0 && h(Section, { title: 'Sets per muscle' }, h('div.pad.chips', Object.entries(vol).sort((a, b) => b[1].total - a[1].total).map(([m, v]) => h('span.chip.chip-static', { key: m }, `${muscleName(m, data.settings)} ${fmtNum(v.total, 1)}`)))),

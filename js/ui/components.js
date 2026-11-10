@@ -3,7 +3,7 @@ import { h, cx } from '../vdom.js';
 import { icon } from './icons.js';
 import { MuscleMap } from './musclemap.js';
 import { data, ui, update, closeSheet, openSheet } from '../store.js';
-import { parseNum, fmtNum, fmtGroup } from '../logic/util.js';
+import { parseNum, fmtNum } from '../logic/util.js';
 import { displayWeight, fromDisplayWeight } from '../logic/units.js';
 import { videoFor, thumbFor } from '../logic/catalog.js';
 
@@ -235,7 +235,7 @@ export function Toast() {
 
 // ---------- Charts (SVG) ----------
 /** points: [{ x: ms, y: number }] oldest first. */
-export function LineChart({ points, height = 180, formatY = (v) => fmtGroup(v, 1), color = 'var(--accent)', id = 'chart' }) {
+export function LineChart({ points, height = 180, formatY = (v) => fmtNum(v, 1), color = 'var(--accent)', id = 'chart' }) {
   if (!points || points.length === 0) return h('div.chart-empty', 'No data yet');
   const W = 340, H = height, padL = 40, padR = 12, padT = 14, padB = 24;
   const ys = points.map((p) => p.y);
@@ -276,7 +276,7 @@ export function LineChart({ points, height = 180, formatY = (v) => fmtGroup(v, 1
 }
 
 /** Vertical bar chart: bars [{ label, value }]. */
-export function BarChart({ bars, height = 140, formatY = (v) => fmtGroup(v, 1), highlightLast = true }) {
+export function BarChart({ bars, height = 140, formatY = (v) => fmtNum(v, 1), highlightLast = true }) {
   if (!bars.length) return h('div.chart-empty', 'No data yet');
   const max = Math.max(1, ...bars.map((b) => b.value));
   // Label only every few bars (always the latest one) so dates never overlap.
@@ -409,7 +409,7 @@ export function DragHandle({ onDrop, label = 'Drag to reorder' }) {
 export function fmtW(kg, { unit = true } = {}) {
   if (kg === null || kg === undefined) return '–';
   const u = data.settings.unit;
-  return `${fmtGroup(displayWeight(kg, u))}${unit ? ' ' + u : ''}`;
+  return `${fmtNum(displayWeight(kg, u))}${unit ? ' ' + u : ''}`;
 }
 
 export function fmtDate(ms, opts = { day: 'numeric', month: 'short', year: 'numeric' }) {
