@@ -15,7 +15,7 @@ import { HowToSheet } from './ui/howto.js';
 import { DataInfoSheet } from './ui/datainfo.js';
 import { wallpaperVars } from './logic/wallpaper.js';
 import { LogActivitySheet, ActivitySheet, ActivityView, ActivityResumeBar, ActivityDetailScreen, activeActivity } from './ui/activity.js';
-import { LogRunSheet } from './ui/health.js';
+import { LogRunSheet, HealthSetupSheet } from './ui/health.js';
 import { YogaScreen, YogaPoseScreen, YogaAddPoseSheet } from './ui/yoga.js';
 import { ReadinessSheet } from './ui/readiness.js';
 import { SettingsScreen, AdvancedSettingsScreen, ExportRoutinesSheet, ImportPreviewSheet, TargetsSheet, MusclesSheet, ActionsSheet } from './ui/settings.js';
@@ -25,6 +25,7 @@ import { fmtDuration } from './logic/util.js';
 const SHEETS = {
   muscleView: MuscleViewSheet,
   logRun: LogRunSheet,
+  healthSetup: HealthSetupSheet,
   logActivity: LogActivitySheet,
   activity: ActivitySheet,
   picker: PickerSheet,

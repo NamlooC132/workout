@@ -15,6 +15,33 @@ export function shortcutDate(ms) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
+// ---- Send a finished workout INTO Apple Health ----
+// The Shortcut "Workout to Health" gets the text  "type|start|minutes"  and uses its "Log Workout" action.
+// (Log Workout has a start date and a duration, but no end date: Health ends it at start + duration.)
+export const HEALTH_WRITE_SHORTCUT = 'Workout to Health';
+
+/** Health type word for an item: 'strength' | 'run' | 'boxing' | 'swimming' | 'cycling' | 'walking' | 'soccer' | 'basketball' | 'yoga' | 'other'. */
+export function healthTypeFor(item) {
+  if (!item) return 'other';
+  if (item.kind === 'run') return 'run';
+  if (Array.isArray(item.entries)) return 'strength';        // a normal workout
+  const n = String(item.name || '').toLowerCase();
+  const rules = [['boxing', /box|קראטה|אגרוף/], ['swimming', /swim|שחי/], ['cycling', /cycl|bike|biking|spin|רכיב|אופני/], ['walking', /walk|hike|הליכ|טיול/], ['soccer', /soccer|football|כדורגל/], ['basketball', /basket|כדורסל/], ['yoga', /yoga|יוגה/], ['run', /\brun|jog|ריצ/]];
+  for (const [t, re] of rules) if (re.test(n)) return t;
+  return 'other';
+}
+
+/** Minutes of a finished workout or activity (at least 1). */
+export const healthMinutes = (item) => Math.max(1, Math.round(((item.endedAt || item.startedAt) - item.startedAt) / 60000));
+
+export function healthWorkoutText(item) {
+  return `${healthTypeFor(item)}|${shortcutDate(item.startedAt)}|${healthMinutes(item)}`;
+}
+
+export function healthWorkoutUrl(item) {
+  return `shortcuts://run-shortcut?name=${encodeURIComponent(HEALTH_WRITE_SHORTCUT)}&input=text&text=${encodeURIComponent(healthWorkoutText(item))}`;
+}
+
 export function shortcutUrl(from, to) {
   const text = `${shortcutDate(from)}|${shortcutDate(to)}`;
   return `shortcuts://run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}&input=text&text=${encodeURIComponent(text)}`;

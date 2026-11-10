@@ -755,3 +755,18 @@ test('wallpaper: finds the main color of a picture and builds theme colors', () 
   assert.equal(grey.hue, null);
   assert.equal(wallpaperVars(grey, true)['--accent'], undefined);
 });
+
+import { healthTypeFor, healthWorkoutText, healthWorkoutUrl, healthMinutes } from '../js/logic/health.js';
+test('Send to Health: type word, start and minutes', () => {
+  assert.equal(healthTypeFor({ entries: [], startedAt: 0, endedAt: 1 }), 'strength');
+  assert.equal(healthTypeFor({ kind: 'run', entries: [] }), 'run');
+  assert.equal(healthTypeFor({ name: 'Boxing' }), 'boxing');
+  assert.equal(healthTypeFor({ name: 'Morning swim' }), 'swimming');
+  assert.equal(healthTypeFor({ name: 'Chess' }), 'other');
+  const start = new Date(2026, 10, 11, 18, 30, 0).getTime();
+  const w = { entries: [], startedAt: start, endedAt: start + 47 * 60000 + 20000 };
+  assert.equal(healthMinutes(w), 47);
+  assert.equal(healthWorkoutText(w), 'strength|2026-11-11 18:30:00|47');
+  assert.match(healthWorkoutUrl(w), /^shortcuts:\/\/run-shortcut\?name=Workout%20to%20Health&input=text&text=strength%7C2026-11-11/);
+  assert.equal(healthMinutes({ startedAt: 5, endedAt: 6 }), 1);
+});
