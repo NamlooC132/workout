@@ -17,7 +17,7 @@ import { newSet } from '../logic/model.js';
 import { makeEntry } from '../workoutService.js';
 import { guideFor, photoFor } from '../logic/catalog.js';
 import { MuscleMap } from './musclemap.js';
-import { HealthBox, RunDetailScreen, runSummary, SendToHealth } from './health.js';
+import { HealthBox, RunDetailScreen, runSummary } from './health.js';
 import { isRun } from '../logic/health.js';
 
 const DECISIONS = { applied: 'Changes applied', light: 'Light workout', cancelled: 'No changes' };
@@ -132,7 +132,6 @@ export function WorkoutDetailScreen({ id }) {
         stat('Volume', fmtNum(displayWeight(workoutTonnage(w), data.settings.unit), 0), data.settings.unit),
       ]),
     h('div', { style: { margin: '8px 0 4px' } }, AddPhotoButton({ workoutId: w.id })),
-    !edit && h('div', { style: { margin: '8px 0 4px' } }, SendToHealth({ item: w })),
     !edit && (w.health?.hr || w.health?.kcal) && h('div.stat-grid.two', { style: { margin: '0 0 4px' } }, [
       stat('Avg heart rate', w.health.hr ? `${w.health.hr}` : '–', 'bpm'),
       stat('Calories', w.health.kcal ? `${w.health.kcal}` : '–', 'kcal'),

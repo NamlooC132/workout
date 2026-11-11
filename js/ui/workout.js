@@ -18,7 +18,7 @@ import * as WS from '../workoutService.js';
 import { tr } from '../i18n.js';
 import { startRest, adjustRest, skipRest, restRemaining, syncWakeLock } from '../timer.js';
 import { guideFor, photoFor } from '../logic/catalog.js';
-import { HealthBox, SendToHealth } from './health.js';
+import { HealthBox } from './health.js';
 import { PhotoStrip, AddPhotoButton } from './photos.js';
 import { setGoals } from '../logic/progression.js';
 import { e1rm } from '../logic/records.js';
@@ -509,7 +509,6 @@ export function FinishSummarySheet(sheet) {
       h('img', { src: 'images/freddy-v2.jpg', alt: 'Freddy' }),
       h('div.freddy-t', ['You lifted ', h('b', `${fmtNum(workoutVolumeKg(w) / FREDDY_KG, 1)} ${fmtNum(workoutVolumeKg(w) / FREDDY_KG, 1) === '1' ? 'Freddy' : 'Freddys'}`)]),
     ]),
-    h('div', { style: { margin: '0 0 12px' } }, SendToHealth({ item: w })),
     h(Section, { title: 'Photos' }, h('div.pad', [PhotoStrip({ workoutId: w.id }), AddPhotoButton({ workoutId: w.id })])),
     restMuscles.length > 0 && h(Section, { title: 'Rest' }, h('div.pad', [
       h('div.chips.rest-chips', restMuscles.map((k) => h('span.chip.chip-static', { key: k }, muscleName(k, data.settings)))),

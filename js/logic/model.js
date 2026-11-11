@@ -52,7 +52,6 @@ export function defaultSettings() {
     restVibrate: true,
     keepAwake: true,
     theme: 'system',                 // 'system' | 'light' | 'dark'
-    healthTypes: 'strength, other',  // type words the user's "Workout to Health" Shortcut has a branch for
     bgImage: null,                   // background picture (data URL, resized) – colors follow it
     bgStats: null,                   // its colors { hue, sat, avgHue, avgSat, light }
     language: 'en',                  // 'en' | 'he'

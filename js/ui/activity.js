@@ -5,7 +5,6 @@ import { icon } from './icons.js';
 import { data, ui, update, openSheet, closeSheet, confirm, toast, saveActivity, deleteActivity } from '../store.js';
 import { Page, Sheet, Section, Button, IconButton, TextField, NumberField, Chip, fmtDateTime, nav } from './components.js';
 import { uid, fmtDuration, deepClone } from '../logic/util.js';
-import { SendToHealth } from './health.js';
 
 const DEFAULT_NAMES = ['Boxing', 'Swimming', 'Cycling', 'Walking', 'Football', 'Basketball'];
 
@@ -124,7 +123,6 @@ export function ActivitySheet(sheet) {
       h('div.stat', [h('div.v', new Date(a.startedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })), h('div.k', 'Date')]),
     ]),
     a.notes && h('div.callout', { style: { marginBottom: '12px' } }, [icon('note', 18), a.notes]),
-    SendToHealth({ item: a }),
     h('div.mt', h(Button, { block: true, size: 'lg', onClick: done }, 'Done')),
   ]);
 }
@@ -143,7 +141,6 @@ export function ActivityDetailScreen({ id }) {
       h('div.stat', [h('div.k', 'Date'), h('div.v', new Date(a.startedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })), h('div.s', new Date(a.startedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }))]),
       h('div.stat', [h('div.k', 'Duration'), h('div.v', fmtDuration(mins * 60000))]),
     ]),
-    h('div', { style: { margin: '8px 0 4px' } }, SendToHealth({ item: a })),
     h(Section, { title: 'Activity' }, h('div.field-card', h(TextField, { value: a.name, placeholder: 'Activity name', onChange: (v) => { a.name = v.trim() || a.name; saveActivity(a); } }))),
     h(Section, { title: 'Minutes' }, h('div.field-card', h(NumberField, { value: mins, decimals: false, placeholder: '0', ariaLabel: 'Minutes', onChange: (v) => { if (v > 0) { a.endedAt = a.startedAt + v * 60000; saveActivity(a); } } }))),
     h(Section, { title: 'Note' }, h('div.field-card', h(TextField, { value: a.notes, placeholder: 'e.g. sparring, felt strong', multiline: true, onChange: (v) => { a.notes = v; saveActivity(a); } }))),

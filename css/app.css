@@ -587,9 +587,6 @@ input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
 .freddy-card img { display: block; width: 100%; aspect-ratio: 1 / 1; border-radius: 10px; object-fit: cover; }
 .freddy-t { font-size: 20px; font-weight: 700; margin-top: 10px; }
 .freddy-t b { color: var(--accent); }
-.hs-step { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 12px; }
-.hs-n { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; }
-.hs-t { font-weight: 700; }
 .bg-thumb { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; display: block; }
 /* Background picture: the picture sits behind everything, dimmed; cards turn into soft glass. */
 html.has-wall, html.has-wall body { background: transparent; }
