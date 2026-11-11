@@ -592,8 +592,8 @@ input.select[type=datetime-local] { max-width: 210px; font-size: 15px; }
 html.has-wall, html.has-wall body { background: transparent; }
 html.has-wall::before { content: ''; position: fixed; inset: 0; z-index: -1; background: var(--wall-dim), var(--wall) center / cover no-repeat; }
 html.has-wall { background: var(--bg); }
-html.has-wall .card, html.has-wall .stat, html.has-wall .field-card, html.has-wall .continue-card, html.has-wall .resume-bar, html.has-wall .freddy-card { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
-html.has-wall .page-header, html.has-wall .tabbar { background: color-mix(in srgb, var(--bg) 55%, transparent); }
+html.has-wall .card, html.has-wall .stat, html.has-wall .field-card, html.has-wall .continue-card, html.has-wall .resume-bar, html.has-wall .freddy-card { -webkit-backdrop-filter: blur(var(--wall-blur, 14px)); backdrop-filter: blur(var(--wall-blur, 14px)); }
+html.has-wall .page-header, html.has-wall .tabbar { background: color-mix(in srgb, var(--bg) var(--wall-bar, 55%), transparent); }
 .photo-add { cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .photo-add input { display: none; }
 .photo-strip { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 10px; }
@@ -1110,3 +1110,9 @@ select.select { border-radius: 8px; min-height: 36px; }
 .tab-u.active::after { transform: scaleX(1); }
 .tab-u:active { opacity: 0.7; }
 @media (max-width: 350px) { .tab-u { font-size: 14px; } }
+
+/* Background picture: glass slider (Settings → Appearance) */
+.glass-row { padding: 4px 16px 14px; }
+.glass-top { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 6px; }
+.glass-slider { width: 100%; accent-color: var(--accent, var(--green)); }
+.glass-ends { display: flex; justify-content: space-between; }

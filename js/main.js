@@ -138,11 +138,11 @@ function App() {
 let wallApplied = null, wallKeys = [];
 function applyWallpaper(dark) {
   const el = document.documentElement;
-  const { bgImage, bgStats } = data.settings;
+  const { bgImage, bgStats, bgGlass } = data.settings;
   if (bgImage && bgStats) {
     el.classList.add('has-wall');
     if (wallApplied !== bgImage) { el.style.setProperty('--wall', `url("${bgImage}")`); wallApplied = bgImage; }
-    const vars = wallpaperVars(bgStats, dark);
+    const vars = wallpaperVars(bgStats, dark, bgGlass ?? 50);
     for (const k of wallKeys) if (!(k in vars)) el.style.removeProperty(k);
     for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v);
     wallKeys = Object.keys(vars);

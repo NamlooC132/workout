@@ -31,6 +31,7 @@ function loadPicture(file) {
 
 export function BackgroundRow() {
   const s = data.settings;
+  const glass = Number.isFinite(+s.bgGlass) ? +s.bgGlass : 50;
   const pick = async (e) => {
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
@@ -40,7 +41,7 @@ export function BackgroundRow() {
       saveSettings({ bgImage: dataUrl, bgStats: stats });
     } catch { toast('Couldn’t read that picture'); }
   };
-  return h(Row, {
+  const row = h(Row, {
     left: s.bgImage ? h('img.bg-thumb', { src: s.bgImage, alt: '' }) : icon('camera', 22),
     title: 'Background picture',
     subtitle: 'The colors of the app follow your picture',
@@ -49,4 +50,13 @@ export function BackgroundRow() {
       s.bgImage && h('button.link-btn', { onclick: () => saveSettings({ bgImage: null, bgStats: null }) }, 'Remove picture'),
     ]),
   });
+  return h('div', [
+    row,
+    s.bgImage && h('div.glass-row', [
+      h('div.glass-top', [h('span', 'Glass'), h('span.muted', glass <= 10 ? 'Solid' : glass >= 90 ? 'Clear' : `${glass}%`)]),
+      h('input.glass-slider', { type: 'range', min: 0, max: 100, step: 5, value: glass, 'aria-label': 'Glass',
+        oninput: (e) => saveSettings({ bgGlass: Number(e.target.value) }) }),
+      h('div.glass-ends.small.muted', [h('span', 'Solid'), h('span', 'Clear')]),
+    ]),
+  ]);
 }

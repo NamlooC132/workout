@@ -766,3 +766,14 @@ test('photos of an activity are kept on import (and photos of unknown ids are sk
   assert.equal(plan.activities.length, 1);
   assert.deepEqual(plan.photos.map((p) => p.id), ['p1']);
 });
+
+test('wallpaper glass: 50 is the original look, 0 is solid, 100 is clearer', () => {
+  const st = { hue: 200, sat: 0.5, avgHue: 200, avgSat: 0.3, light: 0.5 };
+  const alpha = (v) => Number(/,\s*([\d.]+)\)$/.exec(v['--card'])[1]);
+  assert.equal(alpha(wallpaperVars(st, true)), 0.74);
+  assert.equal(alpha(wallpaperVars(st, true, 50)), 0.74);
+  assert.ok(alpha(wallpaperVars(st, true, 0)) > 0.9);
+  assert.ok(alpha(wallpaperVars(st, true, 100)) < 0.3);
+  assert.equal(wallpaperVars(st, true, 0)['--wall-blur'], '0px');
+  assert.equal(wallpaperVars(st, false, 50)['--wall-blur'], '14px');
+});

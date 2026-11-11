@@ -42,21 +42,27 @@ export function analyzePixels(pixels) {
 const hsl = (h, s, l, a = 1) => `hsla(${Math.round(h)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%, ${a})`;
 
 /** CSS variables for the theme. `stats` from analyzePixels, `dark` = dark mode. */
-export function wallpaperVars(stats, dark) {
+export function wallpaperVars(stats, dark, glass = 50) {
+  const g = Math.max(0, Math.min(100, Number.isFinite(+glass) ? +glass : 50));
+  // 0 = solid cards, 50 = the original look, 100 = almost clear glass.
+  const mix = (solid, mid, clear) => (g <= 50 ? solid + (mid - solid) * (g / 50) : mid + (clear - mid) * ((g - 50) / 50));
+  const r2 = (n) => Math.round(n * 100) / 100;
   const ah = stats.avgHue ?? 0, as = Math.min(0.4, stats.avgSat ?? 0);
   const vars = dark
     ? {
       '--bg': hsl(ah, as, 0.09),
-      '--card': hsl(ah, as, 0.15, 0.74),
-      '--card2': hsl(ah, as, 0.2, 0.74),
+      '--card': hsl(ah, as, 0.15, r2(mix(0.97, 0.74, 0.22))),
+      '--card2': hsl(ah, as, 0.2, r2(mix(0.97, 0.74, 0.22))),
       '--wall-dim': 'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5))',
     }
     : {
       '--bg': hsl(ah, as, 0.95),
-      '--card': hsl(ah, as * 0.5, 0.99, 0.78),
-      '--card2': hsl(ah, as, 0.96, 0.75),
+      '--card': hsl(ah, as * 0.5, 0.99, r2(mix(0.97, 0.78, 0.25))),
+      '--card2': hsl(ah, as, 0.96, r2(mix(0.97, 0.75, 0.25))),
       '--wall-dim': 'linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5))',
     };
+  vars['--wall-blur'] = `${r2(mix(0, 14, 26))}px`;
+  vars['--wall-bar'] = `${Math.round(mix(96, 55, 20))}%`;
   if (stats.hue !== null && stats.hue !== undefined) {
     const l = dark ? 0.64 : 0.38;
     vars['--accent'] = hsl(stats.hue, stats.sat, l);

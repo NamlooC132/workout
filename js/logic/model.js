@@ -53,6 +53,7 @@ export function defaultSettings() {
     keepAwake: true,
     theme: 'system',                 // 'system' | 'light' | 'dark'
     bgImage: null,                   // background picture (data URL, resized) – colors follow it
+    bgGlass: 50,                     // how see-through the cards are over the background picture (0 solid … 100 clear)
     bgStats: null,                   // its colors { hue, sat, avgHue, avgSat, light }
     language: 'en',                  // 'en' | 'he'
     rirDisplay: 'current',           // 'current' (only on the set you're doing) | 'all'
