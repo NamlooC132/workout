@@ -755,3 +755,14 @@ test('wallpaper: finds the main color of a picture and builds theme colors', () 
   assert.equal(grey.hue, null);
   assert.equal(wallpaperVars(grey, true)['--accent'], undefined);
 });
+
+test('photos of an activity are kept on import (and photos of unknown ids are skipped)', () => {
+  const du = 'data:image/jpeg;base64,AAAA';
+  const file = { format: 'workoutlog-web', kind: 'full', version: 3, exercises: [], routines: [], workouts: [], measurements: [], blocks: [],
+    activities: [{ id: 'a1', name: 'Boxing', status: 'done', startedAt: 1, endedAt: 60001, notes: '' }],
+    photos: [{ id: 'p1', workoutId: 'a1', addedAt: 1, dataUrl: du, thumb: du }, { id: 'p2', workoutId: 'nope', addedAt: 2, dataUrl: du, thumb: du }] };
+  const v = validateBackup(file);
+  const plan = planImport(v.data, { exercises: [], routines: [], workouts: [], measurements: [], blocks: [], yogaSessions: [], yogaPoses: [], yogaEntries: [], activities: [], photos: [] });
+  assert.equal(plan.activities.length, 1);
+  assert.deepEqual(plan.photos.map((p) => p.id), ['p1']);
+});

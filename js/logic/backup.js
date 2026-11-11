@@ -215,11 +215,11 @@ export function planImport(data, db) {
   // Yoga: sessions by id; poses by id or name (results join the pose already here).
   const ysIds = has(db.yogaSessions || []), yeIds = has(db.yogaEntries || []);
   for (const s of data.yogaSessions || []) { if (ysIds.has(s.id)) plan.skipped++; else plan.yogaSessions.push(s); }
-  const phIds = has(db.photos || []);
-  const wAll = new Set([...db.workouts.map((w) => w.id), ...plan.workouts.map((w) => w.id)]);
-  for (const p of data.photos || []) { if (phIds.has(p.id) || !wAll.has(p.workoutId)) plan.skipped++; else plan.photos.push(p); }
   const acIds = has(db.activities || []);
   for (const a of data.activities || []) { if (acIds.has(a.id)) plan.skipped++; else plan.activities.push(a); }
+  const phIds = has(db.photos || []);
+  const wAll = new Set([...db.workouts.map((w) => w.id), ...plan.workouts.map((w) => w.id), ...(db.activities || []).map((a) => a.id), ...plan.activities.map((a) => a.id)]);
+  for (const p of data.photos || []) { if (phIds.has(p.id) || !wAll.has(p.workoutId)) plan.skipped++; else plan.photos.push(p); }
   const poseById = new Map((db.yogaPoses || []).map((p) => [p.id, p]));
   const poseByName = new Map((db.yogaPoses || []).map((p) => [nameKey(p.name), p]));
   const poseMap = new Map();

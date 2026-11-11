@@ -62,7 +62,7 @@ export function HistoryScreen() {
     ...groups.map((g) => h(Section, { key: g.key, title: `${g.label} · ${countText(g)}` },
       g.items.map((w) => {
         if (w.entries === undefined) return h(Row, {
-          key: w.id, left: h('span.run-ico', icon('timer', 22)),
+          key: w.id, left: workoutPhotos(w.id)[0] ? h('img.hist-photo', { src: workoutPhotos(w.id)[0].thumb, alt: '' }) : h('span.run-ico', icon('timer', 22)),
           title: w.name, subtitle: [h('div', fmtDateTime(w.startedAt)), h('div', [fmtDuration(Math.max(activityMs(w), 60000)), w.notes ? ` · ${w.notes}` : ''].join(''))],
           chevron: true, onClick: () => nav('/activity/' + w.id),
         });

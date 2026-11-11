@@ -213,8 +213,8 @@ export async function load() {
   try {
     const lists = await Promise.all(idb.STORES.map((s) => idb.getAll(s)));
     idb.STORES.forEach((s, i) => { data[s] = lists[i]; });
-    // Photos of workouts that no longer exist (deleted earlier) are cleaned up here, so Undo still works in the same session.
-    const wIds = new Set(data.workouts.map((w) => w.id));
+    // Photos of workouts / activities that no longer exist (deleted earlier) are cleaned up here, so Undo still works in the same session.
+    const wIds = new Set([...data.workouts.map((w) => w.id), ...data.activities.map((a) => a.id)]);
     for (const p of data.photos.filter((p) => !wIds.has(p.workoutId))) idb.del('photos', p.id);
     data.photos = data.photos.filter((p) => wIds.has(p.workoutId));
     const settings = await idb.getMeta('settings');
