@@ -53,12 +53,16 @@ export function wallpaperVars(stats, dark, glass = 50) {
       '--bg': hsl(ah, as, 0.09),
       '--card': hsl(ah, as, 0.15, r2(mix(0.97, 0.74, 0.22))),
       '--card2': hsl(ah, as, 0.2, r2(mix(0.97, 0.74, 0.22))),
+      '--card-solid': hsl(ah, as, 0.15),
+      '--card2-solid': hsl(ah, as, 0.2),
       '--wall-dim': 'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5))',
     }
     : {
       '--bg': hsl(ah, as, 0.95),
       '--card': hsl(ah, as * 0.5, 0.99, r2(mix(0.97, 0.78, 0.25))),
       '--card2': hsl(ah, as, 0.96, r2(mix(0.97, 0.75, 0.25))),
+      '--card-solid': hsl(ah, as * 0.5, 0.99),
+      '--card2-solid': hsl(ah, as, 0.96),
       '--wall-dim': 'linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5))',
     };
   vars['--wall-blur'] = `${r2(mix(0, 14, 26))}px`;

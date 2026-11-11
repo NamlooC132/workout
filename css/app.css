@@ -1116,3 +1116,8 @@ select.select { border-radius: 8px; min-height: 36px; }
 .glass-top { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 6px; }
 .glass-slider { width: 100%; accent-color: var(--accent, var(--green)); }
 .glass-ends { display: flex; justify-content: space-between; }
+
+/* Background picture: popups (rest timer, dialogs, sheets) stay solid – no glass, no setting */
+html.has-wall .dialog, html.has-wall .rest-bar { background: var(--card2-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
+html.has-wall .sheet { background: var(--bg); }
+html.has-wall .sheet .card, html.has-wall .sheet .stat, html.has-wall .sheet .field-card, html.has-wall .sheet .freddy-card { background: var(--card-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
